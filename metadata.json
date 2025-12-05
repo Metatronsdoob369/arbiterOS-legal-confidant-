@@ -1,0 +1,7 @@
+{
+  "name": "Civics & Commerce Guardian",
+  "description": "A friendly, expert legal guide for USC/USS governance contracts. Features natural language legal advice, document analysis, and high-fidelity image generation.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
