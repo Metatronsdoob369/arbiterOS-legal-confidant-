@@ -33,6 +33,10 @@ const INITIAL_CONNECTIONS: EvidenceConnection[] = [
   { id: 'c4', from: '4', to: '5', label: 'prohibited by', strength: 'strong' },
 ];
 
+const NODE_WIDTH = 180;
+const NODE_HEIGHT = 80;
+const NODE_MARGIN = 50;
+
 export const EvidenceBoard: React.FC = () => {
   const [nodes, setNodes] = useState<EvidenceNode[]>(INITIAL_NODES);
   const [connections, setConnections] = useState<EvidenceConnection[]>(INITIAL_CONNECTIONS);
@@ -60,8 +64,8 @@ export const EvidenceBoard: React.FC = () => {
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!dragState || !boardRef.current) return;
     const rect = boardRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(rect.width - 180, e.clientX - rect.left - dragState.offsetX));
-    const y = Math.max(0, Math.min(rect.height - 80, e.clientY - rect.top - dragState.offsetY));
+    const x = Math.max(0, Math.min(rect.width - NODE_WIDTH, e.clientX - rect.left - dragState.offsetX));
+    const y = Math.max(0, Math.min(rect.height - NODE_HEIGHT, e.clientY - rect.top - dragState.offsetY));
 
     setNodes(prev => prev.map(n =>
       n.id === dragState.nodeId ? { ...n, x, y } : n
@@ -98,8 +102,8 @@ export const EvidenceBoard: React.FC = () => {
       label: newNode.label,
       type: newNode.type,
       content: newNode.content || newNode.label,
-      x: 50 + Math.random() * ((boardRect?.width || 600) - 250),
-      y: 50 + Math.random() * ((boardRect?.height || 400) - 150),
+      x: NODE_MARGIN + Math.random() * ((boardRect?.width || 600) - NODE_WIDTH - NODE_MARGIN * 2),
+      y: NODE_MARGIN + Math.random() * ((boardRect?.height || 400) - NODE_HEIGHT - NODE_MARGIN * 2),
     };
     setNodes(prev => [...prev, node]);
     setNewNode({ label: '', type: 'evidence', content: '' });
@@ -119,7 +123,7 @@ export const EvidenceBoard: React.FC = () => {
   const getNodeCenter = (nodeId: string) => {
     const node = nodes.find(n => n.id === nodeId);
     if (!node) return { x: 0, y: 0 };
-    return { x: node.x + 90, y: node.y + 35 };
+    return { x: node.x + NODE_WIDTH / 2, y: node.y + NODE_HEIGHT / 2 };
   };
 
   const getStrengthStyle = (strength: EvidenceConnection['strength']) => {
@@ -273,7 +277,7 @@ export const EvidenceBoard: React.FC = () => {
                 style={{
                   left: node.x,
                   top: node.y,
-                  width: 180,
+                  width: NODE_WIDTH,
                   zIndex: isSelected ? 20 : 10,
                   cursor: dragState?.nodeId === node.id ? 'grabbing' : 'grab',
                 }}

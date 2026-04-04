@@ -483,6 +483,7 @@ export const runArbiterAudit = async (adviceText: string): Promise<CriticRespons
 /**
  * Generate a legal concept image.
  * Uses DALL-E or compatible image generation API.
+ * Note: size parameter kept for API compatibility with callers but mapped to DALL-E format internally.
  */
 export const generateContractImage = async (
   prompt: string,
