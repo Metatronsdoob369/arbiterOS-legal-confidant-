@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Message, Role } from '../types';
-import { sendLegalMessage, runArbiterAudit } from '../services/geminiService';
+import { sendLegalMessage, runArbiterAudit } from '../services/aiProvider';
 import { decodeAudioData, playAudioBuffer } from '../services/audio';
 import { useAudit } from '../contexts/AuditContext';
 import { ArbiterBadge } from './ArbiterBadge';
@@ -12,7 +12,7 @@ interface StagedFile {
   path?: string;
 }
 
-export const LegalAdvisor: React.FC = () => {
+export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = false }) => {
   const { addEntry, clearLog } = useAudit();
   // Start empty to remove visual clutter on load
   const [history, setHistory] = useState<Message[]>([]);
@@ -220,167 +220,229 @@ export const LegalAdvisor: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-black font-mono relative overflow-hidden">
+    <div className="flex flex-col h-full relative overflow-hidden" style={{
+      background: nightMode
+        ? 'radial-gradient(ellipse 800px 600px at 50% 20%, rgba(42,28,18,0.95) 0%, #0d0806 60%)'
+        : 'linear-gradient(180deg, #1a0f0a 0%, #0d0806 100%)',
+      fontFamily: "'Inter', sans-serif",
+    }}>
       
       {/* System Reset Button - Top Right */}
       <div className="absolute top-4 right-4 z-50">
         <button 
           onClick={handleReset}
-          className="flex items-center gap-2 px-3 py-1.5 bg-neutral-900/80 border border-neutral-700 rounded-md text-[9px] uppercase tracking-widest text-neutral-500 hover:text-red-400 hover:border-red-500/50 transition-all backdrop-blur-sm shadow-lg group"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-md text-[9px] uppercase tracking-widest transition-all backdrop-blur-sm group"
+          style={{
+            background: 'rgba(26,15,10,0.8)',
+            border: '1px solid #3d2b1f',
+            color: '#5a4030',
+          }}
         >
           <svg className="w-3 h-3 group-hover:animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
           System Reset
         </button>
       </div>
 
-      {/* HEADER SECTION: Badge + Input Console */}
-      <div className="flex flex-col items-center justify-center pt-8 pb-4 z-40 bg-gradient-to-b from-black via-black to-transparent w-full">
-         <div className="mb-6 transform hover:scale-105 transition-transform duration-500">
+      {/* HEADER SECTION: Badge + THE BIG INPUT */}
+      <div className="flex flex-col items-center justify-center pt-6 pb-4 z-40 w-full">
+         <div className="mb-5 transform hover:scale-105 transition-transform duration-500">
             <ArbiterBadge />
          </div>
 
-         {/* THE EYE WITNESS CONSOLE (Input Card) */}
-         <div className="max-w-[320px] md:max-w-md mx-auto w-full relative">
-            <div className="relative p-[1.5px] rounded-[16px] overflow-hidden bg-gradient-to-br from-[#7e7e7e] via-[#363636] to-[#363636] shadow-2xl">
-                <div className="absolute -top-[10px] -left-[10px] w-[30px] h-[30px] bg-[radial-gradient(ellipse_at_center,#ffffff,rgba(255,255,255,0.3),rgba(255,255,255,0.1),transparent)] blur-[1px] pointer-events-none"></div>
+         {/* ═══ THE COUNSEL BAR — Large, Heavy, Mahogany ═══ */}
+         <div className="w-full max-w-2xl mx-auto px-4">
+            <div className="relative rounded-2xl overflow-hidden" style={{
+              background: 'linear-gradient(135deg, #3d2b1f 0%, #2a1c12 50%, #1e1410 100%)',
+              boxShadow: `
+                0 8px 32px rgba(0,0,0,0.6),
+                0 2px 0 rgba(212,175,55,0.15),
+                inset 0 1px 0 rgba(255,255,255,0.05),
+                inset 0 -1px 0 rgba(0,0,0,0.3)
+              `,
+              border: '1px solid #5a4030',
+            }}>
+              {/* Gold trim top edge */}
+              <div className="h-[2px] w-full" style={{
+                background: 'linear-gradient(90deg, transparent, #d4af37, #ffd700, #d4af37, transparent)',
+              }} />
 
-                <div className="flex flex-col bg-black/80 backdrop-blur-md rounded-[15px] w-full">
-                    {/* Staged Files */}
-                    {selectedFiles.length > 0 && (
-                        <div className="flex gap-2 px-3 pt-3 overflow-x-auto scrollbar-hide">
-                            {selectedFiles.map((file, i) => (
-                                <div key={i} className="flex items-center gap-1 bg-[#1b1b1b] border border-[#363636] px-2 py-1 rounded-[10px] text-[9px] text-white whitespace-nowrap">
-                                    <span className="truncate max-w-[80px]">{file.name}</span>
-                                    <button onClick={() => removeFile(i)} className="hover:text-red-400 ml-1">×</button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Chat Area */}
-                    <div className="relative p-2">
-                        <textarea 
-                            value={inputText}
-                            onChange={(e) => setInputText(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    handleSend();
-                                }
-                            }}
-                            placeholder="Upload Evidence or Query Logic..."
-                            className="w-full h-[50px] bg-transparent text-white text-xs font-sans font-normal p-2 resize-none outline-none placeholder-[#f3f6fd] focus:placeholder-[#363636] transition-colors scrollbar-hide"
-                        />
+              {/* Staged Files */}
+              {selectedFiles.length > 0 && (
+                <div className="flex gap-2 px-4 pt-3 overflow-x-auto scrollbar-hide">
+                  {selectedFiles.map((file, i) => (
+                    <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] whitespace-nowrap" style={{
+                      background: '#1a0f0a',
+                      border: '1px solid #3d2b1f',
+                      color: '#d4af37',
+                    }}>
+                      <span className="truncate max-w-[100px]">{file.name}</span>
+                      <button onClick={() => removeFile(i)} className="hover:text-red-400 ml-1 text-xs">×</button>
                     </div>
-
-                    {/* Actions Row */}
-                    <div className="flex justify-between items-end p-2 pt-0">
-                        {/* Left Actions - Added Glow and Higher Visibility */}
-                        <div className="flex gap-2">
-                            <button 
-                                onClick={() => fileInputRef.current?.click()}
-                                className="text-white/60 drop-shadow-[0_0_5px_rgba(255,255,255,0.3)] hover:text-white hover:-translate-y-1 transition-all duration-300"
-                                title="Add File(s)"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20} viewBox="0 0 24 24"><path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" /></svg>
-                            </button>
-                            <button 
-                                onClick={() => folderInputRef.current?.click()}
-                                className="text-white/60 drop-shadow-[0_0_5px_rgba(255,255,255,0.3)] hover:text-white hover:-translate-y-1 transition-all duration-300"
-                                title="Add Folder (Knowledge Base)"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20} viewBox="0 0 24 24"><path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z" /></svg>
-                            </button>
-                            <button 
-                                onClick={() => setSearchEnabled(!searchEnabled)}
-                                className={`transition-all duration-300 hover:-translate-y-1 ${searchEnabled ? 'text-[#14b8a6] drop-shadow-[0_0_8px_rgba(20,184,166,0.5)]' : 'text-white/60 drop-shadow-[0_0_5px_rgba(255,255,255,0.3)] hover:text-white'}`}
-                                title="Live Analysis Mode"
-                            >
-                                <svg viewBox="0 0 24 24" height={20} width={20} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M21 21l-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0z" /></svg>
-                            </button>
-                            <button 
-                                onClick={() => setShadowCounsel(!shadowCounsel)}
-                                className={`transition-all duration-300 hover:-translate-y-1 ${shadowCounsel ? 'text-[#d4af37] drop-shadow-[0_0_8px_rgba(212,175,55,0.5)]' : 'text-white/60 drop-shadow-[0_0_5px_rgba(255,255,255,0.3)] hover:text-[#d4af37]'}`}
-                                title="Shadow Counsel (Privileged Mode)"
-                            >
-                                <svg viewBox="0 0 24 24" height={20} width={20} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 6v6l4 2"/></svg>
-                            </button>
-                        </div>
-
-                        {/* Submit Button */}
-                        <button 
-                            onClick={() => handleSend()}
-                            disabled={(!inputText && selectedFiles.length === 0) || isLoading}
-                            className="p-[2px] rounded-[10px] bg-gradient-to-t from-[#292929] via-[#555555] to-[#292929] shadow-[inset_0_6px_2px_-4px_rgba(255,255,255,0.5)] border-none outline-none cursor-pointer transition-all active:scale-95 hover:scale-105 group"
-                        >
-                            <div className="w-[30px] h-[30px] p-[6px] bg-black/10 rounded-[10px] backdrop-blur-[3px] text-[#8b8b8b] group-hover:text-[#f3f6fd] group-hover:drop-shadow-[0_0_5px_#ffffff]">
-                                <svg viewBox="0 0 512 512" className="w-full h-full"><path fill="currentColor" d="M473 39.05a24 24 0 0 0-25.5-5.46L47.47 185h-.08a24 24 0 0 0 1 45.16l.41.13l137.3 58.63a16 16 0 0 0 15.54-3.59L422 80a7.07 7.07 0 0 1 10 10L226.66 310.26a16 16 0 0 0-3.59 15.54l58.65 137.38c.06.2.12.38.19.57c3.2 9.27 11.3 15.81 21.09 16.25h1a24.63 24.63 0 0 0 23-15.46L478.39 64.62A24 24 0 0 0 473 39.05" /></svg>
-                            </div>
-                        </button>
-                    </div>
+                  ))}
                 </div>
+              )}
+
+              {/* THE BIG TEXTAREA — Leather pad feel */}
+              <div className="p-4">
+                <textarea 
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  placeholder="State your case, counselor..."
+                  rows={3}
+                  className="w-full bg-transparent text-sm font-sans resize-none outline-none leading-relaxed scrollbar-hide"
+                  style={{
+                    color: '#e8dcc8',
+                    minHeight: '80px',
+                    caretColor: '#d4af37',
+                  }}
+                />
+              </div>
+
+              {/* Actions Row — Brass fixtures */}
+              <div className="flex justify-between items-center px-4 pb-3">
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="transition-all duration-300 hover:-translate-y-1 hover:drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]"
+                    style={{ color: '#8b7355' }}
+                    title="Add Evidence"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width={22} height={22} viewBox="0 0 24 24"><path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6m-3-3v6m5 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" /></svg>
+                  </button>
+                  <button 
+                    onClick={() => folderInputRef.current?.click()}
+                    className="transition-all duration-300 hover:-translate-y-1 hover:drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]"
+                    style={{ color: '#8b7355' }}
+                    title="Add Knowledge Base"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width={22} height={22} viewBox="0 0 24 24"><path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z" /></svg>
+                  </button>
+                  <button 
+                    onClick={() => setSearchEnabled(!searchEnabled)}
+                    className="transition-all duration-300 hover:-translate-y-1"
+                    style={{ color: searchEnabled ? '#14b8a6' : '#8b7355' }}
+                    title="Live Analysis Mode"
+                  >
+                    <svg viewBox="0 0 24 24" height={22} width={22} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><path d="M21 21l-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0z" /></svg>
+                  </button>
+                  <button 
+                    onClick={() => setShadowCounsel(!shadowCounsel)}
+                    className="transition-all duration-300 hover:-translate-y-1"
+                    style={{ color: shadowCounsel ? '#d4af37' : '#8b7355' }}
+                    title="Shadow Counsel (Heavy Model)"
+                  >
+                    <svg viewBox="0 0 24 24" height={22} width={22} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                  </button>
+                </div>
+
+                {/* Send — Gold button */}
+                <button 
+                  onClick={() => handleSend()}
+                  disabled={(!inputText && selectedFiles.length === 0) || isLoading}
+                  className="rounded-xl transition-all active:scale-95 hover:scale-105 disabled:opacity-30"
+                  style={{
+                    background: 'linear-gradient(135deg, #d4af37, #b8941e)',
+                    padding: '10px 14px',
+                    boxShadow: '0 2px 8px rgba(212,175,55,0.3), inset 0 1px 0 rgba(255,255,255,0.2)',
+                  }}
+                >
+                  <svg viewBox="0 0 512 512" className="w-5 h-5" style={{ color: '#1a0f0a' }}>
+                    <path fill="currentColor" d="M473 39.05a24 24 0 0 0-25.5-5.46L47.47 185h-.08a24 24 0 0 0 1 45.16l.41.13l137.3 58.63a16 16 0 0 0 15.54-3.59L422 80a7.07 7.07 0 0 1 10 10L226.66 310.26a16 16 0 0 0-3.59 15.54l58.65 137.38c.06.2.12.38.19.57c3.2 9.27 11.3 15.81 21.09 16.25h1a24.63 24.63 0 0 0 23-15.46L478.39 64.62A24 24 0 0 0 473 39.05" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Gold trim bottom edge */}
+              <div className="h-[1px] w-full" style={{
+                background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.3), transparent)',
+              }} />
             </div>
 
-            {/* Quick Actions (Tags) */}
-            <div className="flex gap-2 mt-3 px-0 text-white text-[10px] flex-wrap justify-center overflow-visible z-50">
-                {/* 1. Upload & Analyze Button */}
-                 <button 
-                   onClick={() => {
-                     setPendingAction('ANALYZE_RISK');
-                     fileInputRef.current?.click();
-                   }}
-                   className="px-3 py-1.5 bg-[#1b1b1b] border-[1.5px] border-[#363636] rounded-[10px] hover:bg-neutral-800 transition-colors whitespace-nowrap text-[#14b8a6] border-[#14b8a6]/30 flex items-center gap-2 group shadow-lg"
-                >
-                   <svg className="group-hover:animate-bounce" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                   Upload & Analyze
-                </button>
+            {/* Quick Actions — Brass tags */}
+            <div className="flex gap-2 mt-3 text-[10px] flex-wrap justify-center overflow-visible z-50">
+              <button 
+                onClick={() => {
+                  setPendingAction('ANALYZE_RISK');
+                  fileInputRef.current?.click();
+                }}
+                className="px-3 py-1.5 rounded-lg flex items-center gap-2 group transition-all hover:-translate-y-0.5"
+                style={{
+                  background: '#1e1410',
+                  border: '1px solid #14b8a6',
+                  color: '#14b8a6',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                }}
+              >
+                <svg className="group-hover:animate-bounce" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Upload & Analyze
+              </button>
 
-                {/* 2. Draft Instruments Dropdown */}
-                <div className="relative">
-                    <button 
-                      onClick={() => setDraftMenuOpen(!draftMenuOpen)}
-                      className="px-3 py-1.5 bg-[#1b1b1b] border-[1.5px] border-[#363636] rounded-[10px] hover:bg-neutral-800 transition-colors whitespace-nowrap flex items-center gap-2 shadow-lg"
-                    >
-                      <span>Draft Instruments</span>
-                      <svg className={`w-3 h-3 transition-transform ${draftMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              <div className="relative">
+                <button 
+                  onClick={() => setDraftMenuOpen(!draftMenuOpen)}
+                  className="px-3 py-1.5 rounded-lg flex items-center gap-2 transition-all hover:-translate-y-0.5"
+                  style={{
+                    background: '#1e1410',
+                    border: '1px solid #3d2b1f',
+                    color: '#d4af37',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                  }}
+                >
+                  <span>Draft Instruments</span>
+                  <svg className={`w-3 h-3 transition-transform ${draftMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                
+                {draftMenuOpen && (
+                  <div className="absolute top-full left-0 mt-2 w-60 rounded-xl overflow-hidden flex flex-col p-1 z-[60]" style={{
+                    background: 'linear-gradient(135deg, #2a1c12 0%, #1e1410 100%)',
+                    border: '1px solid #3d2b1f',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(212,175,55,0.1)',
+                  }}>
+                    <div className="px-3 py-2 text-[9px] uppercase tracking-widest font-bold mb-1" style={{ color: '#5a4030', borderBottom: '1px solid #3d2b1f' }}>
+                      Select Template
+                    </div>
+                    <button onClick={() => handleSend("Generate a UCC compliant Promissory Note for $10,000 between generic parties.")} className="text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-2" style={{ color: '#e8dcc8' }}>
+                      <span className="w-2 h-2 rounded-full" style={{ background: '#2563eb' }}></span>
+                      Promissory Note ($10k)
                     </button>
-                    
-                    {draftMenuOpen && (
-                        <div className="absolute top-full left-0 mt-2 w-56 bg-[#1b1b1b]/95 backdrop-blur-xl border border-[#363636] rounded-xl overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.5)] flex flex-col p-1 z-[60] animate-in fade-in zoom-in-95 duration-200">
-                             <div className="px-3 py-2 text-[9px] uppercase tracking-widest text-neutral-500 font-bold border-b border-neutral-800 mb-1">
-                                 Select Template
-                             </div>
-                             <button onClick={() => handleSend("Generate a UCC compliant Promissory Note for $10,000 between generic parties.")} className="text-left px-3 py-2 text-neutral-300 hover:bg-[#363636] hover:text-white rounded-lg transition-colors flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                                Promissory Note ($10k)
-                             </button>
-                             <button onClick={() => handleSend("Generate a UCC Article 9 Security Agreement. Collateral: '2023 Ford F-150 VIN#12345'.")} className="text-left px-3 py-2 text-neutral-300 hover:bg-[#363636] hover:text-white rounded-lg transition-colors flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                                Security Agreement
-                             </button>
-                             <button onClick={() => handleSend("Draft a Bill of Sale for 500 Industrial Widgets. Price $2000.")} className="text-left px-3 py-2 text-neutral-300 hover:bg-[#363636] hover:text-white rounded-lg transition-colors flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                                Bill of Sale
-                             </button>
-                             <button onClick={() => handleSend("Draft an Independent Contractor Agreement for generic web services.")} className="text-left px-3 py-2 text-neutral-300 hover:bg-[#363636] hover:text-white rounded-lg transition-colors flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
-                                Contractor Agreement
-                             </button>
-                        </div>
-                    )}
-                </div>
+                    <button onClick={() => handleSend("Generate a UCC Article 9 Security Agreement. Collateral: '2023 Ford F-150 VIN#12345'.")} className="text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-2" style={{ color: '#e8dcc8' }}>
+                      <span className="w-2 h-2 rounded-full" style={{ background: '#6366f1' }}></span>
+                      Security Agreement
+                    </button>
+                    <button onClick={() => handleSend("Draft a Bill of Sale for 500 Industrial Widgets. Price $2000.")} className="text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-2" style={{ color: '#e8dcc8' }}>
+                      <span className="w-2 h-2 rounded-full" style={{ background: '#16a34a' }}></span>
+                      Bill of Sale
+                    </button>
+                    <button onClick={() => handleSend("Draft an Independent Contractor Agreement for generic web services.")} className="text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-2" style={{ color: '#e8dcc8' }}>
+                      <span className="w-2 h-2 rounded-full" style={{ background: '#eab308' }}></span>
+                      Contractor Agreement
+                    </button>
+                  </div>
+                )}
+              </div>
 
-                {/* 3. Signature Button */}
-                 <button 
-                   onClick={() => setInputText("Where do I sign on this type of document?")}
-                   className="px-3 py-1.5 bg-[#1b1b1b] border-[1.5px] border-[#363636] rounded-[10px] hover:bg-neutral-800 transition-colors whitespace-nowrap shadow-lg text-neutral-400 hover:text-white"
-                >
-                  Show Signature Areas
-                </button>
+              <button 
+                onClick={() => setInputText("Where do I sign on this type of document?")}
+                className="px-3 py-1.5 rounded-lg transition-all hover:-translate-y-0.5"
+                style={{
+                  background: '#1e1410',
+                  border: '1px solid #3d2b1f',
+                  color: '#8b7355',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                }}
+              >
+                Show Signature Areas
+              </button>
             </div>
          </div>
          
-         {/* File Input */}
+         {/* Hidden file inputs */}
          <input 
             type="file" 
             ref={fileInputRef} 
@@ -389,8 +451,6 @@ export const LegalAdvisor: React.FC = () => {
             accept="image/*,application/pdf,text/plain" 
             onChange={handleFileChange}
           />
-         
-         {/* Folder Input */}
          <input
             type="file"
             ref={folderInputRef}
@@ -400,34 +460,32 @@ export const LegalAdvisor: React.FC = () => {
          />
       </div>
 
-      {/* RESULT STREAM (Messages) */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-8 space-y-12 scrollbar-hide w-full max-w-5xl mx-auto">
+      {/* ═══ RESULT STREAM — The Record ═══ */}
+      <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-8 space-y-10 scrollbar-hide w-full max-w-4xl mx-auto">
         {history.length === 0 && (
-            <div className="flex h-full items-center justify-center opacity-30">
-                <div className="text-center space-y-2">
-                    <div className="w-16 h-16 mx-auto border border-neutral-700 rounded-full flex items-center justify-center">
-                        <svg className="w-6 h-6 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
-                    </div>
-                    <div className="text-[10px] uppercase tracking-[0.3em] text-neutral-500 font-bold">Awaiting Command</div>
-                </div>
+          <div className="flex h-full items-center justify-center opacity-20">
+            <div className="text-center space-y-3">
+              <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center" style={{ border: '1px solid #3d2b1f' }}>
+                <svg className="w-8 h-8" fill="none" stroke="#5a4030" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+              </div>
+              <div className="text-[10px] uppercase tracking-[0.3em] font-bold" style={{ color: '#3d2b1f' }}>
+                Awaiting Counsel
+              </div>
             </div>
+          </div>
         )}
 
         {history.map((msg) => (
           <div key={msg.id} className={`flex ${msg.role === Role.USER ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[90%] md:max-w-[80%] ${
-              msg.role === Role.USER 
-                ? 'text-right' 
-                : 'text-left'
-            }`}>
+            <div className={`max-w-[90%] md:max-w-[80%] ${msg.role === Role.USER ? 'text-right' : 'text-left'}`}>
               
               {msg.role === Role.MODEL && (
-                 <div className="mb-3 opacity-50">
-                    <div className="text-[9px] uppercase tracking-widest text-[#d4af37] flex items-center gap-2">
-                        <span className="w-1 h-1 bg-[#d4af37] rounded-full"></span>
-                        Arbiter Node Response
-                    </div>
-                 </div>
+                <div className="mb-3 opacity-60">
+                  <div className="text-[9px] uppercase tracking-widest flex items-center gap-2" style={{ color: '#d4af37' }}>
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#d4af37' }}></span>
+                    Arbiter Counsel
+                  </div>
+                </div>
               )}
 
               {msg.images && msg.images.length > 0 && (
@@ -435,28 +493,37 @@ export const LegalAdvisor: React.FC = () => {
                   {msg.images.map((attachment, idx) => {
                     const isImage = attachment.startsWith('data:image');
                     return isImage ? (
-                      <img key={idx} src={attachment} alt="Evidence" className="max-w-[200px] h-auto border border-neutral-800 opacity-80" />
+                      <img key={idx} src={attachment} alt="Evidence" className="max-w-[200px] h-auto opacity-80" style={{ border: '1px solid #3d2b1f' }} />
                     ) : (
-                      <div key={idx} className="p-2 border border-neutral-700 bg-neutral-900 text-xs text-neutral-400">
-                          DOC_{idx}
+                      <div key={idx} className="p-2 text-xs" style={{ border: '1px solid #3d2b1f', background: '#1e1410', color: '#8b7355' }}>
+                        DOC_{idx}
                       </div>
                     );
                   })}
                 </div>
               )}
               
-              <div className={`inline-block p-4 md:p-6 border backdrop-blur-sm shadow-glow transition-all duration-500 ${
-                  msg.role === Role.USER 
-                  ? 'bg-neutral-900/30 border-neutral-800 text-neutral-200' 
-                  : 'bg-black border-neutral-800 text-neutral-300'
-              }`}>
-                <div className="font-mono text-sm leading-relaxed">
+              <div className="inline-block p-5 md:p-6 rounded-lg transition-all duration-500" style={{
+                background: msg.role === Role.USER 
+                  ? 'linear-gradient(135deg, #2a1c12, #1e1410)' 
+                  : nightMode
+                    ? 'linear-gradient(135deg, rgba(42,28,18,0.9), rgba(30,20,16,0.9))'
+                    : 'linear-gradient(135deg, #1a0f0a, #150d08)',
+                border: `1px solid ${msg.role === Role.USER ? '#3d2b1f' : '#3d2b1f'}`,
+                boxShadow: nightMode && msg.role === Role.MODEL
+                  ? '0 0 30px rgba(255,200,100,0.05), 0 4px 12px rgba(0,0,0,0.3)'
+                  : '0 4px 12px rgba(0,0,0,0.3)',
+                color: '#e8dcc8',
+              }}>
+                <div className="text-sm leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
                    {renderMessageText(msg.text)}
                 </div>
               </div>
 
               {msg.audioData && (
-                <div className="mt-2 flex items-center gap-2 text-[9px] uppercase tracking-widest text-neutral-600 cursor-pointer hover:text-white" onClick={() => playAudioResponse(msg.audioData!)}>
+                <div className="mt-2 flex items-center gap-2 text-[9px] uppercase tracking-widest cursor-pointer transition-colors" 
+                     style={{ color: '#5a4030' }}
+                     onClick={() => playAudioResponse(msg.audioData!)}>
                    <span className="w-2 h-2 border border-current rounded-full flex items-center justify-center">
                      {isSpeaking ? <span className="w-1 h-1 bg-current rounded-full animate-ping"/> : <span className="w-1 h-1 bg-current rounded-full"/>}
                    </span>
@@ -469,16 +536,20 @@ export const LegalAdvisor: React.FC = () => {
 
         {isLoading && (
           <div className="flex justify-start">
-             <div className="border border-neutral-800 bg-black p-4 flex flex-col gap-2 min-w-[300px] shadow-glow">
-                <div className="flex items-center justify-between text-[10px] uppercase text-neutral-500 tracking-widest border-b border-neutral-900 pb-2">
-                   <span>Status</span>
-                   <span className="text-[#14b8a6] animate-pulse">Running</span>
-                </div>
-                <div className="font-mono text-xs text-white uppercase">{loadingStage || 'Processing...'}</div>
-                <div className="h-1 w-full bg-neutral-900 mt-2 overflow-hidden">
-                   <div className="h-full bg-[#14b8a6] w-1/3 animate-[shimmer_1s_infinite]"></div>
-                </div>
-             </div>
+            <div className="p-5 flex flex-col gap-3 min-w-[300px] rounded-lg" style={{
+              background: '#1e1410',
+              border: '1px solid #3d2b1f',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            }}>
+              <div className="flex items-center justify-between text-[10px] uppercase tracking-widest pb-2" style={{ borderBottom: '1px solid #3d2b1f' }}>
+                <span style={{ color: '#5a4030' }}>Status</span>
+                <span className="animate-pulse" style={{ color: '#d4af37' }}>Running</span>
+              </div>
+              <div className="text-xs uppercase" style={{ color: '#e8dcc8' }}>{loadingStage || 'Processing...'}</div>
+              <div className="h-1 w-full rounded-full overflow-hidden" style={{ background: '#3d2b1f' }}>
+                <div className="h-full w-1/3 animate-[shimmer_1s_infinite]" style={{ background: '#d4af37' }}></div>
+              </div>
+            </div>
           </div>
         )}
         <div ref={bottomRef} />

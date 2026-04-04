@@ -1,6 +1,6 @@
 {
-  "name": "Civics & Commerce Guardian",
-  "description": "A friendly, expert legal guide for USC/USS governance contracts. Features natural language legal advice, document analysis, and high-fidelity image generation.",
+  "name": "ArbiterOS Legal Confidant",
+  "description": "A sharp-tongued, contract-first legal case-building tool. Archer meets Goliath. Zod schemas prevent AI hallucination. Contracts > Prompts. Provider-agnostic — works with OpenAI, Ollama, or any compatible API.",
   "requestFramePermissions": [
     "microphone"
   ]

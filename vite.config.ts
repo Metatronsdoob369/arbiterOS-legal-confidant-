@@ -11,8 +11,12 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [react()],
       define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+        'process.env.API_KEY': JSON.stringify(env.API_KEY || env.OPENAI_API_KEY || ''),
+        'process.env.OPENAI_API_KEY': JSON.stringify(env.OPENAI_API_KEY || ''),
+        'process.env.AI_BASE_URL': JSON.stringify(env.AI_BASE_URL || 'https://api.openai.com/v1'),
+        'process.env.AI_MODEL': JSON.stringify(env.AI_MODEL || 'gpt-4o'),
+        'process.env.AI_SHADOW_MODEL': JSON.stringify(env.AI_SHADOW_MODEL || ''),
+        'process.env.AI_CRITIC_MODEL': JSON.stringify(env.AI_CRITIC_MODEL || ''),
       },
       resolve: {
         alias: {

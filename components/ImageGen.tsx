@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ImageSize } from '../types';
-import { generateContractImage } from '../services/geminiService';
-import { KeySelector } from './KeySelector';
+import { generateContractImage } from '../services/aiProvider';
 import { useAudit } from '../contexts/AuditContext';
 
 type ConceptType = 'Negotiability Flow' | 'Corporate Veil' | 'Security Interest' | 'Chain of Title';
@@ -13,7 +12,6 @@ export const ImageGen: React.FC = () => {
   const [conceptType, setConceptType] = useState<ConceptType>('Negotiability Flow');
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [isReady, setIsReady] = useState(false);
 
   // Derived Metrics for Contextual Injection
   const metrics = useMemo(() => {
@@ -65,9 +63,7 @@ export const ImageGen: React.FC = () => {
         </p>
       </div>
 
-      <KeySelector onReady={() => setIsReady(true)} />
-
-      <div className={`grid lg:grid-cols-12 gap-8 transition-opacity duration-500 ${isReady ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
+      <div className="grid lg:grid-cols-12 gap-8 transition-opacity duration-500">
         
         {/* Controls Column */}
         <div className="lg:col-span-4 space-y-6">
