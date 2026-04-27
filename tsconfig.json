@@ -27,8 +27,6 @@
     "noEmit": true
   },
   "exclude": [
-    "node_modules",
-    "LegalPackages",
-    "services/geminiService.ts"
+    "node_modules"
   ]
 }
