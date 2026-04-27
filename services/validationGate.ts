@@ -194,7 +194,7 @@ export async function runValidationGate(
     );
     return {
       decision: 'block',
-      final_text: buildVerificationModeResponse(draft, highSeverityFails),
+      final_text: buildVerificationModeResponse(draft, failedClaims),
       failed_claims: failedClaims,
       validation_steps: steps,
       audit: {
