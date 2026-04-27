@@ -17,6 +17,7 @@ import {
   type DraftResponse,
   type LibraryItem,
   type EvidenceNode,
+  type GateDecision,
 } from '../schemas/legalSchemas';
 import {
   verifyOrdinary,
@@ -618,11 +619,37 @@ export const sendLegalMessage = async (
     } catch (repairErr: unknown) {
       const errMsg = repairErr instanceof Error ? repairErr.message : String(repairErr);
       console.warn('[ValidationGate] Repair round failed:', errMsg);
-      // Fall back to original gate decision with soften applied
+      
+      if (logAudit) {
+        logAudit(
+          'Validation Gate: Repair Failed',
+          `Repair round encountered an error: ${errMsg}. Falling back to soften decision with disclaimer.`,
+          'System',
+          'Refining'
+        );
+      }
+      
+      // Fall back to soften decision with a clean audit trail
+      // Create a new validation step documenting the repair failure
+      const repairFailureStep: ValidationStep = {
+        rule_id: 'repair_failure',
+        passed: false,
+        details: `Repair attempt failed with error: ${errMsg}. Claims remain unresolved.`,
+        evidence_source: 'System',
+        timestamp: new Date().toISOString(),
+      };
+      
       gateDecision = {
-        ...gateDecision,
         decision: 'soften' as const,
         final_text: draft.draft_text + '\n\n*[Validation Gate: repair attempt failed -- treat as unverified analysis.]*',
+        // Keep the failed claims from the original gate decision (these are the actual issues)
+        failed_claims: gateDecision.failed_claims,
+        // Add the repair failure step to the audit trail
+        validation_steps: [...gateDecision.validation_steps, repairFailureStep],
+        audit: {
+          score: 0.5,
+          critique: `Repair round failed. Falling back to soften: ${gateDecision.failed_claims.length} claim(s) remain unresolved.`,
+        },
       };
     }
   }
