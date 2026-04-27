@@ -392,6 +392,11 @@ export interface CriticResponse {
 /**
  * Attempt to extract and parse a DraftResponse from the raw model output.
  * Falls back to a synthetic minimal ledger if the model produced plain text.
+ * 
+ * NOTE: If parsing fails and the fallback is used, a special synthetic claim
+ * with severity 'high' is added to the claims array. This ensures the gate
+ * will catch the parsing failure and either block or issue a repair_request,
+ * preventing non-compliant model output from bypassing validation.
  */
 function parseDraftResponse(rawContent: string): DraftResponse {
   // Strip markdown code fences if present (```json ... ``` or ``` ... ```)
@@ -427,12 +432,21 @@ function parseDraftResponse(rawContent: string): DraftResponse {
     } catch (_) { /* fall through */ }
   }
 
-  // Fallback: treat entire content as draft_text with an empty claim ledger.
-  // The gate will still run but no claims = no validation failures = pass-through.
-  console.warn('[ValidationGate] Model did not output DraftResponseSchema JSON. Using plain-text fallback with empty claims.');
+  // Fallback: treat entire content as draft_text, but add a synthetic high-severity claim
+  // that records the parsing failure. This ensures the gate will catch this and either
+  // block or request a repair, preventing the non-compliant output from bypassing validation.
+  console.warn('[ValidationGate] Model did not output DraftResponseSchema JSON. Using plain-text fallback with parse-failure marker.');
   return {
     draft_text: rawContent,
-    claims: [],
+    claims: [
+      {
+        id: 'sys:parse_failure',
+        text: 'Model output did not conform to DraftResponseSchema JSON structure',
+        kind: 'fact',
+        severity: 'high',
+        evidence: [],
+      },
+    ],
   };
 }
 
