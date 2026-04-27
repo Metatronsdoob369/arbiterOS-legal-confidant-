@@ -189,6 +189,9 @@ export async function runValidationGate(
 
   // R4: hard block for high-severity failures (statute not found, or high-severity unsupported fact)
   if (highSeverityFails.length > 0) {
+    const highSeverityClaimIds = new Set(
+      highSeverityFails.map((fc) => fc.claim_id)
+    );
     return {
       decision: 'block',
       final_text: buildVerificationModeResponse(draft, highSeverityFails),
@@ -196,7 +199,7 @@ export async function runValidationGate(
       validation_steps: steps,
       audit: {
         score: 0.0,
-        critique: `Gate blocked: ${highSeverityFails.length} high-severity claim(s) failed.`,
+        critique: `Gate blocked: ${highSeverityClaimIds.size} high-severity claim(s) failed.`,
       },
     };
   }
@@ -212,6 +215,9 @@ export async function runValidationGate(
   });
 
   if (repairCandidates.length > 0) {
+    const repairClaimIds = new Set(
+      repairCandidates.map((fc) => fc.claim_id)
+    );
     return {
       decision: 'repair_request',
       final_text: draft.draft_text, // Will be replaced by the repair round result
@@ -219,12 +225,15 @@ export async function runValidationGate(
       validation_steps: steps,
       audit: {
         score: 0.5,
-        critique: `Gate issued repair request for ${repairCandidates.length} fixable claim(s).`,
+        critique: `Gate issued repair request for ${repairClaimIds.size} fixable claim(s).`,
       },
     };
   }
 
   // Remaining failures are low-severity → soften
+  const lowSeverityClaimIds = new Set(
+    failedClaims.map((fc) => fc.claim_id)
+  );
   return {
     decision: 'soften',
     final_text: softenResponse(draft.draft_text, failedClaims),
@@ -232,7 +241,7 @@ export async function runValidationGate(
     validation_steps: steps,
     audit: {
       score: 0.7,
-      critique: `Gate softened: ${failedClaims.length} low-severity claim(s) lack supporting evidence.`,
+      critique: `Gate softened: ${lowSeverityClaimIds.size} low-severity claim(s) lack supporting evidence.`,
     },
   };
 }
