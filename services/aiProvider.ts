@@ -11,7 +11,13 @@ import { Message, Role, AuditEntry } from '../types';
 import {
   AuditScoreSchema,
   ValidationStepSchema,
+  DraftResponseSchema,
+  ClaimSchema,
   type AuditScore,
+  type DraftResponse,
+  type LibraryItem,
+  type EvidenceNode,
+  type GateDecision,
 } from '../schemas/legalSchemas';
 import {
   verifyOrdinary,
@@ -23,6 +29,7 @@ import {
   type ValidationStep,
   type InstrumentTerms,
 } from './legalEngine';
+import { runValidationGate, type GateInputState } from './validationGate';
 
 // ═══════════════════════════════════════════
 // SYSTEM INSTRUCTIONS — Archer meets Goliath
@@ -62,7 +69,35 @@ PROCESS:
 - Always end with actionable next steps. You're building a case, not writing a term paper.
 
 Remember: You're the lawyer they wish they had. Act like it.
+
+FINAL RESPONSE FORMAT (MANDATORY):
+After completing ALL tool calls, output your final response as a raw JSON object ONLY.
+Do NOT wrap in markdown code fences. Output only the JSON, nothing else.
+
+Schema:
+{
+  "draft_text": "<your complete legal advice — markdown, [CITATION:Title|Source] tags, [SIGNATURE_FIELD:Label] tags — exactly as you would normally write it>",
+  "claims": [
+    {
+      "id": "c1",
+      "text": "<atomic claim in one sentence>",
+      "kind": "<fact | legal_rule | interpretation | instruction | speculation>",
+      "severity": "<low | medium | high>",
+      "evidence": [
+        { "kind": "<statute | tool_result | library_item | evidence_node | url>", "ref": "<citation/ID/URL>", "quote": "<optional verbatim excerpt>" }
+      ]
+    }
+  ]
+}
+
+Rules for populating claims:
+- List every factual assertion and legal rule stated in draft_text as a separate claim.
+- For fact/legal_rule claims, populate evidence[] from your tool call results (statute citations, tool outputs).
+- interpretation and speculation claims MUST include an explicit marker in their text, e.g. "[interpretation]" or "[speculation]". If not naturally present in draft_text for those claims, add the marker to the claim.text field.
+- Assign severity: high = legal outcomes hinge on this; medium = important but not outcome-determinative; low = background context.
+- Keep claim texts concise (one sentence). Do not re-paste entire paragraphs.
 `;
+
 
 const CRITIC_SYSTEM_INSTRUCTION = `
 ACT AS: The ArbiterOS Compliance Auditor — a humorless, exacting quality inspector.
@@ -349,6 +384,98 @@ export interface CriticResponse {
   critique: string;
 }
 
+// ═══════════════════════════════════════════
+// DRAFT RESPONSE PARSING
+// Robust extraction of DraftResponseSchema JSON from model output.
+// Handles: raw JSON, JSON inside code fences, malformed/missing JSON.
+// ═══════════════════════════════════════════
+
+/**
+ * Attempt to extract and parse a DraftResponse from the raw model output.
+ * Falls back to a synthetic minimal ledger if the model produced plain text.
+ * 
+ * NOTE: If parsing fails and the fallback is used, a special synthetic claim
+ * with severity 'high' is added to the claims array. This ensures the gate
+ * will catch the parsing failure and either block or issue a repair_request,
+ * preventing non-compliant model output from bypassing validation.
+ */
+function parseDraftResponse(rawContent: string): DraftResponse {
+  // Strip markdown code fences if present (```json ... ``` or ``` ... ```)
+  const stripped = rawContent
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```\s*$/, '')
+    .trim();
+
+  // Try direct JSON parse of the full content
+  try {
+    const parsed = JSON.parse(stripped);
+    const validated = DraftResponseSchema.safeParse(parsed);
+    if (validated.success) return validated.data;
+  } catch (_) { /* fall through */ }
+
+  // Try extracting a JSON object from within the text
+  const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]);
+      const validated = DraftResponseSchema.safeParse(parsed);
+      if (validated.success) return validated.data;
+
+      // If Zod validation failed but draft_text is present, use partial data
+      if (parsed.draft_text && typeof parsed.draft_text === 'string') {
+        return {
+          draft_text: parsed.draft_text,
+          claims: Array.isArray(parsed.claims)
+            ? parsed.claims.filter((c: unknown) => ClaimSchema.safeParse(c).success)
+            : [],
+        };
+      }
+    } catch (_) { /* fall through */ }
+  }
+
+  // Fallback: treat entire content as draft_text, but add a synthetic high-severity claim
+  // that records the parsing failure. This ensures the gate will catch this and either
+  // block or request a repair, preventing the non-compliant output from bypassing validation.
+  console.warn('[ValidationGate] Model did not output DraftResponseSchema JSON. Using plain-text fallback with parse-failure marker.');
+  return {
+    draft_text: rawContent,
+    claims: [
+      {
+        id: 'sys:parse_failure',
+        text: 'Model output did not conform to DraftResponseSchema JSON structure',
+        kind: 'fact',
+        severity: 'high',
+        evidence: [],
+      },
+    ],
+  };
+}
+
+// ═══════════════════════════════════════════
+// REPAIR ROUND PROMPT
+// ═══════════════════════════════════════════
+
+/**
+ * Builds the one-time repair prompt sent back to the model when the gate issues a repair_request.
+ * Instructs the model to fix specific failed claims while preserving the satirical tone.
+ */
+function buildRepairPrompt(draft: DraftResponse, failedReasons: string[]): string {
+  return (
+    `VALIDATION GATE REPAIR REQUEST — one shot, make it count.\n\n` +
+    `Your previous draft failed the following gate checks:\n` +
+    failedReasons.map((r) => `  • ${r}`).join('\n') +
+    `\n\nOriginal draft_text (for reference):\n${draft.draft_text}\n\n` +
+    `Instructions:\n` +
+    `1. Rewrite draft_text to address every failed claim listed above.\n` +
+    `2. Add explicit [interpretation] or [speculation] markers in draft_text for any interpretive claims.\n` +
+    `3. For unsupported factual/legal-rule claims: either cite a statute/tool result in evidence[], or rephrase with appropriate uncertainty (e.g. "arguably", "appears to").\n` +
+    `4. Do NOT introduce new unsupported facts.\n` +
+    `5. Preserve the sardonic, confident ArbiterOS tone — do not go full disclaimer-bot.\n` +
+    `6. Keep the response concise.\n\n` +
+    `Output the corrected response as raw JSON only (same DraftResponseSchema format). No code fences.`
+  );
+}
+
 /**
  * Send a legal message through the provider-agnostic AI pipeline.
  * Supports multi-turn tool calling for verifiable law.
@@ -358,7 +485,8 @@ export const sendLegalMessage = async (
   newMessage: string,
   images: string[] = [],
   logAudit?: (action: string, details: string, source: AuditEntry['source'], status?: AuditEntry['status']) => void,
-  isShadowCounsel: boolean = false
+  isShadowCounsel: boolean = false,
+  gateState?: GateInputState
 ): Promise<ChatResponse> => {
   const config = getConfig();
 
@@ -441,7 +569,104 @@ export const sendLegalMessage = async (
     break;
   }
 
-  return { text: finalText };
+  // ─── Validation Gate Phase ─────────────────────────────────────────────────
+  //
+  // Parse the model's final output into a DraftResponse (structured claim ledger
+  // + draft text). Run the deterministic gate. Perform at most ONE repair round
+  // if the gate issues a repair_request. Log the gate decision to the audit ledger.
+
+  // 1. Parse draft response
+  const draft = parseDraftResponse(finalText);
+
+  // 2. Run gate (deterministic, no model calls)
+  let gateDecision = await runValidationGate(draft, gateState ?? {});
+
+  // 3. If repair requested, perform exactly ONE repair round
+  if (gateDecision.decision === 'repair_request') {
+    if (logAudit) {
+      logAudit(
+        'Validation Gate: Repair Round',
+        `Gate issued repair_request for ${gateDecision.failed_claims.length} claim(s). Initiating repair...`,
+        'System',
+        'Refining'
+      );
+    }
+
+    const repairPrompt = buildRepairPrompt(draft, gateDecision.failed_claims.map((fc) => fc.reason));
+    const repairMessages: OpenAIMessage[] = [
+      { role: 'system', content: LEGAL_SYSTEM_INSTRUCTION },
+      ...messages.slice(1), // preserve conversation context (skip original system msg)
+      { role: 'user', content: repairPrompt },
+    ];
+
+    try {
+      const repairResponse = await callChatCompletion(repairMessages, config, undefined, config.model);
+      const repairContent = repairResponse.choices?.[0]?.message?.content || finalText;
+      const repairedDraft = parseDraftResponse(repairContent);
+      const repairedDecision = await runValidationGate(repairedDraft, gateState ?? {});
+
+      // Use the repaired gate decision regardless of outcome (no infinite loop)
+      gateDecision = repairedDecision;
+
+      if (logAudit) {
+        logAudit(
+          'Validation Gate: Repair Result',
+          `Repair round complete. Gate decision after repair: ${repairedDecision.decision}`,
+          'System',
+          repairedDecision.decision === 'pass' ? 'Verified' : 'Refining'
+        );
+      }
+    } catch (repairErr: unknown) {
+      const errMsg = repairErr instanceof Error ? repairErr.message : String(repairErr);
+      console.warn('[ValidationGate] Repair round failed:', errMsg);
+      
+      if (logAudit) {
+        logAudit(
+          'Validation Gate: Repair Failed',
+          `Repair round encountered an error: ${errMsg}. Falling back to soften decision with disclaimer.`,
+          'System',
+          'Refining'
+        );
+      }
+      
+      // Fall back to soften decision with a clean audit trail
+      // Create a new validation step documenting the repair failure
+      const repairFailureStep: ValidationStep = {
+        rule_id: 'repair_failure',
+        passed: false,
+        details: `Repair attempt failed with error: ${errMsg}. Claims remain unresolved.`,
+        evidence_source: 'System',
+        timestamp: new Date().toISOString(),
+      };
+      
+      gateDecision = {
+        decision: 'soften' as const,
+        final_text: draft.draft_text + '\n\n*[Validation Gate: repair attempt failed -- treat as unverified analysis.]*',
+        // Keep the failed claims from the original gate decision (these are the actual issues)
+        failed_claims: gateDecision.failed_claims,
+        // Add the repair failure step to the audit trail
+        validation_steps: [...gateDecision.validation_steps, repairFailureStep],
+        audit: {
+          score: 0.5,
+          critique: `Repair round failed. Falling back to soften: ${gateDecision.failed_claims.length} claim(s) remain unresolved.`,
+        },
+      };
+    }
+  }
+
+  // 4. Audit log: gate decision summary
+  if (logAudit) {
+    const failCount = gateDecision.failed_claims.length;
+    const stepCount = gateDecision.validation_steps.length;
+    logAudit(
+      `Validation Gate: ${gateDecision.decision.toUpperCase()}`,
+      `${stepCount} check(s) run | ${failCount} failed claim(s) | decision: ${gateDecision.decision}${gateDecision.audit ? ` | gate score: ${(gateDecision.audit.score * 100).toFixed(0)}%` : ''}`,
+      'System',
+      gateDecision.decision === 'pass' ? 'Verified' : gateDecision.decision === 'block' ? 'Error' : 'Refining'
+    );
+  }
+
+  return { text: gateDecision.final_text };
 };
 
 /**

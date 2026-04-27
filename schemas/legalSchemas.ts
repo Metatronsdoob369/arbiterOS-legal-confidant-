@@ -124,6 +124,82 @@ export const ChatResponseSchema = z.object({
 });
 
 // ═══════════════════════════════════════════
+// VALIDATION GATE CONTRACTS
+// Contracts > Prompts: gate validates claims deterministically.
+// "If it ain't in the schema, it ain't real." — and now,
+// if it ain't backed by evidence, it ain't leaving the gate.
+// ═══════════════════════════════════════════
+
+/**
+ * A single evidence reference backing an AI claim.
+ * Ties every assertion to a verifiable source.
+ */
+export const EvidenceRefSchema = z.object({
+  kind: z.enum(['statute', 'library_item', 'evidence_node', 'tool_result', 'url'])
+    .describe('Category of evidence source'),
+  ref: z.string().describe('Identifier or URL for the evidence source (e.g. "UCC 3-104", item ID, URL)'),
+  quote: z.string().optional().describe('Verbatim excerpt from the source that supports the claim'),
+});
+export type EvidenceRef = z.infer<typeof EvidenceRefSchema>;
+
+/**
+ * An atomic claim extracted from the AI draft response.
+ * Each claim must declare its kind, severity, and supporting evidence.
+ * The gate validates claims deterministically — no model calls required.
+ */
+export const ClaimSchema = z.object({
+  id: z.string().describe('Unique claim identifier within the response (e.g. "c1", "c2")'),
+  text: z.string().describe('The atomic claim being made'),
+  kind: z.enum(['fact', 'legal_rule', 'interpretation', 'instruction', 'speculation'])
+    .describe('Type of claim: fact/legal_rule require evidence; interpretation/speculation require explicit labeling'),
+  severity: z.enum(['low', 'medium', 'high']).default('medium')
+    .describe('Risk severity if this claim is wrong: high = hard block or repair required'),
+  evidence: z.array(EvidenceRefSchema).default([])
+    .describe('Supporting evidence references; fact/legal_rule claims must have at least one'),
+});
+export type Claim = z.infer<typeof ClaimSchema>;
+
+/**
+ * The structured draft response produced by Arbiter before the gate processes it.
+ * Separates the user-facing text from the machine-readable claim ledger.
+ */
+export const DraftResponseSchema = z.object({
+  draft_text: z.string().describe('The AI-drafted response text (markdown, with [CITATION:] and [SIGNATURE_FIELD:] tags as usual)'),
+  claims: z.array(ClaimSchema).describe('Atomic claims made in the draft; gate validates each one'),
+  style: z.object({
+    brevity: z.enum(['terse', 'normal', 'verbose']).optional(),
+    tone: z.enum(['sardonic', 'professional', 'blunt']).optional(),
+  }).optional().describe('Persona style hints for repair rounds'),
+});
+export type DraftResponse = z.infer<typeof DraftResponseSchema>;
+
+/**
+ * A single claim that failed gate validation, with the reason.
+ */
+export const FailedClaimSchema = z.object({
+  claim_id: z.string().describe('ID of the claim that failed'),
+  reason: z.string().describe('Human-readable explanation of why the claim failed'),
+});
+export type FailedClaim = z.infer<typeof FailedClaimSchema>;
+
+/**
+ * The final gate decision after validating a DraftResponse.
+ * - pass: all claims verified; draft ships unchanged.
+ * - soften: low/medium claims unsupported; gate adds uncertainty markers.
+ * - block: high-severity failures; response replaced with verification-mode message.
+ * - repair_request: fixable failures (e.g. unlabeled interpretation); one repair round runs.
+ */
+export const GateDecisionSchema = z.object({
+  decision: z.enum(['pass', 'soften', 'block', 'repair_request'])
+    .describe('Gate outcome determining what reaches the user'),
+  final_text: z.string().describe('User-facing response text after gate processing; may differ from draft_text'),
+  failed_claims: z.array(FailedClaimSchema).describe('Claims that failed validation with reasons'),
+  validation_steps: z.array(ValidationStepSchema).describe('Audit trail of every gate check performed'),
+  audit: AuditScoreSchema.optional().describe('Optional compliance score summary'),
+});
+export type GateDecision = z.infer<typeof GateDecisionSchema>;
+
+// ═══════════════════════════════════════════
 // LIBRARY ITEMS (User's knowledge base)
 // ═══════════════════════════════════════════
 
