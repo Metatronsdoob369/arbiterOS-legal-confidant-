@@ -91,12 +91,12 @@ export const AuditLog: React.FC = () => {
   };
 
   return (
-    <div className="h-full overflow-y-auto p-4 md:p-8 max-w-7xl mx-auto flex flex-col font-mono bg-black">
+    <div data-testid="view-audit-log" className="h-full overflow-y-auto p-4 md:p-8 max-w-7xl mx-auto flex flex-col font-mono bg-black">
       
       {/* Header & Controls */}
       <div className="mb-8 flex flex-col xl:flex-row xl:items-end justify-between gap-6 border-b border-neutral-800 pb-6">
         <div>
-            <h2 className="text-3xl font-bold text-white mb-2 uppercase tracking-tight">Governance Ledger</h2>
+            <h2 data-testid="heading-audit-log" className="text-3xl font-bold text-white mb-2 uppercase tracking-tight">Governance Ledger</h2>
             <p className="text-neutral-500 text-xs uppercase tracking-wider max-w-xl">
                Real-time telemetry of the Arbiter's cognitive performance. Use controls to set compliance standards.
             </p>
