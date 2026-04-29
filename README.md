@@ -98,6 +98,31 @@ cp .env.example .env.local
 npm run dev
 ```
 
+### Running E2E Tests
+
+ArbiterOS uses [Playwright](https://playwright.dev/) for end-to-end tests.
+Tests mock all AI/network calls, so **no API key is required**.
+
+```bash
+# Install Playwright browsers (first time only)
+npx playwright install chromium
+
+# Run the full e2e suite (starts the dev server automatically)
+npm run test:e2e
+
+# Run with the interactive Playwright UI
+npm run test:e2e:ui
+
+# Update visual snapshot baselines after intentional UI changes
+npm run test:e2e:update-snapshots
+```
+
+Test files live in the `e2e/` directory:
+| File | What it covers |
+|---|---|
+| `e2e/smoke.spec.ts` | App loads · sidebar navigation · night-mode toggle |
+| `e2e/visual.spec.ts` | Screenshot snapshots — desktop, mobile, night mode |
+
 ### Environment Variables
 
 | Variable | Default | Description |

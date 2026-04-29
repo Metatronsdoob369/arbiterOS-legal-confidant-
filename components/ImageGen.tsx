@@ -55,9 +55,9 @@ export const ImageGen: React.FC = () => {
   };
 
   return (
-    <div className="h-full overflow-y-auto p-4 md:p-8 max-w-7xl mx-auto font-mono bg-black text-neutral-300">
+    <div data-testid="view-image-gen" className="h-full overflow-y-auto p-4 md:p-8 max-w-7xl mx-auto font-mono bg-black text-neutral-300">
       <div className="mb-8 border-b border-neutral-800 pb-6">
-        <h2 className="text-3xl font-bold text-white mb-2 uppercase tracking-tight">Legal Concept Visualizer</h2>
+        <h2 data-testid="heading-image-gen" className="text-3xl font-bold text-white mb-2 uppercase tracking-tight">Legal Concept Visualizer</h2>
         <p className="text-neutral-500 text-xs tracking-wider">
           Generate high-fidelity abstractions to conceptualize complex statutory frameworks.
         </p>

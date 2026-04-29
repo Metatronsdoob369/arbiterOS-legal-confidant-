@@ -220,7 +220,7 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
   };
 
   return (
-    <div className="flex flex-col h-full relative overflow-hidden" style={{
+    <div data-testid="view-legal-advisor" className="flex flex-col h-full relative overflow-hidden" style={{
       background: nightMode
         ? 'radial-gradient(ellipse 800px 600px at 50% 20%, rgba(42,28,18,0.95) 0%, #0d0806 60%)'
         : 'linear-gradient(180deg, #1a0f0a 0%, #0d0806 100%)',

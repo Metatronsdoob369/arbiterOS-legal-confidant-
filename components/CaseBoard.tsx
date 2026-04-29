@@ -74,11 +74,11 @@ export const CaseBoard: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-black font-mono p-4 md:p-8 overflow-hidden">
+    <div data-testid="view-case-board" className="h-full flex flex-col bg-black font-mono p-4 md:p-8 overflow-hidden">
       {/* Header */}
       <div className="mb-8 border-b border-neutral-800 pb-6 flex justify-between items-end">
         <div>
-          <h2 className="text-3xl font-bold text-white mb-2 uppercase tracking-tight">Strategic Case Map</h2>
+          <h2 data-testid="heading-case-board" className="text-3xl font-bold text-white mb-2 uppercase tracking-tight">Strategic Case Map</h2>
           <p className="text-neutral-500 text-xs tracking-wider">
             Drag and drop to organize your legal strategy. Build your map through research.
           </p>

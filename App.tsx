@@ -26,6 +26,7 @@ const AppContent: React.FC = () => {
   // Mahogany / leather / gold sidebar nav button
   const navBtn = (view: View, label: string, icon: React.ReactNode) => (
     <button
+      data-testid={`nav-btn-${view}`}
       onClick={() => setCurrentView(view)}
       className="w-full flex items-center gap-3 px-3 py-3 rounded-md transition-all"
       style={currentView === view ? {
@@ -45,7 +46,7 @@ const AppContent: React.FC = () => {
   );
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden" style={{
+    <div data-testid="app-root" className="flex h-screen w-screen overflow-hidden" style={{
       fontFamily: "'Inter', sans-serif",
       background: '#0d0806',
       color: '#e8dcc8',
@@ -53,7 +54,7 @@ const AppContent: React.FC = () => {
       
       {/* Night Mode Reading Lamp Glow */}
       {nightMode && (
-        <div className="fixed inset-0 pointer-events-none z-[100]" style={{
+        <div data-testid="night-mode-overlay" className="fixed inset-0 pointer-events-none z-[100]" style={{
           background: 'radial-gradient(ellipse 600px 400px at 50% 30%, rgba(255,200,100,0.08) 0%, rgba(255,180,80,0.03) 40%, transparent 70%)',
         }}>
           {/* Gold lamp string */}
@@ -69,13 +70,13 @@ const AppContent: React.FC = () => {
       )}
 
       {/* Sidebar — Mahogany Panel */}
-      <aside className="w-20 md:w-64 flex flex-col z-10 transition-all duration-300" style={{
+      <aside data-testid="sidebar" className="w-20 md:w-64 flex flex-col z-10 transition-all duration-300" style={{
         background: 'linear-gradient(180deg, #1e1410 0%, #150d08 100%)',
         borderRight: '2px solid #3d2b1f',
         boxShadow: '4px 0 20px rgba(0,0,0,0.5)',
       }}>
         {/* Logo — Click for Night Mode */}
-        <div className="p-5 flex items-center justify-center md:justify-start gap-3 cursor-pointer group" 
+        <div data-testid="night-mode-toggle" className="p-5 flex items-center justify-center md:justify-start gap-3 cursor-pointer group" 
              style={{ borderBottom: '1px solid #3d2b1f' }}
              onClick={toggleNightMode}
              title="Toggle Reading Lamp"
@@ -107,7 +108,7 @@ const AppContent: React.FC = () => {
           </div>
         </div>
 
-        <nav className="flex-1 py-4 space-y-1.5 px-3 overflow-y-auto scrollbar-hide">
+        <nav data-testid="sidebar-nav" className="flex-1 py-4 space-y-1.5 px-3 overflow-y-auto scrollbar-hide">
           {navBtn(View.ADVISOR, 'Counsel', (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
           ))}
@@ -174,7 +175,7 @@ const AppContent: React.FC = () => {
           </div>
         </header>
         
-        <div className="flex-1 relative z-10">
+        <div data-testid={`view-${currentView}`} className="flex-1 relative z-10">
            {currentView === View.ADVISOR && <LegalAdvisor nightMode={nightMode} />}
            {currentView === View.EVIDENCE && <EvidenceBoard />}
            {currentView === View.LIBRARY && <Library />}

@@ -121,12 +121,12 @@ export const Library: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col overflow-hidden" style={{ background: 'linear-gradient(180deg, #1a0f0a 0%, #0d0806 100%)' }}>
+    <div data-testid="library-container" className="h-full flex flex-col overflow-hidden" style={{ background: 'linear-gradient(180deg, #1a0f0a 0%, #0d0806 100%)' }}>
       {/* Header */}
       <div className="px-6 md:px-8 pt-6 pb-4 border-b" style={{ borderColor: '#3d2b1f' }}>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Merriweather, serif', color: '#d4af37' }}>
+            <h2 data-testid="heading-library" className="text-2xl font-bold uppercase tracking-tight" style={{ fontFamily: 'Merriweather, serif', color: '#d4af37' }}>
               📚 The Library
             </h2>
             <p className="text-xs mt-1 tracking-wider" style={{ color: '#8b7355' }}>
