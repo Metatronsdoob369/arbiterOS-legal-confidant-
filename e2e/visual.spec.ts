@@ -58,8 +58,8 @@ test.describe('Visual snapshots', () => {
     await page.goto('/');
     // Enable night mode
     await page.getByTestId('night-mode-toggle').click();
-    // Wait for the transition to settle
-    await page.waitForTimeout(600);
+    // Wait for the overlay to be injected into the DOM (deterministic)
+    await page.getByTestId('night-mode-overlay').waitFor({ state: 'attached' });
     await expect(page).toHaveScreenshot('desktop-night-mode.png', { fullPage: false });
   });
 });
