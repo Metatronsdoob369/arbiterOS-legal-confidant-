@@ -72,6 +72,28 @@ Full audit trail with compliance scoring, telemetry charts, and jurisdiction con
 
 ---
 
+## 🎨 Styling System
+
+ArbiterOS uses a **local Tailwind CSS build pipeline** (no CDN). Styles are processed at build time via Vite + PostCSS.
+
+Key files:
+| File | Purpose |
+|---|---|
+| `tailwind.config.ts` | Extended theme: mahogany/leather/gold palette, Inter + Merriweather fonts, custom shadows/radii |
+| `postcss.config.cjs` | PostCSS config wiring Tailwind + Autoprefixer |
+| `src/styles/globals.css` | Tailwind directives + global body/font/selection/scrollbar/keyframe styles |
+| `components/ui/` | Reusable Radix-based primitives: Button, IconButton, Card, Tooltip, Dialog, Spinner, Skeleton |
+
+**Component utilities** (class merging):
+- `clsx` + `tailwind-merge` via `components/ui/cn.ts`
+- `class-variance-authority` for component variants
+
+**Night Mode** is a unique overlay effect (not a full theme). It lives in:
+- `contexts/NightModeContext.tsx` — React context + toggle hook
+- `components/NightModeOverlay.tsx` — The lamp glow + pull-string overlay
+
+---
+
 ## 🔧 De-Googled Setup
 
 **Zero Google dependencies.** The AI provider is configurable.
@@ -179,9 +201,14 @@ The AI gets structured data in, and structured data out. It doesn't get to "inte
 ```
 arbiterOS-legal-confidant/
 ├── App.tsx                    # Main router + night mode + mahogany UI
-├── index.html                 # HTML root with gold selection highlights
-├── index.tsx                  # React entry
+├── index.html                 # HTML root (no CDN scripts)
+├── index.tsx                  # React entry — imports globals.css
+├── tailwind.config.ts         # Design tokens: mahogany/leather/gold palette
+├── postcss.config.cjs         # PostCSS wiring for Tailwind + Autoprefixer
 ├── types.ts                   # Core TypeScript types
+├── src/
+│   └── styles/
+│       └── globals.css        # Tailwind directives + global body/scrollbar styles
 ├── schemas/
 │   └── legalSchemas.ts        # Zod schemas (the chastity belt)
 ├── services/
@@ -189,16 +216,27 @@ arbiterOS-legal-confidant/
 │   ├── legalEngine.ts         # Verifiable law database + validation
 │   └── audio.ts               # TTS audio processing
 ├── components/
+│   ├── ui/                    # Reusable design system primitives
+│   │   ├── Button.tsx         # Button with default/ghost/outline variants
+│   │   ├── IconButton.tsx     # Icon-only button with gold/ghost variants
+│   │   ├── Card.tsx           # Panel surface (default/elevated/flat)
+│   │   ├── Tooltip.tsx        # Radix-based accessible tooltip
+│   │   ├── Dialog.tsx         # Radix-based modal dialog
+│   │   ├── Spinner.tsx        # Spinner + Skeleton loading states
+│   │   ├── cn.ts              # clsx + tailwind-merge helper
+│   │   └── index.ts           # Barrel export
+│   ├── NavItem.tsx            # Sidebar nav button with active/inactive variants
+│   ├── NightModeOverlay.tsx   # Reading-lamp overlay effect (not a theme switch)
 │   ├── LegalAdvisor.tsx       # Main chat (mahogany + large bar)
 │   ├── EvidenceBoard.tsx      # Visual whiteboard for case building
 │   ├── Library.tsx            # Legal reference storage
 │   ├── CaseBoard.tsx          # Kanban case management
 │   ├── ImageGen.tsx           # Legal concept visualizer
 │   ├── AuditLog.tsx           # Governance ledger + telemetry
-│   ├── ArbiterBadge.tsx       # Animated badge
-│   └── ThemeToggle.tsx        # Theme toggle component
+│   └── ArbiterBadge.tsx       # Animated badge
 ├── contexts/
-│   └── AuditContext.tsx       # Audit state management
+│   ├── AuditContext.tsx        # Audit state management
+│   └── NightModeContext.tsx    # Night Mode toggle context + hook
 └── LegalPackages/             # Extended legal schemas & auditor
 ```
 
@@ -232,9 +270,11 @@ The AI has personality. It has wit. It does NOT have discretion over what the la
 
 - **React 19** + **TypeScript** — Because type safety is a legal requirement (in this codebase, anyway)
 - **Vite** — Build tool
+- **Tailwind CSS** (local build, no CDN) — Utility styling with mahogany/leather/gold design tokens
+- **Radix UI** — Accessible headless primitives (Tooltip, Dialog, Tabs)
+- **class-variance-authority** + **clsx** + **tailwind-merge** — Component variant system
 - **Zod** — Runtime schema validation (the real MVP)
-- **Tailwind CSS** — Utility styling
-- **Styled Components** — Component-scoped animations
+- **Styled Components** — Component-scoped animations (legacy; being phased out)
 - **Recharts** — Telemetry visualization
 - **No Google SDK** — By choice
 
