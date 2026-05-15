@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { Message, Role } from '../types';
 import { sendLegalMessage, runArbiterAudit } from '../services/aiProvider';
 import { decodeAudioData, playAudioBuffer } from '../services/audio';
@@ -27,14 +28,23 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
   const [draftMenuOpen, setDraftMenuOpen] = useState(false);
   
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
 
-  // Auto-scroll
+  // Auto-scroll — MutationObserver watches the scroll container for DOM changes
+  // and scrolls to bottom whenever content is added. This is more reliable than
+  // useEffect because it fires after the browser has actually painted new nodes.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [history]);
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const observer = new MutationObserver(() => {
+      el.scrollTop = el.scrollHeight;
+    });
+    observer.observe(el, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
 
   // Auto-Analyze Effect
   useEffect(() => {
@@ -215,7 +225,27 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
           </div>
         );
       }
-      return <span key={index} className="whitespace-pre-wrap">{part}</span>;
+      return (
+        <ReactMarkdown
+          key={index}
+          components={{
+            h1: ({children}) => <h1 className="text-lg font-bold text-neutral-100 mt-4 mb-2">{children}</h1>,
+            h2: ({children}) => <h2 className="text-base font-bold text-neutral-200 mt-3 mb-2">{children}</h2>,
+            h3: ({children}) => <h3 className="text-sm font-bold text-neutral-300 mt-3 mb-1">{children}</h3>,
+            h4: ({children}) => <h4 className="text-sm font-semibold text-neutral-400 mt-2 mb-1">{children}</h4>,
+            p: ({children}) => <p className="text-sm text-neutral-300 leading-relaxed mb-2">{children}</p>,
+            ul: ({children}) => <ul className="list-disc list-inside text-sm text-neutral-300 space-y-1 mb-2 ml-2">{children}</ul>,
+            ol: ({children}) => <ol className="list-decimal list-inside text-sm text-neutral-300 space-y-1 mb-2 ml-2">{children}</ol>,
+            li: ({children}) => <li className="text-sm text-neutral-300">{children}</li>,
+            strong: ({children}) => <strong className="text-neutral-100 font-semibold">{children}</strong>,
+            em: ({children}) => <em className="text-neutral-400 italic">{children}</em>,
+            code: ({children}) => <code className="bg-neutral-800 text-[#14b8a6] px-1 rounded text-xs font-mono">{children}</code>,
+            blockquote: ({children}) => <blockquote className="border-l-2 border-[#d4af37] pl-3 my-2 text-neutral-400 italic">{children}</blockquote>,
+          }}
+        >
+          {part}
+        </ReactMarkdown>
+      );
     });
   };
 
@@ -461,7 +491,7 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
       </div>
 
       {/* ═══ RESULT STREAM — The Record ═══ */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-8 pb-8 space-y-10 scrollbar-hide w-full max-w-4xl mx-auto">
+      <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto px-4 md:px-8 pb-8 space-y-10 scrollbar-hide w-full max-w-4xl mx-auto">
         {history.length === 0 && (
           <div className="flex h-full items-center justify-center opacity-20">
             <div className="text-center space-y-3">

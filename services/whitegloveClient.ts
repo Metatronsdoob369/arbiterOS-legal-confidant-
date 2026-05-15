@@ -8,7 +8,7 @@
  * Sources: Law StackExchange (CC BY-SA 4.0) + Project Gutenberg LCC-K (Public Domain)
  */
 
-const WHITEGLOVE_BASE = process.env.WHITEGLOVE_URL ?? 'http://localhost:3000';
+const WHITEGLOVE_BASE = (import.meta as any).env?.VITE_WHITEGLOVE_URL ?? 'http://localhost:3001';
 const FETCH_TIMEOUT_MS = 2500;
 
 export interface StatuteResult {

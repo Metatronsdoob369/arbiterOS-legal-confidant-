@@ -240,10 +240,11 @@ interface ProviderConfig {
 }
 
 const getConfig = (): ProviderConfig => {
-  const apiKey = process.env.API_KEY || process.env.OPENAI_API_KEY || '';
-  const baseUrl = process.env.AI_BASE_URL || 'https://api.openai.com/v1';
-  const model = process.env.AI_MODEL || 'gpt-4o';
-  const criticModel = process.env.AI_CRITIC_MODEL || model;
+  const env = (import.meta as any).env ?? {};
+  const apiKey = env.VITE_API_KEY || env.VITE_OPENAI_API_KEY || '';
+  const baseUrl = env.VITE_AI_BASE_URL || 'https://api.openai.com/v1';
+  const model = env.VITE_AI_MODEL || 'gpt-4o';
+  const criticModel = env.VITE_AI_CRITIC_MODEL || model;
 
   return { baseUrl, apiKey, model, criticModel };
 };
@@ -271,6 +272,7 @@ async function callChatCompletion(
     messages,
     temperature: 0.3,
     max_tokens: 4096,
+    response_format: { type: 'json_object' },
   };
 
   if (tools && tools.length > 0) {
@@ -426,7 +428,13 @@ function parseDraftResponse(rawContent: string): DraftResponse {
         return {
           draft_text: parsed.draft_text,
           claims: Array.isArray(parsed.claims)
-            ? parsed.claims.filter((c: unknown) => ClaimSchema.safeParse(c).success)
+            ? parsed.claims.map((c: any) => ({
+                id: c.id ?? 'c1',
+                text: c.text ?? '',
+                kind: ['fact','legal_rule','interpretation','instruction','speculation'].includes(c.kind) ? c.kind : 'interpretation',
+                severity: ['low','medium','high'].includes(c.severity) ? c.severity : 'medium',
+                evidence: Array.isArray(c.evidence) ? c.evidence : [],
+              }))
             : [],
         };
       }

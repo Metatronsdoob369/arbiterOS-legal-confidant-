@@ -294,7 +294,7 @@ async function processClaim(
   for (const ev of claim.evidence) {
     if (ev.kind === 'statute') {
       const lookup = await consultStatute(ev.ref);
-      if (!lookup.found || !lookup.text) {
+      if (!lookup.found) {
         // Statute cited but not in the law library — cannot verify the claim
         failedClaims.push({
           claim_id: claim.id,

@@ -192,7 +192,7 @@ const AppContent: React.FC = () => {
           </div>
         </header>
 
-        <div data-testid={`view-${currentView}`} className="flex-1 relative z-10">
+        <div data-testid={`view-${currentView}`} className="flex-1 min-h-0 relative z-10 overflow-hidden">
           {currentView === View.ADVISOR    && <LegalAdvisor nightMode={nightMode} />}
           {currentView === View.EVIDENCE   && <EvidenceBoard />}
           {currentView === View.LIBRARY    && <Library />}
