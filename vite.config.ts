@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => {
         'process.env.AI_MODEL': JSON.stringify(env.AI_MODEL || 'gpt-4o'),
         'process.env.AI_SHADOW_MODEL': JSON.stringify(env.AI_SHADOW_MODEL || ''),
         'process.env.AI_CRITIC_MODEL': JSON.stringify(env.AI_CRITIC_MODEL || ''),
+        'process.env.WHITEGLOVE_URL': JSON.stringify(env.WHITEGLOVE_URL || 'http://100.113.215.46:3000'),
       },
       resolve: {
         alias: {
