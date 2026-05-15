@@ -2,6 +2,8 @@
 // Ported from LegalPackages/auditor.ts.tsx
 // Implements the "Faith-Less" Verifiable Law Database Logic and UCC/USC "Contracts in Code"
 
+import { queryWhiteGlove } from './whitegloveClient';
+
 export interface ValidationStep {
   rule_id: string;
   passed: boolean;
@@ -11,47 +13,14 @@ export interface ValidationStep {
   generated_content?: string; // Optional field for generated forms
 }
 
-// --- 0. THE SOURCE OF TRUTH (Simulated RAG / Vector DB) ---
-// In production, this connects to Pinecone/Weaviate containing the full USC/UCC.
-// Here, we hardcode the "Truth" so the AI cannot hallucinate it.
-
-const LAW_LIBRARY: Record<string, { title: string; text: string; source: string }> = {
-  'UCC 3-104': {
-    title: 'Negotiable Instrument',
-    source: 'Uniform Commercial Code § 3-104',
-    text: `(a) ...means an unconditional promise or order to pay a fixed amount of money, with or without interest or other charges described in the promise or order, if it: (1) is payable to bearer or to order at the time it is issued or first comes into possession of a holder; (2) is payable on demand or at a definite time; and (3) does not state any other undertaking or instruction...`
-  },
-  'UCC 9-203': {
-    title: 'Attachment and Enforceability of Security Interest',
-    source: 'Uniform Commercial Code § 9-203',
-    text: `(b) ...a security interest is enforceable against the debtor and third parties with respect to the collateral only if: (1) value has been given; (2) the debtor has rights in the collateral... and (3) one of the following conditions is met: (A) the debtor has authenticated a security agreement that provides a description of the collateral...`
-  },
-  'UCC 2-201': {
-    title: 'Formal Requirements; Statute of Frauds',
-    source: 'Uniform Commercial Code § 2-201',
-    text: `(1) a contract for the sale of goods for the price of $500 or more is not enforceable by way of action or defense unless there is some writing sufficient to indicate that a contract for sale has been made between the parties and signed by the party against whom enforcement is sought...`
-  },
-  'FTC Credit Rule': {
-    title: 'Unfair Credit Practices',
-    source: '16 CFR § 444.2',
-    text: `(a) In connection with the extension of credit... it is an unfair act or practice... for a lender or retail installment seller... to take or receive from a consumer an obligation that: (1) Constitutes or contains a cognovit or confession of judgment (for other than purposes of executory process in the State of Louisiana)...`
-  }
-};
+// --- 0. THE SOURCE OF TRUTH ---
+// Queries the WhiteGlove local retrieval server (joecwales/whiteglove-legal-2026).
+// Falls back to a hardcoded seed library when the server is not running.
+// Set WHITEGLOVE_URL env var to point at a remote instance.
 
 // The "RAG" Tool - strictly retrieves text, does not interpret.
 export const consultStatute = async (query: string): Promise<{ found: boolean; title?: string; text?: string; citation?: string }> => {
-  // Simple keyword matching to simulate vector search
-  const key = Object.keys(LAW_LIBRARY).find(k => query.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(query.toLowerCase()));
-  
-  if (key) {
-    return { 
-      found: true, 
-      title: LAW_LIBRARY[key].title, 
-      text: LAW_LIBRARY[key].text, 
-      citation: LAW_LIBRARY[key].source 
-    };
-  }
-  return { found: false };
+  return queryWhiteGlove(query);
 };
 
 
