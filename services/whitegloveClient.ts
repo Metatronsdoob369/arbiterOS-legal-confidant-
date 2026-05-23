@@ -1,15 +1,16 @@
 /**
  * whitegloveClient.ts — WhiteGlove Faith-Less Retrieval Client
  *
- * Queries the local WhiteGlove server (GET /retrieve?q=...) for statute text.
+ * Queries the WhiteGlove legal endpoint (POST /legal/query) backed by
+ * 52K+ Alabama statutes in Qdrant (legal-heatmap collection).
  * Falls back to the hardcoded LAW_LIBRARY if the server isn't reachable.
  *
  * Dataset: joecwales/whiteglove-legal-2026
- * Sources: Law StackExchange (CC BY-SA 4.0) + Project Gutenberg LCC-K (Public Domain)
+ * Sources: Alabama Code + Law StackExchange (CC BY-SA 4.0) + Project Gutenberg LCC-K (Public Domain)
  */
 
-const WHITEGLOVE_BASE = (import.meta as any).env?.VITE_WHITEGLOVE_URL ?? 'http://localhost:3001';
-const FETCH_TIMEOUT_MS = 2500;
+const WHITEGLOVE_BASE = (import.meta as any).env?.VITE_WHITEGLOVE_URL ?? 'http://localhost:4880';
+const FETCH_TIMEOUT_MS = 15000;
 
 export interface StatuteResult {
   found: boolean;
@@ -54,18 +55,50 @@ function fallbackLookup(query: string): StatuteResult {
   return { found: false };
 }
 
+interface LegalQueryResult {
+  rank: number;
+  score: number;
+  citation: string;
+  title: string;
+  source: string;
+  path: string;
+  spectral_band: string;
+  corpus_heat: number;
+  drift: number;
+  shard_id: string;
+  confidence: 'high' | 'medium' | 'low';
+  text?: string | null;
+}
+
+interface LegalQueryResponse {
+  query: string;
+  results: LegalQueryResult[];
+  meta: {
+    total_returned: number;
+    collection: string;
+    embed_model: string;
+    vector_dims: number;
+    latency_ms: number;
+  };
+}
+
 /**
  * Query the WhiteGlove Faith-Less retrieval endpoint.
- * Returns the top matching statute chunk from the legal corpus.
+ * Hits POST /legal/query — Qdrant-backed semantic search over 52K+ Alabama statutes.
+ * Returns the top matching statute with citation and spectral confidence band.
  * Falls back to the hardcoded library if the server is unreachable within FETCH_TIMEOUT_MS.
  */
 export async function queryWhiteGlove(query: string): Promise<StatuteResult> {
   try {
-    const url = `${WHITEGLOVE_BASE}/retrieve?q=${encodeURIComponent(query)}`;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
-    const res = await fetch(url, { signal: controller.signal });
+    const res = await fetch(`${WHITEGLOVE_BASE}/legal/query`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, top_k: 3 }),
+      signal: controller.signal,
+    });
     clearTimeout(timer);
 
     if (!res.ok) {
@@ -73,23 +106,56 @@ export async function queryWhiteGlove(query: string): Promise<StatuteResult> {
       return fallbackLookup(query);
     }
 
-    const data = await res.json() as {
-      found: boolean;
-      title?: string;
-      text?: string;
-      citation?: string;
-      source?: string;
-    };
+    const data = await res.json() as LegalQueryResponse;
+    const top = data.results?.[0];
+
+    if (!top) return { found: false };
+
+    const bodyText = top.text
+      ? top.text
+      : `[Shard ${top.shard_id} — text not available locally]`;
 
     return {
-      found: data.found ?? false,
-      title: data.title,
-      text: data.text,
-      citation: data.citation,
-      source: data.source ?? 'whiteglove',
+      found: true,
+      title: top.title || top.citation,
+      text: bodyText,
+      citation: top.citation,
+      source: `whiteglove:${top.shard_id}`,
     };
   } catch {
     // Server not running or timed out — silent fallback
     return fallbackLookup(query);
+  }
+}
+
+/**
+ * Query multiple statutes — returns ranked results for richer UI display.
+ * Use this when you want to show citations list rather than single-statute confirmation.
+ */
+export async function queryWhiteGloveMulti(query: string, topK = 5): Promise<StatuteResult[]> {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    const res = await fetch(`${WHITEGLOVE_BASE}/legal/query`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, top_k: topK }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+
+    if (!res.ok) return [];
+
+    const data = await res.json() as LegalQueryResponse;
+    return (data.results ?? []).map(r => ({
+      found: true,
+      title: r.title || r.citation,
+      text: r.text || `[Shard ${r.shard_id}]`,
+      citation: r.citation,
+      source: `whiteglove:${r.shard_id}`,
+    }));
+  } catch {
+    return [];
   }
 }
