@@ -5,7 +5,7 @@
  * Your personal legal arsenal, organized and searchable.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { LibraryItem } from '../schemas/legalSchemas';
 
 const INITIAL_ITEMS: LibraryItem[] = [
@@ -77,7 +77,7 @@ export const Library: React.FC = () => {
     tags: '',
   });
 
-  const filteredItems = items
+  const filteredItems = useMemo(() => items
     .filter(item => {
       const matchesSearch = searchQuery === '' ||
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -90,7 +90,7 @@ export const Library: React.FC = () => {
       if (a.pinned && !b.pinned) return -1;
       if (!a.pinned && b.pinned) return 1;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
+    }), [items, searchQuery, filterType]);
 
   const addItem = () => {
     if (!newItem.title.trim() || !newItem.content.trim()) return;
