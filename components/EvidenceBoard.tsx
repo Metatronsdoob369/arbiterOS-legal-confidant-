@@ -6,7 +6,7 @@
  * Because sometimes, you are.
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import type { EvidenceNode, EvidenceConnection } from '../schemas/legalSchemas';
 
 const NODE_COLORS: Record<EvidenceNode['type'], { bg: string; border: string; text: string }> = {
@@ -47,9 +47,18 @@ export const EvidenceBoard: React.FC = () => {
   const [newNode, setNewNode] = useState({ label: '', type: 'evidence' as EvidenceNode['type'], content: '' });
   const boardRef = useRef<HTMLDivElement>(null);
 
+  // ⚡ Bolt Optimization: Use a Map for O(1) node lookups instead of O(N) array search.
+  // This drastically reduces complexity during high-frequency events (like drag re-renders)
+  // from O(Nodes * Connections) to O(Nodes + Connections) by replacing nodes.find().
+  const nodeMap = useMemo(() => {
+    const map = new Map<string, EvidenceNode>();
+    nodes.forEach(node => map.set(node.id, node));
+    return map;
+  }, [nodes]);
+
   const handleMouseDown = useCallback((e: React.MouseEvent, nodeId: string) => {
     e.stopPropagation();
-    const node = nodes.find(n => n.id === nodeId);
+    const node = nodeMap.get(nodeId);
     if (!node || !boardRef.current) return;
 
     const rect = boardRef.current.getBoundingClientRect();
@@ -59,7 +68,7 @@ export const EvidenceBoard: React.FC = () => {
       offsetY: e.clientY - rect.top - node.y,
     });
     setSelectedNode(nodeId);
-  }, [nodes]);
+  }, [nodeMap]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!dragState || !boardRef.current) return;
@@ -121,7 +130,7 @@ export const EvidenceBoard: React.FC = () => {
   };
 
   const getNodeCenter = (nodeId: string) => {
-    const node = nodes.find(n => n.id === nodeId);
+    const node = nodeMap.get(nodeId);
     if (!node) return { x: 0, y: 0 };
     return { x: node.x + NODE_WIDTH / 2, y: node.y + NODE_HEIGHT / 2 };
   };
@@ -328,7 +337,7 @@ export const EvidenceBoard: React.FC = () => {
 
       {/* Selected Node Detail */}
       {selectedNode && (() => {
-        const node = nodes.find(n => n.id === selectedNode);
+        const node = nodeMap.get(selectedNode);
         if (!node) return null;
         const colors = NODE_COLORS[node.type];
         const nodeConnections = connections.filter(c => c.from === node.id || c.to === node.id);
