@@ -26,3 +26,11 @@ dist-ssr
 # Playwright
 playwright-report/
 test-results/
+
+# Environment — NEVER commit
+.env
+.env.local
+.env.*.local
+
+# Local worktrees
+.worktrees/
