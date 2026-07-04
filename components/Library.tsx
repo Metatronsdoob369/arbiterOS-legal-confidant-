@@ -77,20 +77,31 @@ export const Library: React.FC = () => {
     tags: '',
   });
 
-  const filteredItems = useMemo(() => items
-    .filter(item => {
-      const matchesSearch = searchQuery === '' ||
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
-      const matchesType = filterType === 'all' || item.type === filterType;
-      return matchesSearch && matchesType;
-    })
-    .sort((a, b) => {
-      if (a.pinned && !b.pinned) return -1;
-      if (!a.pinned && b.pinned) return 1;
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    }), [items, searchQuery, filterType]);
+  const filteredItems = useMemo(() => {
+    // ⚡ Bolt Optimization: Cache toLowerCase() outside the filter loop
+    const query = searchQuery.toLowerCase();
+
+    return items
+      .filter(item => {
+        // ⚡ Bolt Optimization: Early return for type mismatch (O(1)) to skip expensive string operations
+        if (filterType !== 'all' && item.type !== filterType) return false;
+
+        // Skip string operations if no query
+        if (query === '') return true;
+
+        return item.title.toLowerCase().includes(query) ||
+          item.content.toLowerCase().includes(query) ||
+          item.tags.some(t => t.toLowerCase().includes(query));
+      })
+      .sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        // ⚡ Bolt Optimization: ISO 8601 strings sort lexically, avoiding expensive new Date() parsing
+        if (a.createdAt > b.createdAt) return -1;
+        if (a.createdAt < b.createdAt) return 1;
+        return 0;
+      });
+  }, [items, searchQuery, filterType]);
 
   const addItem = () => {
     if (!newItem.title.trim() || !newItem.content.trim()) return;
