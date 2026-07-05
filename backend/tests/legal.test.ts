@@ -1,23 +1,27 @@
 import argon2 from 'argon2';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../app';
 
 const originalEnv = {
   ARBITER_DB_PATH: process.env.ARBITER_DB_PATH,
   ARBITER_SESSION_SECRET: process.env.ARBITER_SESSION_SECRET,
   ARBITER_SESSION_COOKIE: process.env.ARBITER_SESSION_COOKIE,
+  WHITEGLOVE_URL: process.env.WHITEGLOVE_URL,
 };
 
 beforeEach(() => {
   process.env.ARBITER_DB_PATH = ':memory:';
   process.env.ARBITER_SESSION_SECRET = 'test-session-secret-12345';
   process.env.ARBITER_SESSION_COOKIE = 'arbiter_session';
+  process.env.WHITEGLOVE_URL = 'http://lawlibra.local:4880';
 });
 
 afterEach(() => {
   process.env.ARBITER_DB_PATH = originalEnv.ARBITER_DB_PATH;
   process.env.ARBITER_SESSION_SECRET = originalEnv.ARBITER_SESSION_SECRET;
   process.env.ARBITER_SESSION_COOKIE = originalEnv.ARBITER_SESSION_COOKIE;
+  process.env.WHITEGLOVE_URL = originalEnv.WHITEGLOVE_URL;
+  vi.unstubAllGlobals();
 });
 
 function readSessionCookie(setCookieHeader: string | string[] | undefined) {
@@ -31,15 +35,66 @@ function readSessionCookie(setCookieHeader: string | string[] | undefined) {
 
 describe('legal backend routes', () => {
   it('returns retrieval health without exposing the frontend to direct Qdrant access', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+      status: 'ok',
+      service: 'LawLibra',
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }));
+
+    vi.stubGlobal('fetch', fetchMock);
+
     const app = await createApp();
     const response = await app.inject({ method: 'GET', url: '/api/legal/health' });
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toHaveProperty('status');
     expect(response.json()).toHaveProperty('collection');
+    expect(fetchMock).toHaveBeenCalledWith('http://lawlibra.local:4880/health', expect.any(Object));
   });
 
-  it('routes legal queries through the backend boundary and records audit events', async () => {
+  it('routes legal queries to the mapped legal corpus and records audit events', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const requestUrl = input.toString();
+
+      if (requestUrl.includes('/api/legal/query') || requestUrl.includes('/legal/query')) {
+        return new Response(JSON.stringify({
+          query: 'UCC 3-104',
+          results: [
+            {
+              rank: 1,
+              score: 0.9912,
+              citation: 'Ala. Code § 7-3-104',
+              title: 'Negotiable Instruments',
+              source: 'whiteglove-manifold',
+              path: 'Ala. Code § 7-3-104',
+              spectral_band: 'settled',
+              corpus_heat: 0.00123,
+              drift: 0.0004,
+              shard_id: 'Ala. Code § 7-3-104',
+              confidence: 'high',
+              text: 'An instrument is negotiable if it is an unconditional promise or order to pay a fixed amount of money.',
+            },
+          ],
+          meta: {
+            total_returned: 1,
+            collection: 'legal-heatmap',
+            embed_model: 'temporal-manifold',
+            vector_dims: 3072,
+            latency_ms: 14,
+          },
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      throw new Error(`unexpected fetch: ${requestUrl}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+
     const app = await createApp();
     const passwordHash = await argon2.hash('secret-passphrase');
 
@@ -70,9 +125,12 @@ describe('legal backend routes', () => {
 
     expect(queryResponse.statusCode).toBe(200);
     expect(queryResponse.json()).toMatchObject({
-      found: false,
-      source: 'backend-proxy:UCC 3-104',
+      found: true,
+      title: 'Negotiable Instruments',
+      citation: 'Ala. Code § 7-3-104',
+      source: 'whiteglove-manifold',
     });
+    expect(fetchMock).toHaveBeenCalledWith('http://lawlibra.local:4880/api/legal/query', expect.any(Object));
 
     const auditResponse = await app.inject({
       method: 'GET',
@@ -88,9 +146,9 @@ describe('legal backend routes', () => {
           domain: 'legal',
           resourceType: 'legal_query',
           details: expect.objectContaining({
-            found: false,
+            found: true,
             queryLength: 9,
-            source: 'backend-proxy:UCC 3-104',
+            source: 'whiteglove-manifold',
           }),
         }),
       ],
