@@ -16,6 +16,13 @@ import { test, expect } from '@playwright/test';
 // Helpers
 // ---------------------------------------------------------------------------
 
+async function loginAsBootstrapAdmin(page: import('@playwright/test').Page) {
+  await page.getByTestId('login-username').fill('admin');
+  await page.getByTestId('login-password').fill('secret-passphrase');
+  await page.getByTestId('login-submit').click();
+  await expect(page.getByTestId('app-root')).toBeVisible();
+}
+
 /** Block all calls to the configured AI base URL so no real key is needed. */
 async function mockAiRoutes(page: import('@playwright/test').Page) {
   await page.route('**/v1/**', (route) => {
@@ -54,6 +61,7 @@ test.describe('App shell', () => {
   test.beforeEach(async ({ page }) => {
     await mockAiRoutes(page);
     await page.goto('/');
+    await loginAsBootstrapAdmin(page);
   });
 
   test('loads and renders the app root', async ({ page }) => {
@@ -75,6 +83,7 @@ test.describe('Navigation — sidebar', () => {
   test.beforeEach(async ({ page }) => {
     await mockAiRoutes(page);
     await page.goto('/');
+    await loginAsBootstrapAdmin(page);
   });
 
   const views: Array<{ btn: string; viewId: string; heading: string }> = [
@@ -99,6 +108,7 @@ test.describe('Night mode', () => {
   test.beforeEach(async ({ page }) => {
     await mockAiRoutes(page);
     await page.goto('/');
+    await loginAsBootstrapAdmin(page);
   });
 
   test('night-mode toggle exists', async ({ page }) => {

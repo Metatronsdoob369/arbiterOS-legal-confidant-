@@ -7,8 +7,10 @@ import { CaseBoard } from './components/CaseBoard';
 import { Library } from './components/Library';
 import { EvidenceBoard } from './components/EvidenceBoard';
 import { AuditProvider } from './contexts/AuditContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NightModeProvider, useNightMode } from './contexts/NightModeContext';
 import { NightModeOverlay } from './components/NightModeOverlay';
+import { LoginScreen } from './components/auth/LoginScreen';
 import { NavItem } from './components/NavItem';
 import { TooltipProvider } from './components/ui';
 
@@ -35,7 +37,7 @@ const LampIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
-const AppContent: React.FC = () => {
+const AppWorkspace: React.FC = () => {
   const [currentView, setCurrentView] = React.useState<View>(View.ADVISOR);
   const { nightMode, toggleNightMode } = useNightMode();
 
@@ -205,14 +207,26 @@ const AppContent: React.FC = () => {
   );
 };
 
+const AppGate: React.FC = () => {
+  const { user, loading } = useAuth();
+
+  if (!user) {
+    return <LoginScreen loading={loading} />;
+  }
+
+  return <AppWorkspace />;
+};
+
 const App: React.FC = () => (
-  <AuditProvider>
-    <NightModeProvider>
-      <TooltipProvider>
-        <AppContent />
-      </TooltipProvider>
-    </NightModeProvider>
-  </AuditProvider>
+  <AuthProvider>
+    <AuditProvider>
+      <NightModeProvider>
+        <TooltipProvider>
+          <AppGate />
+        </TooltipProvider>
+      </NightModeProvider>
+    </AuditProvider>
+  </AuthProvider>
 );
 
 export default App;

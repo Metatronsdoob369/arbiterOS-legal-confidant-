@@ -34,3 +34,6 @@ test-results/
 
 # Local worktrees
 .worktrees/
+
+# Local backend storage
+data/

@@ -1,47 +1,6 @@
-/**
- * 📚 The Library — Legal Reference Storage
- * 
- * Store quotes, law snippets, articles, books, papers.
- * Your personal legal arsenal, organized and searchable.
- */
-
-import React, { useState } from 'react';
+import React from 'react';
 import type { LibraryItem } from '../schemas/legalSchemas';
-
-const INITIAL_ITEMS: LibraryItem[] = [
-  {
-    id: '1',
-    type: 'statute',
-    title: 'UCC § 3-104 — Negotiable Instrument',
-    content: '(a) ...means an unconditional promise or order to pay a fixed amount of money, with or without interest...',
-    source: 'Uniform Commercial Code',
-    citation: 'UCC § 3-104',
-    tags: ['ucc', 'negotiable', 'instrument'],
-    createdAt: new Date().toISOString(),
-    pinned: true,
-  },
-  {
-    id: '2',
-    type: 'quote',
-    title: 'The law is reason, free from passion.',
-    content: 'The law is reason, free from passion.',
-    source: 'Aristotle, Politics',
-    tags: ['philosophy', 'jurisprudence'],
-    createdAt: new Date().toISOString(),
-    pinned: false,
-  },
-  {
-    id: '3',
-    type: 'snippet',
-    title: 'FTC Credit Rule — Confession of Judgment',
-    content: 'It is an unfair act or practice for a lender to take from a consumer an obligation that constitutes a cognovit or confession of judgment.',
-    source: '16 CFR § 444.2',
-    citation: '16 CFR § 444.2',
-    tags: ['ftc', 'consumer', 'credit'],
-    createdAt: new Date().toISOString(),
-    pinned: true,
-  },
-];
+import { apiFetch } from '../services/localApiClient';
 
 const TYPE_ICONS: Record<LibraryItem['type'], string> = {
   quote: '💬',
@@ -64,11 +23,12 @@ const TYPE_COLORS: Record<LibraryItem['type'], string> = {
 };
 
 export const Library: React.FC = () => {
-  const [items, setItems] = useState<LibraryItem[]>(INITIAL_ITEMS);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<LibraryItem['type'] | 'all'>('all');
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newItem, setNewItem] = useState({
+  const [items, setItems] = React.useState<LibraryItem[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [filterType, setFilterType] = React.useState<LibraryItem['type'] | 'all'>('all');
+  const [showAddForm, setShowAddForm] = React.useState(false);
+  const [newItem, setNewItem] = React.useState({
     type: 'note' as LibraryItem['type'],
     title: '',
     content: '',
@@ -77,52 +37,81 @@ export const Library: React.FC = () => {
     tags: '',
   });
 
+  const loadItems = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const payload = await apiFetch<{ items: LibraryItem[] }>('/api/memories');
+      setItems(payload.items);
+    } catch {
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    void loadItems();
+  }, [loadItems]);
+
   const filteredItems = items
-    .filter(item => {
-      const matchesSearch = searchQuery === '' ||
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+    .filter((item) => {
+      const search = searchQuery.trim().toLowerCase();
+      const matchesSearch =
+        search === '' ||
+        item.title.toLowerCase().includes(search) ||
+        item.content.toLowerCase().includes(search) ||
+        item.tags.some((tag) => tag.toLowerCase().includes(search));
       const matchesType = filterType === 'all' || item.type === filterType;
       return matchesSearch && matchesType;
     })
-    .sort((a, b) => {
-      if (a.pinned && !b.pinned) return -1;
-      if (!a.pinned && b.pinned) return 1;
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    .sort((left, right) => {
+      if (left.pinned && !right.pinned) return -1;
+      if (!left.pinned && right.pinned) return 1;
+      return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
     });
 
-  const addItem = () => {
+  const addItem = async () => {
     if (!newItem.title.trim() || !newItem.content.trim()) return;
-    const item: LibraryItem = {
-      id: Date.now().toString(),
-      type: newItem.type,
-      title: newItem.title,
-      content: newItem.content,
-      source: newItem.source || undefined,
-      citation: newItem.citation || undefined,
-      tags: newItem.tags.split(',').map(t => t.trim()).filter(Boolean),
-      createdAt: new Date().toISOString(),
-      pinned: false,
-    };
-    setItems(prev => [item, ...prev]);
+
+    await apiFetch('/api/memories', {
+      method: 'POST',
+      body: JSON.stringify({
+        entryType: newItem.type,
+        title: newItem.title,
+        content: newItem.content,
+        source: newItem.source,
+        citation: newItem.citation,
+        tags: newItem.tags.split(',').map((tag) => tag.trim()).filter(Boolean),
+        pinned: false,
+      }),
+    });
+
     setNewItem({ type: 'note', title: '', content: '', source: '', citation: '', tags: '' });
     setShowAddForm(false);
+    await loadItems();
   };
 
-  const togglePin = (id: string) => {
-    setItems(prev => prev.map(item =>
-      item.id === id ? { ...item, pinned: !item.pinned } : item
-    ));
+  const togglePin = async (item: LibraryItem) => {
+    await apiFetch(`/api/memories/${item.id}/pin`, {
+      method: 'PATCH',
+      body: JSON.stringify({ pinned: !item.pinned }),
+    });
+    await loadItems();
   };
 
-  const deleteItem = (id: string) => {
-    setItems(prev => prev.filter(item => item.id !== id));
+  const deleteItem = async (id: string) => {
+    await apiFetch(`/api/memories/${id}`, {
+      method: 'DELETE',
+    });
+    await loadItems();
   };
 
   return (
-    <div data-testid="library-container" className="h-full flex flex-col overflow-hidden" style={{ background: 'linear-gradient(180deg, #1a0f0a 0%, #0d0806 100%)' }}>
-      {/* Header */}
+    <div
+      data-testid="library-container"
+      className="h-full flex flex-col overflow-hidden"
+      style={{ background: 'linear-gradient(180deg, #1a0f0a 0%, #0d0806 100%)' }}
+    >
       <div className="px-6 md:px-8 pt-6 pb-4 border-b" style={{ borderColor: '#3d2b1f' }}>
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -134,7 +123,7 @@ export const Library: React.FC = () => {
             </p>
           </div>
           <button
-            onClick={() => setShowAddForm(!showAddForm)}
+            onClick={() => setShowAddForm((current) => !current)}
             className="px-4 py-2 text-xs font-bold uppercase tracking-widest rounded transition-all"
             style={{
               background: showAddForm ? '#3d2b1f' : 'linear-gradient(135deg, #d4af37, #b8941e)',
@@ -146,13 +135,12 @@ export const Library: React.FC = () => {
           </button>
         </div>
 
-        {/* Add Form */}
         {showAddForm && (
           <div className="p-4 rounded-lg mb-4" style={{ background: '#1e1410', border: '1px solid #3d2b1f' }}>
             <div className="grid grid-cols-2 gap-3 mb-3">
               <select
                 value={newItem.type}
-                onChange={e => setNewItem(prev => ({ ...prev, type: e.target.value as LibraryItem['type'] }))}
+                onChange={(event) => setNewItem((current) => ({ ...current, type: event.target.value as LibraryItem['type'] }))}
                 className="px-3 py-2 text-xs rounded outline-none"
                 style={{ background: '#2a1c12', border: '1px solid #3d2b1f', color: '#d4af37' }}
               >
@@ -162,7 +150,7 @@ export const Library: React.FC = () => {
               </select>
               <input
                 value={newItem.source}
-                onChange={e => setNewItem(prev => ({ ...prev, source: e.target.value }))}
+                onChange={(event) => setNewItem((current) => ({ ...current, source: event.target.value }))}
                 placeholder="Source..."
                 className="px-3 py-2 text-xs rounded outline-none"
                 style={{ background: '#2a1c12', border: '1px solid #3d2b1f', color: '#e8dcc8' }}
@@ -170,14 +158,14 @@ export const Library: React.FC = () => {
             </div>
             <input
               value={newItem.title}
-              onChange={e => setNewItem(prev => ({ ...prev, title: e.target.value }))}
+              onChange={(event) => setNewItem((current) => ({ ...current, title: event.target.value }))}
               placeholder="Title..."
               className="w-full px-3 py-2 text-xs rounded outline-none mb-3"
               style={{ background: '#2a1c12', border: '1px solid #3d2b1f', color: '#e8dcc8' }}
             />
             <textarea
               value={newItem.content}
-              onChange={e => setNewItem(prev => ({ ...prev, content: e.target.value }))}
+              onChange={(event) => setNewItem((current) => ({ ...current, content: event.target.value }))}
               placeholder="Content..."
               className="w-full px-3 py-2 text-xs rounded outline-none mb-3 resize-none h-20"
               style={{ background: '#2a1c12', border: '1px solid #3d2b1f', color: '#e8dcc8' }}
@@ -185,20 +173,20 @@ export const Library: React.FC = () => {
             <div className="flex gap-3">
               <input
                 value={newItem.citation}
-                onChange={e => setNewItem(prev => ({ ...prev, citation: e.target.value }))}
+                onChange={(event) => setNewItem((current) => ({ ...current, citation: event.target.value }))}
                 placeholder="Citation (optional)..."
                 className="flex-1 px-3 py-2 text-xs rounded outline-none"
                 style={{ background: '#2a1c12', border: '1px solid #3d2b1f', color: '#e8dcc8' }}
               />
               <input
                 value={newItem.tags}
-                onChange={e => setNewItem(prev => ({ ...prev, tags: e.target.value }))}
+                onChange={(event) => setNewItem((current) => ({ ...current, tags: event.target.value }))}
                 placeholder="Tags (comma-separated)..."
                 className="flex-1 px-3 py-2 text-xs rounded outline-none"
                 style={{ background: '#2a1c12', border: '1px solid #3d2b1f', color: '#e8dcc8' }}
               />
               <button
-                onClick={addItem}
+                onClick={() => void addItem()}
                 className="px-4 py-2 text-xs font-bold uppercase rounded"
                 style={{ background: '#d4af37', color: '#1a0f0a' }}
               >
@@ -208,12 +196,11 @@ export const Library: React.FC = () => {
           </div>
         )}
 
-        {/* Search & Filter */}
         <div className="flex gap-3">
           <div className="flex-1 relative">
             <input
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search your library..."
               className="w-full px-4 py-2.5 text-xs rounded-lg outline-none pl-9"
               style={{ background: '#2a1c12', border: '1px solid #3d2b1f', color: '#e8dcc8' }}
@@ -232,7 +219,7 @@ export const Library: React.FC = () => {
             >
               All
             </button>
-            {(['statute', 'quote', 'snippet', 'article', 'note'] as const).map(type => (
+            {(['statute', 'quote', 'snippet', 'article', 'note'] as const).map((type) => (
               <button
                 key={type}
                 onClick={() => setFilterType(type)}
@@ -250,9 +237,17 @@ export const Library: React.FC = () => {
         </div>
       </div>
 
-      {/* Items Grid */}
       <div className="flex-1 overflow-y-auto px-6 md:px-8 py-6 space-y-4 scrollbar-hide">
-        {filteredItems.length === 0 && (
+        {loading ? (
+          <div className="flex items-center justify-center h-full opacity-30">
+            <div className="text-center">
+              <div className="text-4xl mb-3">⏳</div>
+              <div className="text-xs uppercase tracking-widest" style={{ color: '#8b7355' }}>
+                Loading library
+              </div>
+            </div>
+          </div>
+        ) : filteredItems.length === 0 ? (
           <div className="flex items-center justify-center h-full opacity-30">
             <div className="text-center">
               <div className="text-4xl mb-3">📚</div>
@@ -261,65 +256,72 @@ export const Library: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
-
-        {filteredItems.map(item => (
-          <div
-            key={item.id}
-            className={`group p-4 rounded-lg border transition-all hover:-translate-y-0.5 ${TYPE_COLORS[item.type]}`}
-            style={{
-              boxShadow: item.pinned ? '0 0 15px rgba(212, 175, 55, 0.1)' : 'none',
-            }}
-          >
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-sm">{TYPE_ICONS[item.type]}</span>
-                <span className="text-[10px] uppercase tracking-widest font-bold" style={{ color: '#8b7355' }}>
-                  {item.type}
-                </span>
-                {item.pinned && <span className="text-[9px]" style={{ color: '#d4af37' }}>📌</span>}
-              </div>
-              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => togglePin(item.id)} className="text-xs hover:scale-110 transition-transform" title="Pin/Unpin">
-                  📌
-                </button>
-                <button onClick={() => deleteItem(item.id)} className="text-xs hover:scale-110 transition-transform text-red-400" title="Delete">
-                  ×
-                </button>
-              </div>
-            </div>
-            <h3 className="text-sm font-bold mb-2" style={{ fontFamily: 'Merriweather, serif', color: '#e8dcc8' }}>
-              {item.title}
-            </h3>
-            <p className="text-xs leading-relaxed mb-3" style={{ color: '#a89070' }}>
-              {item.content}
-            </p>
-            <div className="flex items-center justify-between">
-              <div className="flex gap-1.5 flex-wrap">
-                {item.tags.map(tag => (
-                  <span
-                    key={tag}
-                    className="px-2 py-0.5 text-[9px] uppercase tracking-wider rounded-full"
-                    style={{ background: '#2a1c12', color: '#8b7355', border: '1px solid #3d2b1f' }}
-                  >
-                    {tag}
+        ) : (
+          filteredItems.map((item) => (
+            <div
+              key={item.id}
+              className={`group p-4 rounded-lg border transition-all hover:-translate-y-0.5 ${TYPE_COLORS[item.type]}`}
+              style={{
+                boxShadow: item.pinned ? '0 0 15px rgba(212, 175, 55, 0.1)' : 'none',
+              }}
+            >
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">{TYPE_ICONS[item.type]}</span>
+                  <span className="text-[10px] uppercase tracking-widest font-bold" style={{ color: '#8b7355' }}>
+                    {item.type}
                   </span>
-                ))}
+                  {item.pinned && <span className="text-[9px]" style={{ color: '#d4af37' }}>📌</span>}
+                </div>
+                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => void togglePin(item)}
+                    className="text-xs hover:scale-110 transition-transform"
+                    title="Pin/Unpin"
+                  >
+                    📌
+                  </button>
+                  <button
+                    onClick={() => void deleteItem(item.id)}
+                    className="text-xs hover:scale-110 transition-transform text-red-400"
+                    title="Delete"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
-              {item.citation && (
-                <span className="text-[9px] italic" style={{ color: '#d4af37' }}>
-                  {item.citation}
-                </span>
-              )}
+              <h3 className="text-sm font-bold mb-2" style={{ fontFamily: 'Merriweather, serif', color: '#e8dcc8' }}>
+                {item.title}
+              </h3>
+              <p className="text-xs leading-relaxed mb-3" style={{ color: '#a89070' }}>
+                {item.content}
+              </p>
+              <div className="flex items-center justify-between">
+                <div className="flex gap-1.5 flex-wrap">
+                  {item.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-2 py-0.5 text-[9px] uppercase tracking-wider rounded-full"
+                      style={{ background: '#2a1c12', color: '#8b7355', border: '1px solid #3d2b1f' }}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                {item.citation && (
+                  <span className="text-[9px] italic" style={{ color: '#d4af37' }}>
+                    {item.citation}
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
-      {/* Footer Stats */}
       <div className="px-6 py-3 border-t flex items-center justify-between" style={{ borderColor: '#3d2b1f', background: '#150d08' }}>
         <span className="text-[10px] uppercase tracking-widest" style={{ color: '#5a4030' }}>
-          {items.length} entries • {items.filter(i => i.pinned).length} pinned
+          {items.length} entries • {items.filter((item) => item.pinned).length} pinned
         </span>
         <span className="text-[10px] uppercase tracking-widest" style={{ color: '#5a4030' }}>
           ArbiterOS Library v1.0

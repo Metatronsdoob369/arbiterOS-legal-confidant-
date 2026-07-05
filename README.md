@@ -94,13 +94,13 @@ Key files:
 
 ---
 
-## 🔧 De-Googled Setup
+## 🔧 Airgapped MVP Startup
 
 **Zero Google dependencies.** The AI provider is configurable.
 
 ### Prerequisites
 - Node.js 18+
-- An API key for your preferred provider
+- An API key for your preferred provider if you want live AI responses
 
 ### Quick Start
 
@@ -108,17 +108,22 @@ Key files:
 # 1. Install
 npm install
 
-# 2. Configure your AI provider
-cp .env.example .env.local
+# 2. Configure the local backend and provider env
+cp .env.example .env
 
-# 3. Edit .env.local with your provider details:
-#    OPENAI_API_KEY=sk-...           # OpenAI
-#    AI_BASE_URL=http://localhost:11434/v1  # Ollama
-#    AI_MODEL=gpt-4o                 # or llama3, mistral, etc.
+# 3. Load the env file into your shell
+set -a
+source .env
+set +a
 
-# 4. Run
+# 4. Seed the bootstrap admin
+npm run seed:admin
+
+# 5. Run the app
 npm run dev
 ```
+
+The backend listens on `http://localhost:4881` and the frontend runs on `http://localhost:4321`.
 
 ### Running E2E Tests
 
@@ -139,6 +144,8 @@ npm run test:e2e:ui
 npm run test:e2e:update-snapshots
 ```
 
+The e2e config seeds the local admin account automatically before launch.
+
 Test files live in the `e2e/` directory:
 | File | What it covers |
 |---|---|
@@ -149,11 +156,18 @@ Test files live in the `e2e/` directory:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `ARBITER_BACKEND_PORT` | `4881` | Local Fastify backend port |
+| `ARBITER_DB_PATH` | `data/arbiter.db` | SQLite database file |
+| `ARBITER_SESSION_COOKIE` | `arbiter_session` | Session cookie name |
+| `ARBITER_SESSION_SECRET` | `replace-with-local-secret` | Backend cookie signing secret |
+| `ARBITER_BOOTSTRAP_USERNAME` | `admin` | Local admin bootstrap username |
+| `ARBITER_BOOTSTRAP_PASSWORD` | `secret-passphrase` | Local admin bootstrap password |
 | `OPENAI_API_KEY` | — | Your API key (works with any OpenAI-compatible provider) |
 | `AI_BASE_URL` | `https://api.openai.com/v1` | API endpoint. Change for Ollama, OpenRouter, etc. |
 | `AI_MODEL` | `gpt-4o` | Primary model for legal counsel |
 | `AI_SHADOW_MODEL` | Same as `AI_MODEL` | Heavy model for Shadow Counsel mode |
 | `AI_CRITIC_MODEL` | Same as `AI_MODEL` | Model for the compliance auditor |
+| `VITE_WHITEGLOVE_URL` | `http://localhost:4880` | Optional WhiteGlove retrieval endpoint |
 
 ### Provider Examples
 
