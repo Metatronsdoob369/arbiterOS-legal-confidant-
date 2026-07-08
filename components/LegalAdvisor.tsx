@@ -13,6 +13,136 @@ interface StagedFile {
   path?: string;
 }
 
+// ⚡ Bolt Optimization: Memoize the MessageBubble to prevent re-rendering the entire
+// chat history (and re-parsing Markdown) every time the user types in the input textarea.
+const MessageBubble = React.memo<{
+  msg: Message;
+  nightMode: boolean;
+  isSpeaking: boolean;
+  onPlayAudio: (audioData: Uint8Array) => void
+}>(({ msg, nightMode, isSpeaking, onPlayAudio }) => {
+  const renderMessageText = (text: string) => {
+    const parts = text.split(/(\[(?:SIGNATURE_FIELD|CITATION):.*?\])/g);
+    return parts.map((part, index) => {
+      if (part.startsWith('[SIGNATURE_FIELD')) {
+        const label = part.includes(':') ? part.split(':')[1].replace(']', '') : 'SIGN HERE';
+        return (
+          <div key={index} className="my-4 p-4 border border-dashed border-[#d4af37] bg-[#d4af37]/10 rounded-lg flex items-center justify-between group cursor-pointer hover:bg-[#d4af37]/20 transition-all">
+            <div className="flex items-center gap-3">
+               <div className="w-8 h-8 rounded-full bg-[#d4af37] flex items-center justify-center text-black font-bold text-xs animate-pulse">
+                 ✍️
+               </div>
+               <div className="flex flex-col">
+                 <span className="text-xs font-bold text-[#d4af37] uppercase tracking-widest">{label}</span>
+                 <span className="text-[10px] text-neutral-400">Electronic Signature Required</span>
+               </div>
+            </div>
+            <div className="h-px flex-1 bg-[#d4af37]/30 mx-4"></div>
+            <span className="text-[9px] text-neutral-500 font-mono group-hover:text-[#d4af37]">CLICK TO SIGN</span>
+          </div>
+        );
+      }
+      if (part.startsWith('[CITATION')) {
+        const content = part.replace('[CITATION:', '').replace(']', '');
+        const [title, source] = content.split('|');
+        return (
+          <div key={index} className="my-3 inline-block w-full">
+            <div className="bg-neutral-900 border-l-2 border-[#14b8a6] p-3 rounded-r-md shadow-glow">
+                <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-bold text-[#14b8a6] uppercase tracking-widest">Verified Source</span>
+                    <span className="text-[9px] text-neutral-500 font-mono">RETRIEVED FROM VECTOR DB</span>
+                </div>
+                <div className="text-xs font-bold text-neutral-200">{title}</div>
+                <div className="text-[10px] text-neutral-400 italic mt-1">{source}</div>
+            </div>
+          </div>
+        );
+      }
+      return (
+        <div key={index}>
+          <ReactMarkdown
+            components={{
+              h1: ({children}) => <h1 className="text-lg font-bold text-neutral-100 mt-4 mb-2">{children}</h1>,
+            h2: ({children}) => <h2 className="text-base font-bold text-neutral-200 mt-3 mb-2">{children}</h2>,
+            h3: ({children}) => <h3 className="text-sm font-bold text-neutral-300 mt-3 mb-1">{children}</h3>,
+            h4: ({children}) => <h4 className="text-sm font-semibold text-neutral-400 mt-2 mb-1">{children}</h4>,
+            p: ({children}) => <p className="text-sm text-neutral-300 leading-relaxed mb-2">{children}</p>,
+            ul: ({children}) => <ul className="list-disc list-inside text-sm text-neutral-300 space-y-1 mb-2 ml-2">{children}</ul>,
+            ol: ({children}) => <ol className="list-decimal list-inside text-sm text-neutral-300 space-y-1 mb-2 ml-2">{children}</ol>,
+            li: ({children}) => <li className="text-sm text-neutral-300">{children}</li>,
+            strong: ({children}) => <strong className="text-neutral-100 font-semibold">{children}</strong>,
+            em: ({children}) => <em className="text-neutral-400 italic">{children}</em>,
+              code: ({children}) => <code className="bg-neutral-800 text-[#14b8a6] px-1 rounded text-xs font-mono">{children}</code>,
+              blockquote: ({children}) => <blockquote className="border-l-2 border-[#d4af37] pl-3 my-2 text-neutral-400 italic">{children}</blockquote>,
+            }}
+          >
+            {part}
+          </ReactMarkdown>
+        </div>
+      );
+    });
+  };
+
+  return (
+    <div className={`flex ${msg.role === Role.USER ? 'justify-end' : 'justify-start'}`}>
+      <div className={`max-w-[90%] md:max-w-[80%] ${msg.role === Role.USER ? 'text-right' : 'text-left'}`}>
+
+        {msg.role === Role.MODEL && (
+          <div className="mb-3 opacity-60">
+            <div className="text-[9px] uppercase tracking-widest flex items-center gap-2" style={{ color: '#d4af37' }}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#d4af37' }}></span>
+              Arbiter Counsel
+            </div>
+          </div>
+        )}
+
+        {msg.images && msg.images.length > 0 && (
+          <div className={`flex flex-wrap gap-2 mb-4 ${msg.role === Role.USER ? 'justify-end' : 'justify-start'}`}>
+            {msg.images.map((attachment, idx) => {
+              const isImage = attachment.startsWith('data:image');
+              return isImage ? (
+                <img key={idx} src={attachment} alt="Evidence" className="max-w-[200px] h-auto opacity-80" style={{ border: '1px solid #3d2b1f' }} />
+              ) : (
+                <div key={idx} className="p-2 text-xs" style={{ border: '1px solid #3d2b1f', background: '#1e1410', color: '#8b7355' }}>
+                  DOC_{idx}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="inline-block p-5 md:p-6 rounded-lg transition-all duration-500" style={{
+          background: msg.role === Role.USER
+            ? 'linear-gradient(135deg, #2a1c12, #1e1410)'
+            : nightMode
+              ? 'linear-gradient(135deg, rgba(42,28,18,0.9), rgba(30,20,16,0.9))'
+              : 'linear-gradient(135deg, #1a0f0a, #150d08)',
+          border: `1px solid ${msg.role === Role.USER ? '#3d2b1f' : '#3d2b1f'}`,
+          boxShadow: nightMode && msg.role === Role.MODEL
+            ? '0 0 30px rgba(255,200,100,0.05), 0 4px 12px rgba(0,0,0,0.3)'
+            : '0 4px 12px rgba(0,0,0,0.3)',
+          color: '#e8dcc8',
+        }}>
+          <div className="text-sm leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
+             {renderMessageText(msg.text)}
+          </div>
+        </div>
+
+        {msg.audioData && (
+          <div className="mt-2 flex items-center gap-2 text-[9px] uppercase tracking-widest cursor-pointer transition-colors"
+               style={{ color: '#5a4030' }}
+               onClick={() => onPlayAudio(msg.audioData!)}>
+             <span className="w-2 h-2 border border-current rounded-full flex items-center justify-center">
+               {isSpeaking ? <span className="w-1 h-1 bg-current rounded-full animate-ping"/> : <span className="w-1 h-1 bg-current rounded-full"/>}
+             </span>
+             {isSpeaking ? 'Transmission Active' : 'Replay Audio Log'}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
 export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = false }) => {
   const { addEntry, clearLog } = useAudit();
   // Start empty to remove visual clutter on load
@@ -172,7 +302,7 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
     }
   };
 
-  const playAudioResponse = async (audioData: Uint8Array) => {
+  const playAudioResponse = React.useCallback(async (audioData: Uint8Array) => {
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
     }
@@ -186,68 +316,7 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
     } catch (e) {
       setIsSpeaking(false);
     }
-  };
-
-  const renderMessageText = (text: string) => {
-    const parts = text.split(/(\[(?:SIGNATURE_FIELD|CITATION):.*?\])/g);
-    return parts.map((part, index) => {
-      if (part.startsWith('[SIGNATURE_FIELD')) {
-        const label = part.includes(':') ? part.split(':')[1].replace(']', '') : 'SIGN HERE';
-        return (
-          <div key={index} className="my-4 p-4 border border-dashed border-[#d4af37] bg-[#d4af37]/10 rounded-lg flex items-center justify-between group cursor-pointer hover:bg-[#d4af37]/20 transition-all">
-            <div className="flex items-center gap-3">
-               <div className="w-8 h-8 rounded-full bg-[#d4af37] flex items-center justify-center text-black font-bold text-xs animate-pulse">
-                 ✍️
-               </div>
-               <div className="flex flex-col">
-                 <span className="text-xs font-bold text-[#d4af37] uppercase tracking-widest">{label}</span>
-                 <span className="text-[10px] text-neutral-400">Electronic Signature Required</span>
-               </div>
-            </div>
-            <div className="h-px flex-1 bg-[#d4af37]/30 mx-4"></div>
-            <span className="text-[9px] text-neutral-500 font-mono group-hover:text-[#d4af37]">CLICK TO SIGN</span>
-          </div>
-        );
-      }
-      if (part.startsWith('[CITATION')) {
-        const content = part.replace('[CITATION:', '').replace(']', '');
-        const [title, source] = content.split('|');
-        return (
-          <div key={index} className="my-3 inline-block w-full">
-            <div className="bg-neutral-900 border-l-2 border-[#14b8a6] p-3 rounded-r-md shadow-glow">
-                <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-bold text-[#14b8a6] uppercase tracking-widest">Verified Source</span>
-                    <span className="text-[9px] text-neutral-500 font-mono">RETRIEVED FROM VECTOR DB</span>
-                </div>
-                <div className="text-xs font-bold text-neutral-200">{title}</div>
-                <div className="text-[10px] text-neutral-400 italic mt-1">{source}</div>
-            </div>
-          </div>
-        );
-      }
-      return (
-        <ReactMarkdown
-          key={index}
-          components={{
-            h1: ({children}) => <h1 className="text-lg font-bold text-neutral-100 mt-4 mb-2">{children}</h1>,
-            h2: ({children}) => <h2 className="text-base font-bold text-neutral-200 mt-3 mb-2">{children}</h2>,
-            h3: ({children}) => <h3 className="text-sm font-bold text-neutral-300 mt-3 mb-1">{children}</h3>,
-            h4: ({children}) => <h4 className="text-sm font-semibold text-neutral-400 mt-2 mb-1">{children}</h4>,
-            p: ({children}) => <p className="text-sm text-neutral-300 leading-relaxed mb-2">{children}</p>,
-            ul: ({children}) => <ul className="list-disc list-inside text-sm text-neutral-300 space-y-1 mb-2 ml-2">{children}</ul>,
-            ol: ({children}) => <ol className="list-decimal list-inside text-sm text-neutral-300 space-y-1 mb-2 ml-2">{children}</ol>,
-            li: ({children}) => <li className="text-sm text-neutral-300">{children}</li>,
-            strong: ({children}) => <strong className="text-neutral-100 font-semibold">{children}</strong>,
-            em: ({children}) => <em className="text-neutral-400 italic">{children}</em>,
-            code: ({children}) => <code className="bg-neutral-800 text-[#14b8a6] px-1 rounded text-xs font-mono">{children}</code>,
-            blockquote: ({children}) => <blockquote className="border-l-2 border-[#d4af37] pl-3 my-2 text-neutral-400 italic">{children}</blockquote>,
-          }}
-        >
-          {part}
-        </ReactMarkdown>
-      );
-    });
-  };
+  }, []);
 
   return (
     <div data-testid="view-legal-advisor" className="flex flex-col h-full relative overflow-hidden" style={{
@@ -506,62 +575,13 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
         )}
 
         {history.map((msg) => (
-          <div key={msg.id} className={`flex ${msg.role === Role.USER ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[90%] md:max-w-[80%] ${msg.role === Role.USER ? 'text-right' : 'text-left'}`}>
-              
-              {msg.role === Role.MODEL && (
-                <div className="mb-3 opacity-60">
-                  <div className="text-[9px] uppercase tracking-widest flex items-center gap-2" style={{ color: '#d4af37' }}>
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#d4af37' }}></span>
-                    Arbiter Counsel
-                  </div>
-                </div>
-              )}
-
-              {msg.images && msg.images.length > 0 && (
-                <div className={`flex flex-wrap gap-2 mb-4 ${msg.role === Role.USER ? 'justify-end' : 'justify-start'}`}>
-                  {msg.images.map((attachment, idx) => {
-                    const isImage = attachment.startsWith('data:image');
-                    return isImage ? (
-                      <img key={idx} src={attachment} alt="Evidence" className="max-w-[200px] h-auto opacity-80" style={{ border: '1px solid #3d2b1f' }} />
-                    ) : (
-                      <div key={idx} className="p-2 text-xs" style={{ border: '1px solid #3d2b1f', background: '#1e1410', color: '#8b7355' }}>
-                        DOC_{idx}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              
-              <div className="inline-block p-5 md:p-6 rounded-lg transition-all duration-500" style={{
-                background: msg.role === Role.USER 
-                  ? 'linear-gradient(135deg, #2a1c12, #1e1410)' 
-                  : nightMode
-                    ? 'linear-gradient(135deg, rgba(42,28,18,0.9), rgba(30,20,16,0.9))'
-                    : 'linear-gradient(135deg, #1a0f0a, #150d08)',
-                border: `1px solid ${msg.role === Role.USER ? '#3d2b1f' : '#3d2b1f'}`,
-                boxShadow: nightMode && msg.role === Role.MODEL
-                  ? '0 0 30px rgba(255,200,100,0.05), 0 4px 12px rgba(0,0,0,0.3)'
-                  : '0 4px 12px rgba(0,0,0,0.3)',
-                color: '#e8dcc8',
-              }}>
-                <div className="text-sm leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
-                   {renderMessageText(msg.text)}
-                </div>
-              </div>
-
-              {msg.audioData && (
-                <div className="mt-2 flex items-center gap-2 text-[9px] uppercase tracking-widest cursor-pointer transition-colors" 
-                     style={{ color: '#5a4030' }}
-                     onClick={() => playAudioResponse(msg.audioData!)}>
-                   <span className="w-2 h-2 border border-current rounded-full flex items-center justify-center">
-                     {isSpeaking ? <span className="w-1 h-1 bg-current rounded-full animate-ping"/> : <span className="w-1 h-1 bg-current rounded-full"/>}
-                   </span>
-                   {isSpeaking ? 'Transmission Active' : 'Replay Audio Log'}
-                </div>
-              )}
-            </div>
-          </div>
+          <MessageBubble
+            key={msg.id}
+            msg={msg}
+            nightMode={nightMode}
+            isSpeaking={isSpeaking}
+            onPlayAudio={playAudioResponse}
+          />
         ))}
 
         {isLoading && (
