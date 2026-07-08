@@ -1,7 +1,22 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import ReactMarkdown, { Components } from 'react-markdown';
 import { Message, Role } from '../types';
+
+const markdownComponents: Components = {
+  h1: ({children}) => <h1 className="text-lg font-bold text-neutral-100 mt-4 mb-2">{children}</h1>,
+  h2: ({children}) => <h2 className="text-base font-bold text-neutral-200 mt-3 mb-2">{children}</h2>,
+  h3: ({children}) => <h3 className="text-sm font-bold text-neutral-300 mt-3 mb-1">{children}</h3>,
+  h4: ({children}) => <h4 className="text-sm font-semibold text-neutral-400 mt-2 mb-1">{children}</h4>,
+  p: ({children}) => <p className="text-sm text-neutral-300 leading-relaxed mb-2">{children}</p>,
+  ul: ({children}) => <ul className="list-disc list-inside text-sm text-neutral-300 space-y-1 mb-2 ml-2">{children}</ul>,
+  ol: ({children}) => <ol className="list-decimal list-inside text-sm text-neutral-300 space-y-1 mb-2 ml-2">{children}</ol>,
+  li: ({children}) => <li className="text-sm text-neutral-300">{children}</li>,
+  strong: ({children}) => <strong className="text-neutral-100 font-semibold">{children}</strong>,
+  em: ({children}) => <em className="text-neutral-400 italic">{children}</em>,
+  code: ({children}) => <code className="bg-neutral-800 text-[#14b8a6] px-1 rounded text-xs font-mono">{children}</code>,
+  blockquote: ({children}) => <blockquote className="border-l-2 border-[#d4af37] pl-3 my-2 text-neutral-400 italic">{children}</blockquote>,
+};
 import { sendLegalMessage, runArbiterAudit } from '../services/aiProvider';
 import { decodeAudioData, playAudioBuffer } from '../services/audio';
 import { useAudit } from '../contexts/AuditContext';
@@ -188,7 +203,7 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
     }
   };
 
-  const renderMessageText = (text: string) => {
+  const renderMessageText = useCallback((text: string) => {
     const parts = text.split(/(\[(?:SIGNATURE_FIELD|CITATION):.*?\])/g);
     return parts.map((part, index) => {
       if (part.startsWith('[SIGNATURE_FIELD')) {
@@ -228,26 +243,13 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
       return (
         <ReactMarkdown
           key={index}
-          components={{
-            h1: ({children}) => <h1 className="text-lg font-bold text-neutral-100 mt-4 mb-2">{children}</h1>,
-            h2: ({children}) => <h2 className="text-base font-bold text-neutral-200 mt-3 mb-2">{children}</h2>,
-            h3: ({children}) => <h3 className="text-sm font-bold text-neutral-300 mt-3 mb-1">{children}</h3>,
-            h4: ({children}) => <h4 className="text-sm font-semibold text-neutral-400 mt-2 mb-1">{children}</h4>,
-            p: ({children}) => <p className="text-sm text-neutral-300 leading-relaxed mb-2">{children}</p>,
-            ul: ({children}) => <ul className="list-disc list-inside text-sm text-neutral-300 space-y-1 mb-2 ml-2">{children}</ul>,
-            ol: ({children}) => <ol className="list-decimal list-inside text-sm text-neutral-300 space-y-1 mb-2 ml-2">{children}</ol>,
-            li: ({children}) => <li className="text-sm text-neutral-300">{children}</li>,
-            strong: ({children}) => <strong className="text-neutral-100 font-semibold">{children}</strong>,
-            em: ({children}) => <em className="text-neutral-400 italic">{children}</em>,
-            code: ({children}) => <code className="bg-neutral-800 text-[#14b8a6] px-1 rounded text-xs font-mono">{children}</code>,
-            blockquote: ({children}) => <blockquote className="border-l-2 border-[#d4af37] pl-3 my-2 text-neutral-400 italic">{children}</blockquote>,
-          }}
+          components={markdownComponents}
         >
           {part}
         </ReactMarkdown>
       );
     });
-  };
+  }, []);
 
   return (
     <div data-testid="view-legal-advisor" className="flex flex-col h-full relative overflow-hidden" style={{
