@@ -77,18 +77,14 @@ export const CaseBoard: React.FC = () => {
   // This avoids multiple O(N) filter operations inside the O(M) column render loop,
   // preventing performance bottlenecks during frequent drag-and-drop re-renders.
   const tasksByColumn = useMemo(() => {
-    const grouped: Record<string, Task[]> = {
+    const grouped: Record<Status, Task[]> = {
       discovery: [],
       analysis: [],
       drafting: [],
       execution: [],
     };
     tasks.forEach(task => {
-      if (grouped[task.status]) {
-        grouped[task.status].push(task);
-      } else {
-        grouped[task.status] = [task];
-      }
+      grouped[task.status].push(task);
     });
     return grouped;
   }, [tasks]);
@@ -136,14 +132,14 @@ export const CaseBoard: React.FC = () => {
                 <div className="flex justify-between items-center">
                   <h3 className="text-xs font-bold text-white uppercase tracking-widest">{column.label}</h3>
                   <span className="text-[10px] text-neutral-500 font-mono">
-                    {(tasksByColumn[column.id] || []).length}
+                    {tasksByColumn[column.id].length}
                   </span>
                 </div>
               </div>
 
               {/* Drop Zone */}
               <div className="flex-1 p-3 space-y-3 overflow-y-auto scrollbar-hide">
-                {(tasksByColumn[column.id] || []).map(task => (
+                {tasksByColumn[column.id].map(task => (
                   <div
                     key={task.id}
                     draggable
@@ -167,7 +163,7 @@ export const CaseBoard: React.FC = () => {
                   </div>
                 ))}
                 
-                {(tasksByColumn[column.id] || []).length === 0 && (
+                {tasksByColumn[column.id].length === 0 && (
                   <div className="h-full flex items-center justify-center border-2 border-dashed border-neutral-800/50 rounded m-2">
                     <span className="text-[10px] text-neutral-700 uppercase tracking-widest">Drop Here</span>
                   </div>
