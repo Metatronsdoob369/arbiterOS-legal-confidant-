@@ -44,7 +44,7 @@ const MessageBubble = React.memo<{
     const parts = text.split(/(\[(?:SIGNATURE_FIELD|CITATION):.*?\])/g);
     return parts.map((part, index) => {
       if (part.startsWith('[SIGNATURE_FIELD')) {
-        const label = part.includes(':') ? part.split(':')[1].replace(']', '') : 'SIGN HERE';
+        const label = part.includes(':') ? part.split(':')[1].replace(/\]/g, '') : 'SIGN HERE';
         return (
           <div key={index} className="my-4 p-4 border border-dashed border-[#d4af37] bg-[#d4af37]/10 rounded-lg flex items-center justify-between group cursor-pointer hover:bg-[#d4af37]/20 transition-all">
             <div className="flex items-center gap-3">
@@ -62,7 +62,7 @@ const MessageBubble = React.memo<{
         );
       }
       if (part.startsWith('[CITATION')) {
-        const content = part.replace('[CITATION:', '').replace(']', '');
+        const content = part.replace('[CITATION:', '').replace(/\]/g, '');
         const [title, source] = content.split('|');
         return (
           <div key={index} className="my-3 inline-block w-full">
