@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 
 type Status = 'discovery' | 'analysis' | 'drafting' | 'execution';
 
@@ -29,6 +29,22 @@ export const CaseBoard: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
   const [newTaskContent, setNewTaskContent] = useState('');
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+
+  // ⚡ Bolt Optimization: Group tasks by status using useMemo
+  // Why: Prevents multiple O(N) array traversals during each render cycle (especially bad during drag-and-drop).
+  // Impact: Reduces rendering complexity from O(Columns * Tasks * 3) to O(Tasks) per update.
+  const tasksByStatus = useMemo(() => {
+    const grouped = {
+      discovery: [] as Task[],
+      analysis: [] as Task[],
+      drafting: [] as Task[],
+      execution: [] as Task[]
+    };
+    tasks.forEach(task => {
+      grouped[task.status].push(task);
+    });
+    return grouped;
+  }, [tasks]);
 
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
     setDraggedTaskId(taskId);
@@ -116,14 +132,14 @@ export const CaseBoard: React.FC = () => {
                 <div className="flex justify-between items-center">
                   <h3 className="text-xs font-bold text-white uppercase tracking-widest">{column.label}</h3>
                   <span className="text-[10px] text-neutral-500 font-mono">
-                    {tasks.filter(t => t.status === column.id).length}
+                    {tasksByStatus[column.id].length}
                   </span>
                 </div>
               </div>
 
               {/* Drop Zone */}
               <div className="flex-1 p-3 space-y-3 overflow-y-auto scrollbar-hide">
-                {tasks.filter(t => t.status === column.id).map(task => (
+                {tasksByStatus[column.id].map(task => (
                   <div
                     key={task.id}
                     draggable
@@ -147,7 +163,7 @@ export const CaseBoard: React.FC = () => {
                   </div>
                 ))}
                 
-                {tasks.filter(t => t.status === column.id).length === 0 && (
+                {tasksByStatus[column.id].length === 0 && (
                   <div className="h-full flex items-center justify-center border-2 border-dashed border-neutral-800/50 rounded m-2">
                     <span className="text-[10px] text-neutral-700 uppercase tracking-widest">Drop Here</span>
                   </div>
