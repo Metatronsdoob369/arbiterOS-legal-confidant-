@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import type { Components } from 'react-markdown';
 import { Message, Role } from '../types';
 import { sendLegalMessage, runArbiterAudit } from '../services/aiProvider';
 import { decodeAudioData, playAudioBuffer } from '../services/audio';
@@ -12,6 +13,24 @@ interface StagedFile {
   name: string;
   path?: string;
 }
+
+// ⚡ Bolt Optimization: Stable reference for ReactMarkdown components to prevent
+// re-mounting all markdown DOM nodes on every render (inline objects always have
+// new references, which forces ReactMarkdown to fully unmount/remount its tree).
+const markdownComponents: Components = {
+  h1: ({children}) => <h1 className="text-lg font-bold text-neutral-100 mt-4 mb-2">{children}</h1>,
+  h2: ({children}) => <h2 className="text-base font-bold text-neutral-200 mt-3 mb-2">{children}</h2>,
+  h3: ({children}) => <h3 className="text-sm font-bold text-neutral-300 mt-3 mb-1">{children}</h3>,
+  h4: ({children}) => <h4 className="text-sm font-semibold text-neutral-400 mt-2 mb-1">{children}</h4>,
+  p: ({children}) => <p className="text-sm text-neutral-300 leading-relaxed mb-2">{children}</p>,
+  ul: ({children}) => <ul className="list-disc list-inside text-sm text-neutral-300 space-y-1 mb-2 ml-2">{children}</ul>,
+  ol: ({children}) => <ol className="list-decimal list-inside text-sm text-neutral-300 space-y-1 mb-2 ml-2">{children}</ol>,
+  li: ({children}) => <li className="text-sm text-neutral-300">{children}</li>,
+  strong: ({children}) => <strong className="text-neutral-100 font-semibold">{children}</strong>,
+  em: ({children}) => <em className="text-neutral-400 italic">{children}</em>,
+  code: ({children}) => <code className="bg-neutral-800 text-[#14b8a6] px-1 rounded text-xs font-mono">{children}</code>,
+  blockquote: ({children}) => <blockquote className="border-l-2 border-[#d4af37] pl-3 my-2 text-neutral-400 italic">{children}</blockquote>,
+};
 
 // ⚡ Bolt Optimization: Memoize the MessageBubble to prevent re-rendering the entire
 // chat history (and re-parsing Markdown) every time the user types in the input textarea.
@@ -25,7 +44,7 @@ const MessageBubble = React.memo<{
     const parts = text.split(/(\[(?:SIGNATURE_FIELD|CITATION):.*?\])/g);
     return parts.map((part, index) => {
       if (part.startsWith('[SIGNATURE_FIELD')) {
-        const label = part.includes(':') ? part.split(':')[1].replace(']', '') : 'SIGN HERE';
+        const label = part.includes(':') ? part.split(':')[1].replace(/\]/g, '') : 'SIGN HERE';
         return (
           <div key={index} className="my-4 p-4 border border-dashed border-[#d4af37] bg-[#d4af37]/10 rounded-lg flex items-center justify-between group cursor-pointer hover:bg-[#d4af37]/20 transition-all">
             <div className="flex items-center gap-3">
@@ -43,7 +62,7 @@ const MessageBubble = React.memo<{
         );
       }
       if (part.startsWith('[CITATION')) {
-        const content = part.replace('[CITATION:', '').replace(']', '');
+        const content = part.replace('[CITATION:', '').replace(/\]/g, '');
         const [title, source] = content.split('|');
         return (
           <div key={index} className="my-3 inline-block w-full">
@@ -60,22 +79,7 @@ const MessageBubble = React.memo<{
       }
       return (
         <div key={index}>
-          <ReactMarkdown
-            components={{
-              h1: ({children}) => <h1 className="text-lg font-bold text-neutral-100 mt-4 mb-2">{children}</h1>,
-            h2: ({children}) => <h2 className="text-base font-bold text-neutral-200 mt-3 mb-2">{children}</h2>,
-            h3: ({children}) => <h3 className="text-sm font-bold text-neutral-300 mt-3 mb-1">{children}</h3>,
-            h4: ({children}) => <h4 className="text-sm font-semibold text-neutral-400 mt-2 mb-1">{children}</h4>,
-            p: ({children}) => <p className="text-sm text-neutral-300 leading-relaxed mb-2">{children}</p>,
-            ul: ({children}) => <ul className="list-disc list-inside text-sm text-neutral-300 space-y-1 mb-2 ml-2">{children}</ul>,
-            ol: ({children}) => <ol className="list-decimal list-inside text-sm text-neutral-300 space-y-1 mb-2 ml-2">{children}</ol>,
-            li: ({children}) => <li className="text-sm text-neutral-300">{children}</li>,
-            strong: ({children}) => <strong className="text-neutral-100 font-semibold">{children}</strong>,
-            em: ({children}) => <em className="text-neutral-400 italic">{children}</em>,
-              code: ({children}) => <code className="bg-neutral-800 text-[#14b8a6] px-1 rounded text-xs font-mono">{children}</code>,
-              blockquote: ({children}) => <blockquote className="border-l-2 border-[#d4af37] pl-3 my-2 text-neutral-400 italic">{children}</blockquote>,
-            }}
-          >
+          <ReactMarkdown components={markdownComponents}>
             {part}
           </ReactMarkdown>
         </div>
