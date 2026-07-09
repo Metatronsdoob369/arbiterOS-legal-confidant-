@@ -21,27 +21,44 @@ export const AuditLog: React.FC = () => {
   const [jurisdictionLock, setJurisdictionLock] = useState(false);
 
   // Process data for charts
+  // ⚡ Bolt Optimization: Single-pass O(N) data processing instead of O(5N) multiple array traversals
+  // Why: Replaces multiple .map, .filter, .reduce, and .reverse calls with one single loop.
+  // Impact: Drastically reduces memory allocation and CPU overhead as the audit log grows.
   const { telemetryData, statusData, complianceMetrics } = useMemo(() => {
-    // Reverse entries to show chronological order (oldest to newest)
-    const chronoEntries = [...entries].reverse();
-    
-    // 1. Telemetry (Latency & Score) - Take last 20 relevant entries
-    const telemetry = chronoEntries
-      .filter(e => e.metadata?.latencyMs || e.metadata?.criticScore)
-      .slice(-20)
-      .map(e => ({
-        time: e.timestamp.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        latency: e.metadata?.latencyMs || 0,
-        score: (e.metadata?.criticScore || 0) * 100,
-        id: e.id,
-        status: (e.metadata?.criticScore || 1) < confidenceThreshold ? 'risk' : 'safe'
-      }));
+    let belowThreshold = 0;
+    let totalAudited = 0;
+    const statusCounts: Record<string, number> = {};
+    const rawTelemetry = [];
 
-    // 2. Status Distribution
-    const statusCounts = entries.reduce((acc, curr) => {
-      acc[curr.status] = (acc[curr.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    // Single pass over entries (newest to oldest)
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+
+      // 1. Status Distribution
+      statusCounts[e.status] = (statusCounts[e.status] || 0) + 1;
+
+      // 2. Compliance Metrics
+      if (e.metadata?.criticScore) {
+        totalAudited++;
+        if (e.metadata.criticScore < confidenceThreshold) {
+          belowThreshold++;
+        }
+      }
+
+      // 3. Telemetry (collect up to 20 newest relevant entries)
+      if (rawTelemetry.length < 20 && (e.metadata?.latencyMs || e.metadata?.criticScore)) {
+        rawTelemetry.push(e);
+      }
+    }
+
+    // Process telemetry and reverse to make it chronological (oldest to newest)
+    const telemetry = rawTelemetry.reverse().map(e => ({
+      time: e.timestamp.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      latency: e.metadata?.latencyMs || 0,
+      score: (e.metadata?.criticScore || 0) * 100,
+      id: e.id,
+      status: (e.metadata?.criticScore || 1) < confidenceThreshold ? 'risk' : 'safe'
+    }));
 
     const statusChart = [
       { name: 'Verified', value: statusCounts['Verified'] || 0, color: '#ffffff' },
@@ -49,10 +66,6 @@ export const AuditLog: React.FC = () => {
       { name: 'Refining', value: statusCounts['Refining'] || 0, color: '#a3a3a3' },
       { name: 'Error', value: statusCounts['Error'] || 0, color: '#ef4444' }
     ].filter(d => d.value > 0);
-
-    // 3. Compliance Metrics based on Threshold
-    const belowThreshold = entries.filter(e => e.metadata?.criticScore && e.metadata.criticScore < confidenceThreshold).length;
-    const totalAudited = entries.filter(e => e.metadata?.criticScore).length;
 
     return { 
         telemetryData: telemetry, 
