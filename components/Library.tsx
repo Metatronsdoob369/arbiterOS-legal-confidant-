@@ -5,7 +5,7 @@
  * Your personal legal arsenal, organized and searchable.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import type { LibraryItem } from '../schemas/legalSchemas';
 
 const INITIAL_ITEMS: LibraryItem[] = [
@@ -62,6 +62,63 @@ const TYPE_COLORS: Record<LibraryItem['type'], string> = {
   snippet: 'border-teal-700/40 bg-teal-900/10',
   note: 'border-neutral-600/40 bg-neutral-800/10',
 };
+
+// ⚡ Bolt Optimization: Memoize the LibraryItemCard to prevent re-rendering the entire
+// library list (O(N) rendering) every time the user types in the search or add form inputs.
+const LibraryItemCard = React.memo<{
+  item: LibraryItem;
+  onTogglePin: (id: string) => void;
+  onDelete: (id: string) => void;
+}>(({ item, onTogglePin, onDelete }) => (
+  <div
+    className={`group p-4 rounded-lg border transition-all hover:-translate-y-0.5 ${TYPE_COLORS[item.type]}`}
+    style={{
+      boxShadow: item.pinned ? '0 0 15px rgba(212, 175, 55, 0.1)' : 'none',
+    }}
+  >
+    <div className="flex items-start justify-between mb-2">
+      <div className="flex items-center gap-2">
+        <span className="text-sm">{TYPE_ICONS[item.type]}</span>
+        <span className="text-[10px] uppercase tracking-widest font-bold" style={{ color: '#8b7355' }}>
+          {item.type}
+        </span>
+        {item.pinned && <span className="text-[9px]" style={{ color: '#d4af37' }}>📌</span>}
+      </div>
+      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button onClick={() => onTogglePin(item.id)} className="text-xs hover:scale-110 transition-transform" title="Pin/Unpin">
+          📌
+        </button>
+        <button onClick={() => onDelete(item.id)} className="text-xs hover:scale-110 transition-transform text-red-400" title="Delete">
+          ×
+        </button>
+      </div>
+    </div>
+    <h3 className="text-sm font-bold mb-2" style={{ fontFamily: 'Merriweather, serif', color: '#e8dcc8' }}>
+      {item.title}
+    </h3>
+    <p className="text-xs leading-relaxed mb-3" style={{ color: '#a89070' }}>
+      {item.content}
+    </p>
+    <div className="flex items-center justify-between">
+      <div className="flex gap-1.5 flex-wrap">
+        {item.tags.map(tag => (
+          <span
+            key={tag}
+            className="px-2 py-0.5 text-[9px] uppercase tracking-wider rounded-full"
+            style={{ background: '#2a1c12', color: '#8b7355', border: '1px solid #3d2b1f' }}
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+      {item.citation && (
+        <span className="text-[9px] italic" style={{ color: '#d4af37' }}>
+          {item.citation}
+        </span>
+      )}
+    </div>
+  </div>
+));
 
 export const Library: React.FC = () => {
   const [items, setItems] = useState<LibraryItem[]>(INITIAL_ITEMS);
@@ -121,15 +178,15 @@ export const Library: React.FC = () => {
     setShowAddForm(false);
   };
 
-  const togglePin = (id: string) => {
+  const togglePin = useCallback((id: string) => {
     setItems(prev => prev.map(item =>
       item.id === id ? { ...item, pinned: !item.pinned } : item
     ));
-  };
+  }, []);
 
-  const deleteItem = (id: string) => {
+  const deleteItem = useCallback((id: string) => {
     setItems(prev => prev.filter(item => item.id !== id));
-  };
+  }, []);
 
   return (
     <div data-testid="library-container" className="h-full flex flex-col overflow-hidden" style={{ background: 'linear-gradient(180deg, #1a0f0a 0%, #0d0806 100%)' }}>
@@ -275,55 +332,12 @@ export const Library: React.FC = () => {
         )}
 
         {filteredItems.map(item => (
-          <div
+          <LibraryItemCard
             key={item.id}
-            className={`group p-4 rounded-lg border transition-all hover:-translate-y-0.5 ${TYPE_COLORS[item.type]}`}
-            style={{
-              boxShadow: item.pinned ? '0 0 15px rgba(212, 175, 55, 0.1)' : 'none',
-            }}
-          >
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-sm">{TYPE_ICONS[item.type]}</span>
-                <span className="text-[10px] uppercase tracking-widest font-bold" style={{ color: '#8b7355' }}>
-                  {item.type}
-                </span>
-                {item.pinned && <span className="text-[9px]" style={{ color: '#d4af37' }}>📌</span>}
-              </div>
-              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => togglePin(item.id)} className="text-xs hover:scale-110 transition-transform" title="Pin/Unpin">
-                  📌
-                </button>
-                <button onClick={() => deleteItem(item.id)} className="text-xs hover:scale-110 transition-transform text-red-400" title="Delete">
-                  ×
-                </button>
-              </div>
-            </div>
-            <h3 className="text-sm font-bold mb-2" style={{ fontFamily: 'Merriweather, serif', color: '#e8dcc8' }}>
-              {item.title}
-            </h3>
-            <p className="text-xs leading-relaxed mb-3" style={{ color: '#a89070' }}>
-              {item.content}
-            </p>
-            <div className="flex items-center justify-between">
-              <div className="flex gap-1.5 flex-wrap">
-                {item.tags.map(tag => (
-                  <span
-                    key={tag}
-                    className="px-2 py-0.5 text-[9px] uppercase tracking-wider rounded-full"
-                    style={{ background: '#2a1c12', color: '#8b7355', border: '1px solid #3d2b1f' }}
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-              {item.citation && (
-                <span className="text-[9px] italic" style={{ color: '#d4af37' }}>
-                  {item.citation}
-                </span>
-              )}
-            </div>
-          </div>
+            item={item}
+            onTogglePin={togglePin}
+            onDelete={deleteItem}
+          />
         ))}
       </div>
 

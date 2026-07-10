@@ -7,3 +7,6 @@
 ## 2026-07-05 - [React.memo missing on heavy markdown lists]
 **Learning:** Rendering complex markdown in a list without `React.memo` combined with a fast-changing state like an input field causes massive lag, because typing triggers a full re-parse and re-render of the entire chat history.
 **Action:** Extract list items that do heavy rendering (like markdown parsing) into their own component and wrap them with `React.memo`. Ensure props like callbacks are wrapped in `React.useCallback` in the parent so they don't break memoization.
+## 2026-07-10 - [O(N) List Rendering on Keystroke]
+**Learning:** Inline mapping of lists within components that have fast-updating state (like text search inputs or forms) causes O(N) re-renders of the entire list per keystroke, causing severe UI latency.
+**Action:** Extract list items into their own memoized components (`React.memo`) and wrap all passed handler functions in `useCallback` to maintain reference stability, ensuring O(1) rendering updates when typing.
