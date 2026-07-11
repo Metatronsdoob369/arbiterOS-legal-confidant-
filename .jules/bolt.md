@@ -7,3 +7,6 @@
 ## 2026-07-05 - [React.memo missing on heavy markdown lists]
 **Learning:** Rendering complex markdown in a list without `React.memo` combined with a fast-changing state like an input field causes massive lag, because typing triggers a full re-parse and re-render of the entire chat history.
 **Action:** Extract list items that do heavy rendering (like markdown parsing) into their own component and wrap them with `React.memo`. Ensure props like callbacks are wrapped in `React.useCallback` in the parent so they don't break memoization.
+## 2026-07-11 - [React.memo missing on draggable nodes in EvidenceBoard]
+**Learning:** Rendering nodes without `React.memo` while handling `onMouseMove` events for drag-and-drop causes a massive performance bottleneck. The parent component re-renders every time the mouse moves, forcing React to do a full DOM reconciliation on all non-moving nodes, changing rendering complexity from O(Nodes + Connections) to O(1) per frame for non-moving nodes when memoized.
+**Action:** Extract node components in canvas/drag-and-drop UIs and wrap them in `React.memo()`. Make sure event handler props are stabilized with `useCallback` to prevent breaking memoization during rapid re-renders.

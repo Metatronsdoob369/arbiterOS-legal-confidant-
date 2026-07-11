@@ -37,6 +37,64 @@ const NODE_WIDTH = 180;
 const NODE_HEIGHT = 80;
 const NODE_MARGIN = 50;
 
+// ⚡ Bolt Optimization: Extract Node rendering to a memoized component
+// This prevents React from re-rendering every single node (and doing full DOM reconciliation)
+// on every mouse move event during drag-and-drop.
+const MemoizedNode = React.memo<{
+  node: EvidenceNode;
+  isSelected: boolean;
+  isConnectTarget: boolean;
+  isDragging: boolean;
+  colors: { bg: string; border: string; text: string };
+  onMouseDown: (e: React.MouseEvent, id: string) => void;
+  onClick: (id: string) => void;
+  onDelete: (id: string) => void;
+}>(({ node, isSelected, isConnectTarget, isDragging, colors, onMouseDown, onClick, onDelete }) => {
+  return (
+    <div
+      className="absolute group"
+      style={{
+        left: node.x,
+        top: node.y,
+        width: NODE_WIDTH,
+        zIndex: isSelected ? 20 : 10,
+        cursor: isDragging ? 'grabbing' : 'grab',
+      }}
+      onMouseDown={e => onMouseDown(e, node.id)}
+      onClick={e => { e.stopPropagation(); onClick(node.id); }}
+    >
+      <div
+        className="rounded-lg p-3 transition-all"
+        style={{
+          background: colors.bg,
+          border: `2px solid ${isSelected ? colors.border : isConnectTarget ? '#d4af37' : colors.border + '40'}`,
+          boxShadow: isSelected
+            ? `0 0 20px ${colors.border}30, 0 4px 15px rgba(0,0,0,0.4)`
+            : '0 2px 8px rgba(0,0,0,0.3)',
+        }}
+      >
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[9px] uppercase tracking-widest font-bold" style={{ color: colors.text }}>
+            {node.type}
+          </span>
+          <button
+            onClick={e => { e.stopPropagation(); onDelete(node.id); }}
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-red-400 text-xs"
+          >
+            ×
+          </button>
+        </div>
+        <div className="text-xs font-bold mb-1" style={{ color: '#e8dcc8' }}>
+          {node.label}
+        </div>
+        <div className="text-[10px] leading-relaxed" style={{ color: '#8b7355' }}>
+          {node.content.substring(0, 60)}{node.content.length > 60 ? '...' : ''}
+        </div>
+      </div>
+    </div>
+  );
+});
+
 export const EvidenceBoard: React.FC = () => {
   const [nodes, setNodes] = useState<EvidenceNode[]>(INITIAL_NODES);
   const [connections, setConnections] = useState<EvidenceConnection[]>(INITIAL_CONNECTIONS);
@@ -85,7 +143,7 @@ export const EvidenceBoard: React.FC = () => {
     setDragState(null);
   }, []);
 
-  const handleNodeClick = (nodeId: string) => {
+  const handleNodeClick = useCallback((nodeId: string) => {
     if (connectMode) {
       if (connectMode.from !== nodeId) {
         const newConn: EvidenceConnection = {
@@ -101,7 +159,7 @@ export const EvidenceBoard: React.FC = () => {
     } else {
       setSelectedNode(nodeId);
     }
-  };
+  }, [connectMode]);
 
   const addNode = () => {
     if (!newNode.label.trim()) return;
@@ -119,11 +177,11 @@ export const EvidenceBoard: React.FC = () => {
     setShowAddPanel(false);
   };
 
-  const deleteNode = (id: string) => {
+  const deleteNode = useCallback((id: string) => {
     setNodes(prev => prev.filter(n => n.id !== id));
     setConnections(prev => prev.filter(c => c.from !== id && c.to !== id));
     if (selectedNode === id) setSelectedNode(null);
-  };
+  }, [selectedNode]);
 
   const deleteConnection = (id: string) => {
     setConnections(prev => prev.filter(c => c.id !== id));
@@ -274,56 +332,19 @@ export const EvidenceBoard: React.FC = () => {
           </svg>
 
           {/* Nodes Layer */}
-          {nodes.map(node => {
-            const colors = NODE_COLORS[node.type];
-            const isSelected = selectedNode === node.id;
-            const isConnectTarget = connectMode && connectMode.from !== node.id;
-
-            return (
-              <div
-                key={node.id}
-                className="absolute group"
-                style={{
-                  left: node.x,
-                  top: node.y,
-                  width: NODE_WIDTH,
-                  zIndex: isSelected ? 20 : 10,
-                  cursor: dragState?.nodeId === node.id ? 'grabbing' : 'grab',
-                }}
-                onMouseDown={e => handleMouseDown(e, node.id)}
-                onClick={e => { e.stopPropagation(); handleNodeClick(node.id); }}
-              >
-                <div
-                  className="rounded-lg p-3 transition-all"
-                  style={{
-                    background: colors.bg,
-                    border: `2px solid ${isSelected ? colors.border : isConnectTarget ? '#d4af37' : colors.border + '40'}`,
-                    boxShadow: isSelected
-                      ? `0 0 20px ${colors.border}30, 0 4px 15px rgba(0,0,0,0.4)`
-                      : '0 2px 8px rgba(0,0,0,0.3)',
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[9px] uppercase tracking-widest font-bold" style={{ color: colors.text }}>
-                      {node.type}
-                    </span>
-                    <button
-                      onClick={e => { e.stopPropagation(); deleteNode(node.id); }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-red-400 text-xs"
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <div className="text-xs font-bold mb-1" style={{ color: '#e8dcc8' }}>
-                    {node.label}
-                  </div>
-                  <div className="text-[10px] leading-relaxed" style={{ color: '#8b7355' }}>
-                    {node.content.substring(0, 60)}{node.content.length > 60 ? '...' : ''}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {nodes.map(node => (
+            <MemoizedNode
+              key={node.id}
+              node={node}
+              isSelected={selectedNode === node.id}
+              isConnectTarget={!!(connectMode && connectMode.from !== node.id)}
+              isDragging={dragState?.nodeId === node.id}
+              colors={NODE_COLORS[node.type]}
+              onMouseDown={handleMouseDown}
+              onClick={handleNodeClick}
+              onDelete={deleteNode}
+            />
+          ))}
 
           {/* Connect Mode Indicator */}
           {connectMode && (
