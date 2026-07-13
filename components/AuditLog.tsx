@@ -14,6 +14,35 @@ import {
   Cell 
 } from 'recharts';
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-black border border-white p-3 text-[10px] font-mono shadow-2xl max-w-[200px]">
+        <p className="text-white font-bold mb-2 border-b border-neutral-800 pb-1">{label}</p>
+        <div className="space-y-1">
+           <div className="flex justify-between">
+              <span className="text-neutral-500">Latency:</span>
+              <span className="text-white">{data.latency}ms</span>
+           </div>
+           <div className="flex justify-between">
+              <span className="text-neutral-500">Confidence:</span>
+              <span className={data.status === 'risk' ? 'text-red-500 font-bold' : 'text-green-500'}>
+                  {data.score.toFixed(1)}%
+              </span>
+           </div>
+           {data.status === 'risk' && (
+               <div className="mt-2 text-red-500 uppercase tracking-widest text-[9px] border-t border-neutral-800 pt-1">
+                  Below Threshold
+               </div>
+           )}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 export const AuditLog: React.FC = () => {
   const { entries } = useAudit();
   const [confidenceThreshold, setConfidenceThreshold] = useState(0.85);
@@ -22,37 +51,55 @@ export const AuditLog: React.FC = () => {
 
   // Process data for charts
   const { telemetryData, statusData, complianceMetrics } = useMemo(() => {
-    // Reverse entries to show chronological order (oldest to newest)
-    const chronoEntries = [...entries].reverse();
-    
-    // 1. Telemetry (Latency & Score) - Take last 20 relevant entries
-    const telemetry = chronoEntries
-      .filter(e => e.metadata?.latencyMs || e.metadata?.criticScore)
-      .slice(-20)
-      .map(e => ({
-        time: e.timestamp.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        latency: e.metadata?.latencyMs || 0,
-        score: (e.metadata?.criticScore || 0) * 100,
-        id: e.id,
-        status: (e.metadata?.criticScore || 1) < confidenceThreshold ? 'risk' : 'safe'
-      }));
+    // ⚡ Bolt Optimization: Use a single O(N) pass to compute all derived data
+    // instead of multiple filter/slice/reduce passes with intermediate array allocations.
+    const telemetry = [];
+    let verifiedCount = 0;
+    let pendingCount = 0;
+    let refiningCount = 0;
+    let errorCount = 0;
+    let totalAudited = 0;
+    let belowThreshold = 0;
 
-    // 2. Status Distribution
-    const statusCounts = entries.reduce((acc, curr) => {
-      acc[curr.status] = (acc[curr.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    // Traverse from newest to oldest (normal array order since items are unshifted)
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+
+      // 1. Telemetry: Keep up to 20 relevant entries
+      if (telemetry.length < 20 && (e.metadata?.latencyMs || e.metadata?.criticScore)) {
+        telemetry.push({
+          time: e.timestamp.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          latency: e.metadata?.latencyMs || 0,
+          score: (e.metadata?.criticScore || 0) * 100,
+          id: e.id,
+          status: (e.metadata?.criticScore || 1) < confidenceThreshold ? 'risk' : 'safe'
+        });
+      }
+
+      // 2. Status Distribution
+      if (e.status === 'Verified') verifiedCount++;
+      else if (e.status === 'Pending') pendingCount++;
+      else if (e.status === 'Refining') refiningCount++;
+      else if (e.status === 'Error') errorCount++;
+
+      // 3. Compliance Metrics
+      if (e.metadata?.criticScore !== undefined) {
+        totalAudited++;
+        if (e.metadata.criticScore < confidenceThreshold) {
+          belowThreshold++;
+        }
+      }
+    }
+
+    // Reverse the telemetry array to display oldest to newest (chronological order) on the chart
+    telemetry.reverse();
 
     const statusChart = [
-      { name: 'Verified', value: statusCounts['Verified'] || 0, color: '#ffffff' },
-      { name: 'Pending', value: statusCounts['Pending'] || 0, color: '#525252' },
-      { name: 'Refining', value: statusCounts['Refining'] || 0, color: '#a3a3a3' },
-      { name: 'Error', value: statusCounts['Error'] || 0, color: '#ef4444' }
-    ].filter(d => d.value > 0);
-
-    // 3. Compliance Metrics based on Threshold
-    const belowThreshold = entries.filter(e => e.metadata?.criticScore && e.metadata.criticScore < confidenceThreshold).length;
-    const totalAudited = entries.filter(e => e.metadata?.criticScore).length;
+      { name: 'Verified', value: verifiedCount, color: '#ffffff' },
+      { name: 'Pending', value: pendingCount, color: '#525252' },
+      { name: 'Refining', value: refiningCount, color: '#a3a3a3' },
+      { name: 'Error', value: errorCount, color: '#ef4444' }
+    ].filter(s => s.value > 0);
 
     return { 
         telemetryData: telemetry, 
@@ -60,35 +107,6 @@ export const AuditLog: React.FC = () => {
         complianceMetrics: { belowThreshold, totalAudited } 
     };
   }, [entries, confidenceThreshold]);
-
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-black border border-white p-3 text-[10px] font-mono shadow-2xl max-w-[200px]">
-          <p className="text-white font-bold mb-2 border-b border-neutral-800 pb-1">{label}</p>
-          <div className="space-y-1">
-             <div className="flex justify-between">
-                <span className="text-neutral-500">Latency:</span>
-                <span className="text-white">{data.latency}ms</span>
-             </div>
-             <div className="flex justify-between">
-                <span className="text-neutral-500">Confidence:</span>
-                <span className={data.score < (confidenceThreshold * 100) ? 'text-red-500 font-bold' : 'text-green-500'}>
-                    {data.score.toFixed(1)}%
-                </span>
-             </div>
-             {data.score < (confidenceThreshold * 100) && (
-                 <div className="mt-2 text-red-500 uppercase tracking-widest text-[9px] border-t border-neutral-800 pt-1">
-                    Below Threshold
-                 </div>
-             )}
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <div data-testid="view-audit-log" className="h-full overflow-y-auto p-4 md:p-8 max-w-7xl mx-auto flex flex-col font-mono bg-black">
