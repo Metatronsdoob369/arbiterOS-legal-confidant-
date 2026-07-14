@@ -21,38 +21,51 @@ export const AuditLog: React.FC = () => {
   const [jurisdictionLock, setJurisdictionLock] = useState(false);
 
   // Process data for charts
+  // ⚡ Bolt Optimization: Replace chained array methods with a single O(N) pass
+  // Why: Prevents massive O(N) memory allocation ([...entries]) and 5 separate O(N) traversals
+  // Impact: O(N) single pass vs O(N) * 5, avoids garbage collection lag during frequent logging
   const { telemetryData, statusData, complianceMetrics } = useMemo(() => {
-    // Reverse entries to show chronological order (oldest to newest)
-    const chronoEntries = [...entries].reverse();
-    
-    // 1. Telemetry (Latency & Score) - Take last 20 relevant entries
-    const telemetry = chronoEntries
-      .filter(e => e.metadata?.latencyMs || e.metadata?.criticScore)
-      .slice(-20)
-      .map(e => ({
-        time: e.timestamp.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        latency: e.metadata?.latencyMs || 0,
-        score: (e.metadata?.criticScore || 0) * 100,
-        id: e.id,
-        status: (e.metadata?.criticScore || 1) < confidenceThreshold ? 'risk' : 'safe'
-      }));
+    const telemetry = [];
+    const statusCounts: Record<string, number> = { Verified: 0, Pending: 0, Refining: 0, Error: 0 };
+    let belowThreshold = 0;
+    let totalAudited = 0;
 
-    // 2. Status Distribution
-    const statusCounts = entries.reduce((acc, curr) => {
-      acc[curr.status] = (acc[curr.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+
+      // Update status counts
+      statusCounts[e.status] = (statusCounts[e.status] || 0) + 1;
+
+      // Update compliance metrics
+      if (e.metadata?.criticScore !== undefined) {
+        totalAudited++;
+        if (e.metadata.criticScore < confidenceThreshold) {
+          belowThreshold++;
+        }
+      }
+
+      // Collect telemetry (last 20 from chrono order means first 20 in reverse chrono order)
+      // Since entries is newest to oldest, we collect up to 20 relevant items from the front
+      if (telemetry.length < 20 && (e.metadata?.latencyMs || e.metadata?.criticScore)) {
+        telemetry.push({
+          time: e.timestamp.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          latency: e.metadata?.latencyMs || 0,
+          score: (e.metadata?.criticScore || 0) * 100,
+          id: e.id,
+          status: (e.metadata?.criticScore || 1) < confidenceThreshold ? 'risk' : 'safe'
+        });
+      }
+    }
+
+    // Reverse telemetry to match chrono order (oldest to newest)
+    telemetry.reverse();
 
     const statusChart = [
-      { name: 'Verified', value: statusCounts['Verified'] || 0, color: '#ffffff' },
-      { name: 'Pending', value: statusCounts['Pending'] || 0, color: '#525252' },
-      { name: 'Refining', value: statusCounts['Refining'] || 0, color: '#a3a3a3' },
-      { name: 'Error', value: statusCounts['Error'] || 0, color: '#ef4444' }
+      { name: 'Verified', value: statusCounts['Verified'], color: '#ffffff' },
+      { name: 'Pending', value: statusCounts['Pending'], color: '#525252' },
+      { name: 'Refining', value: statusCounts['Refining'], color: '#a3a3a3' },
+      { name: 'Error', value: statusCounts['Error'], color: '#ef4444' }
     ].filter(d => d.value > 0);
-
-    // 3. Compliance Metrics based on Threshold
-    const belowThreshold = entries.filter(e => e.metadata?.criticScore && e.metadata.criticScore < confidenceThreshold).length;
-    const totalAudited = entries.filter(e => e.metadata?.criticScore).length;
 
     return { 
         telemetryData: telemetry, 
