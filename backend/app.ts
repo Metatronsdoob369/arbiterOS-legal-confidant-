@@ -12,6 +12,7 @@ import { registerAuthRoutes } from './modules/auth/routes';
 import { registerMemoryRoutes } from './modules/memory/routes';
 import { registerProcessedFileRoutes } from './modules/processed-files/routes';
 import { registerAuditRoutes } from './modules/audit/routes';
+import { registerCommonLawRoutes } from './modules/common-law/routes';
 import { registerLegalRoutes } from './modules/legal/routes';
 
 export async function createApp() {
@@ -50,6 +51,7 @@ export async function createApp() {
   await registerMemoryRoutes(app);
   await registerProcessedFileRoutes(app);
   await registerAuditRoutes(app);
+  await registerCommonLawRoutes(app);
   await registerLegalRoutes(app);
 
   app.get('/api/health', async () => ({ status: 'ok' }));

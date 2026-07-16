@@ -9,6 +9,7 @@
     "dev:frontend": "vite",
     "dev:backend": "tsx watch backend/server.ts",
     "seed:admin": "tsx backend/scripts/seedAdmin.ts",
+    "bootstrap:common-law": "tsx backend/scripts/bootstrapCommonLaw.ts",
     "test:unit": "vitest run",
     "build": "vite build",
     "preview": "vite preview",

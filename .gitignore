@@ -37,3 +37,8 @@ test-results/
 
 # Local backend storage
 data/
+
+# Local scratch files
+TGIL_VISION.md
+test-gateway.ts
+weppy-project-sync/

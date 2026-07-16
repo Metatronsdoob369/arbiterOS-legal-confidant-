@@ -29,6 +29,7 @@ import {
   type ValidationStep,
   type InstrumentTerms,
 } from './legalEngine';
+import { commonLawEngine } from './commonLawEngine';
 import { runValidationGate, type GateInputState } from './validationGate';
 
 // ═══════════════════════════════════════════
@@ -59,6 +60,8 @@ CORE PROTOCOLS (Non-Negotiable):
 6. **Citation Binding**: If referencing a statute, use 'consult_statute' to retrieve raw text.
    Display with '[CITATION:Title|Source]' tags. No citation? No claim. Period.
 7. **Negotiability**: For financial instruments, use 'verify_negotiability' for UCC 3-104 compliance.
+8. **Common-Law Holdings**: For statutory interpretation, negotiability disputes, or case-driven legal propositions, use 'retrieve_holdings'.
+   High-severity legal_rule or interpretation claims must carry either a statute citation or a strong interpretation link from holdings.
 
 PROCESS:
 - Receive user intent (text or document upload).
@@ -84,7 +87,10 @@ Schema:
       "kind": "<fact | legal_rule | interpretation | instruction | speculation>",
       "severity": "<low | medium | high>",
       "evidence": [
-        { "kind": "<statute | tool_result | library_item | evidence_node | url>", "ref": "<citation/ID/URL>", "quote": "<optional verbatim excerpt>" }
+        { "kind": "<statute | holding | tool_result | library_item | evidence_node | url>", "ref": "<citation/ID/URL>", "quote": "<optional verbatim excerpt>", "strength": "<optional weak | moderate | strong>" }
+      ],
+      "interpretation_links": [
+        { "holding_id": "<holding id>", "citation": "<holding citation>", "relation": "<supports | distinguishes | limits>", "strength": "<weak | moderate | strong>", "quote": "<optional holding excerpt>" }
       ]
     }
   ]
@@ -93,7 +99,10 @@ Schema:
 Rules for populating claims:
 - List every factual assertion and legal rule stated in draft_text as a separate claim.
 - For fact/legal_rule claims, populate evidence[] from your tool call results (statute citations, tool outputs).
+- If you use retrieve_holdings, copy the strongest holding into evidence[] with kind "holding" and its strength.
+- Also populate interpretation_links[] from the retrieve_holdings result for the claim that relies on those holdings.
 - interpretation and speculation claims MUST include an explicit marker in their text, e.g. "[interpretation]" or "[speculation]". If not naturally present in draft_text for those claims, add the marker to the claim.text field.
+- High-severity legal_rule or interpretation claims must include either a statute evidence ref or at least one interpretation_links entry with strength "strong".
 - Assign severity: high = legal outcomes hinge on this; medium = important but not outcome-determinative; low = background context.
 - Keep claim texts concise (one sentence). Do not re-paste entire paragraphs.
 `;
@@ -192,6 +201,22 @@ const TOOL_DEFINITIONS = [
         type: 'object',
         properties: {
           query: { type: 'string', description: 'The statute name or keywords (e.g., "UCC 3-104")' },
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'retrieve_holdings',
+      description: 'Retrieves common-law holdings and interpretation links from the local CommonLawSpectralEngine.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'The legal proposition or question to retrieve holdings for.' },
+          statute: { type: 'string', description: 'Optional statute anchor such as "UCC 3-104".' },
+          topK: { type: 'number', description: 'Maximum holdings to return, up to 10.' },
         },
         required: ['query'],
       },
@@ -335,6 +360,11 @@ async function executeToolCall(
         result = await consultStatute(args.query);
         break;
       }
+      case 'retrieve_holdings': {
+        if (logAudit) logAudit('Common Law Retrieval', `Fetching holdings for '${args.query}'`, 'System', 'Pending');
+        result = await commonLawEngine.retrieveHoldings(args);
+        break;
+      }
       case 'draft_verified_form': {
         if (logAudit) logAudit('Form Generation', `Drafting validated ${args.form_type}...`, 'Arbiter', 'Pending');
         const formResult = await generateVerifiedForm(args.form_type, args);
@@ -356,7 +386,16 @@ async function executeToolCall(
       }
     }
 
-    if (logAudit && name !== 'consult_statute' && result.details) {
+    if (logAudit && name === 'retrieve_holdings' && Array.isArray(result.holdings)) {
+      logAudit(
+        'Result: holdings',
+        `${result.holdings.length} holding(s) returned via ${result.fallbackMode ?? 'none'} fallback mode.`,
+        'Arbiter',
+        result.holdings.length > 0 ? 'Verified' : 'Error'
+      );
+    }
+
+    if (logAudit && name !== 'consult_statute' && name !== 'retrieve_holdings' && result.details) {
       logAudit(
         `Result: ${name.replace('verify_', '').replace('analyze_', '')}`,
         result.details,
@@ -434,6 +473,7 @@ function parseDraftResponse(rawContent: string): DraftResponse {
                 kind: ['fact','legal_rule','interpretation','instruction','speculation'].includes(c.kind) ? c.kind : 'interpretation',
                 severity: ['low','medium','high'].includes(c.severity) ? c.severity : 'medium',
                 evidence: Array.isArray(c.evidence) ? c.evidence : [],
+                interpretation_links: Array.isArray(c.interpretation_links) ? c.interpretation_links : [],
               }))
             : [],
         };
@@ -454,6 +494,7 @@ function parseDraftResponse(rawContent: string): DraftResponse {
         kind: 'fact',
         severity: 'high',
         evidence: [],
+        interpretation_links: [],
       },
     ],
   };
@@ -476,7 +517,7 @@ function buildRepairPrompt(draft: DraftResponse, failedReasons: string[]): strin
     `Instructions:\n` +
     `1. Rewrite draft_text to address every failed claim listed above.\n` +
     `2. Add explicit [interpretation] or [speculation] markers in draft_text for any interpretive claims.\n` +
-    `3. For unsupported factual/legal-rule claims: either cite a statute/tool result in evidence[], or rephrase with appropriate uncertainty (e.g. "arguably", "appears to").\n` +
+    `3. For unsupported factual/legal-rule claims: either cite a statute/tool result in evidence[], attach strong interpretation_links from retrieve_holdings, or rephrase with appropriate uncertainty (e.g. "arguably", "appears to").\n` +
     `4. Do NOT introduce new unsupported facts.\n` +
     `5. Preserve the sardonic, confident ArbiterOS tone — do not go full disclaimer-bot.\n` +
     `6. Keep the response concise.\n\n` +

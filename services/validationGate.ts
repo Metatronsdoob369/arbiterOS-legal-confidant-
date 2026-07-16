@@ -15,6 +15,7 @@
  *   R1 — fact/legal_rule claims must have evidence; severity governs harshness of failure.
  *   R2 — statute evidence refs must resolve in the law library (via legalEngine.consultStatute).
  *   R3 — interpretation/speculation claims must carry explicit uncertainty markers.
+ *   R5 — high-severity legal_rule / interpretation claims need a statute or strong holding link.
  *   R4 — block decision produces an in-character "verification mode" response requesting missing inputs.
  *
  * "If it ain't in the schema, it ain't real." — Contracts > Prompts
@@ -371,6 +372,43 @@ async function processClaim(
         passed: true,
         details: `Claim [${claim.id}] (${claim.kind}): uncertainty marker confirmed in ${isLabeledInClaim ? 'claim text' : 'draft_text'}.`,
         evidence_source: 'gate:R3',
+        timestamp: now(),
+      });
+    }
+  }
+
+  // ── R5: high-severity legal_rule / interpretation need strong holding support ─
+
+  if (
+    claim.severity === 'high'
+    && (claim.kind === 'legal_rule' || claim.kind === 'interpretation')
+  ) {
+    const hasStatuteEvidence = claim.evidence.some((ev) => ev.kind === 'statute');
+    const hasStrongHoldingEvidence = claim.evidence.some(
+      (ev) => ev.kind === 'holding' && ev.strength === 'strong'
+    );
+    const hasStrongInterpretationLink = (claim.interpretation_links ?? []).some(
+      (link) => link.strength === 'strong'
+    );
+
+    if (!hasStatuteEvidence && !hasStrongHoldingEvidence && !hasStrongInterpretationLink) {
+      failedClaims.push({
+        claim_id: claim.id,
+        reason: `R5: High-severity ${claim.kind} claim "${claim.text.slice(0, 80)}..." has no statute citation or strong holding support.`,
+      });
+      steps.push({
+        rule_id: 'R5_HOLDING_REQUIRED',
+        passed: false,
+        details: `Claim [${claim.id}] is high-severity ${claim.kind} but has no statute evidence and no strong interpretation link.`,
+        evidence_source: 'gate:R5',
+        timestamp: now(),
+      });
+    } else {
+      steps.push({
+        rule_id: 'R5_HOLDING_PRESENT',
+        passed: true,
+        details: `Claim [${claim.id}] satisfies R5 with ${hasStatuteEvidence ? 'statute evidence' : 'strong holding support'}.`,
+        evidence_source: 'gate:R5',
         timestamp: now(),
       });
     }

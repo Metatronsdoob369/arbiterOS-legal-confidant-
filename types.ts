@@ -55,6 +55,12 @@ declare global {
 
   interface Window {
     aistudio?: AIStudio;
+    commonLawEngine?: {
+      checkCollectionHealth: () => Promise<unknown>;
+      bootstrapHoldings: () => Promise<unknown>;
+      retrieveHoldings: (input: { query: string; statute?: string; topK?: number }) => Promise<unknown>;
+      embedTexts: (texts: string[]) => Promise<unknown>;
+    };
     webkitAudioContext?: typeof AudioContext;
   }
 }

@@ -135,12 +135,23 @@ export const ChatResponseSchema = z.object({
  * Ties every assertion to a verifiable source.
  */
 export const EvidenceRefSchema = z.object({
-  kind: z.enum(['statute', 'library_item', 'evidence_node', 'tool_result', 'url'])
+  kind: z.enum(['statute', 'holding', 'library_item', 'evidence_node', 'tool_result', 'url'])
     .describe('Category of evidence source'),
   ref: z.string().describe('Identifier or URL for the evidence source (e.g. "UCC 3-104", item ID, URL)'),
   quote: z.string().optional().describe('Verbatim excerpt from the source that supports the claim'),
+  strength: z.enum(['weak', 'moderate', 'strong']).optional()
+    .describe('Relative evidentiary force when the source is a holding or tool result'),
 });
 export type EvidenceRef = z.infer<typeof EvidenceRefSchema>;
+
+export const InterpretationLinkSchema = z.object({
+  holding_id: z.string().describe('Resolved holding identifier returned by retrieve_holdings'),
+  citation: z.string().describe('Holding citation or stable corpus label'),
+  relation: z.enum(['supports', 'distinguishes', 'limits']).describe('How the holding bears on the claim'),
+  strength: z.enum(['weak', 'moderate', 'strong']).default('moderate').describe('Weight assigned to the holding'),
+  quote: z.string().optional().describe('Key holding language supporting the claim'),
+});
+export type InterpretationLink = z.infer<typeof InterpretationLinkSchema>;
 
 /**
  * An atomic claim extracted from the AI draft response.
@@ -156,6 +167,8 @@ export const ClaimSchema = z.object({
     .describe('Risk severity if this claim is wrong: high = hard block or repair required'),
   evidence: z.array(EvidenceRefSchema).default([])
     .describe('Supporting evidence references; fact/legal_rule claims must have at least one'),
+  interpretation_links: z.array(InterpretationLinkSchema).default([])
+    .describe('Common-law holding links supporting the claim; high-severity legal claims should carry at least one strong link'),
 });
 export type Claim = z.infer<typeof ClaimSchema>;
 

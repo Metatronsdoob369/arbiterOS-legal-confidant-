@@ -168,6 +168,13 @@ Test files live in the `e2e/` directory:
 | `AI_SHADOW_MODEL` | Same as `AI_MODEL` | Heavy model for Shadow Counsel mode |
 | `AI_CRITIC_MODEL` | Same as `AI_MODEL` | Model for the compliance auditor |
 | `VITE_WHITEGLOVE_URL` | `http://localhost:4880` | Optional WhiteGlove retrieval endpoint |
+| `VITE_QDRANT_URL` | `http://127.0.0.1:6333` | Local Qdrant endpoint for the CommonLawSpectralEngine |
+| `VITE_COMMON_LAW_COLLECTION` | `case-law-holdings` | Local holdings collection name |
+| `VITE_EMBED_ENDPOINT` | `http://127.0.0.1:4881/embed` | Local embed endpoint mounted on the ArbiterOS backend |
+| `COMMON_LAW_QDRANT_URL` | `http://127.0.0.1:6333` | Backend Qdrant URL for holdings retrieval |
+| `COMMON_LAW_COLLECTION` | `case-law-holdings` | Backend holdings collection name |
+| `COMMON_LAW_VECTOR_SIZE` | `1024` | Embedding dimension used by the local common-law layer |
+| `COMMON_LAW_AUTO_BOOTSTRAP` | `true` | Auto-seed the fallback holdings corpus when the collection is missing or empty |
 
 ### Provider Examples
 
@@ -207,6 +214,42 @@ The secret weapon. Every piece of legal data the AI touches is validated through
 - `EvidenceNodeSchema` / `EvidenceConnectionSchema` — Evidence board graph
 
 The AI gets structured data in, and structured data out. It doesn't get to "interpret" anything. That's the whole point.
+
+---
+
+## ⚖️ CommonLawSpectralEngine Local Setup
+
+ArbiterOS now exposes the local CommonLawSpectralEngine directly from the backend:
+
+- `POST http://127.0.0.1:4881/embed` — 1024-D local embed endpoint
+- `GET /api/common-law/health` — collection health
+- `POST /api/common-law/query` — holdings retrieval with interpretation links
+- `POST /api/common-law/bootstrap` — create/seed the local fallback holdings collection
+
+### Local bring-up
+
+```bash
+# 1. Verify Qdrant is reachable
+curl -sS http://127.0.0.1:6333/collections
+
+# 2. Bootstrap the holdings collection
+npm run bootstrap:common-law
+
+# 3. Start ArbiterOS
+npm run dev
+```
+
+### Browser / console checks
+
+```js
+await window.commonLawEngine.checkCollectionHealth()
+await window.commonLawEngine.retrieveHoldings({
+  query: 'negotiable instrument unconditional promise',
+  statute: 'UCC 3-104',
+})
+```
+
+If local Qdrant is down or the collection is empty, the engine falls back to a seeded in-memory holdings subset so retrieval still returns interpretation links and the validation gate can emit explicit failure steps instead of silently degrading.
 
 ---
 
