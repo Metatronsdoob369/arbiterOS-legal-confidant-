@@ -5,6 +5,9 @@
  * No Google. No surveillance. Just law.
  * 
  * "The future is not prompted; it is Contracted." — OMC Architecture
+ *
+ * Common Law extension: tools now include retrieve_holdings / link_interpretation
+ * so the model can assemble InterpretationLinks required by Validation Gate R5.
  */
 
 import { Message, Role, AuditEntry } from '../types';
@@ -29,6 +32,7 @@ import {
   type ValidationStep,
   type InstrumentTerms,
 } from './legalEngine';
+import { retrieveHoldings, retrieveAndLink, linkInterpretation } from './commonLawEngine';
 import { runValidationGate, type GateInputState } from './validationGate';
 
 // ═══════════════════════════════════════════
@@ -59,12 +63,17 @@ CORE PROTOCOLS (Non-Negotiable):
 6. **Citation Binding**: If referencing a statute, use 'consult_statute' to retrieve raw text.
    Display with '[CITATION:Title|Source]' tags. No citation? No claim. Period.
 7. **Negotiability**: For financial instruments, use 'verify_negotiability' for UCC 3-104 compliance.
+8. **Common Law Holdings (R5)**: For ANY legal_rule or interpretation claim you MUST call
+   'retrieve_holdings' (or 'retrieve_and_link') and attach an InterpretationLink to the claim.
+   Under common law the holding is the law. Statutes alone are insufficient.
+   Use 'link_interpretation' if you already have holdings.
 
 PROCESS:
 - Receive user intent (text or document upload).
 - If document: Read it, extract key clauses, run 'analyze_clause_risks'. 
   Then tell them what's wrong with it — and be entertaining about it.
 - If request for form: Identify the type, gather parameters, run 'draft_verified_form'.
+- If legal_rule / interpretation: retrieve holdings first, then form the claim with interpretation_link.
 - If verification fails, deny the request and explain why with the enthusiasm of a prosecutor.
 - Always end with actionable next steps. You're building a case, not writing a term paper.
 
@@ -84,15 +93,24 @@ Schema:
       "kind": "<fact | legal_rule | interpretation | instruction | speculation>",
       "severity": "<low | medium | high>",
       "evidence": [
-        { "kind": "<statute | tool_result | library_item | evidence_node | url>", "ref": "<citation/ID/URL>", "quote": "<optional verbatim excerpt>" }
-      ]
+        { "kind": "<statute | tool_result | library_item | evidence_node | url | holding>", "ref": "<citation/ID/URL>", "quote": "<optional verbatim excerpt>" }
+      ],
+      "interpretation_link": {  // REQUIRED for kind=legal_rule or interpretation
+        "claim_id": "c1",
+        "statute_citation": "UCC 3-104",
+        "holding_refs": [ /* HoldingRef objects from tool */ ],
+        "synthesis": "binding | persuasive | distinguishable | overruled | insufficient_authority",
+        "confidence": 0.9,
+        "graph_weight": 0.85
+      }
     }
   ]
 }
 
 Rules for populating claims:
 - List every factual assertion and legal rule stated in draft_text as a separate claim.
-- For fact/legal_rule claims, populate evidence[] from your tool call results (statute citations, tool outputs).
+- For fact/legal_rule claims, populate evidence[] from your tool call results (statute citations, tool outputs, holdings).
+- For legal_rule and interpretation claims you MUST populate interpretation_link from retrieve_holdings / retrieve_and_link.
 - interpretation and speculation claims MUST include an explicit marker in their text, e.g. "[interpretation]" or "[speculation]". If not naturally present in draft_text for those claims, add the marker to the claim.text field.
 - Assign severity: high = legal outcomes hinge on this; medium = important but not outcome-determinative; low = background context.
 - Keep claim texts concise (one sentence). Do not re-paste entire paragraphs.
@@ -109,6 +127,7 @@ CHECKS:
 2. Did it cite specific USC/UCC sections from tool outputs?
 3. Is the legal logic sound and properly sourced?
 4. Did it avoid unsupported legal interpretation?
+5. For legal_rule / interpretation claims: is there a valid InterpretationLink with sufficient graph_weight?
 
 OUTPUT: JSON object with exactly two fields:
 - "score": number from 0.0 to 1.0 (1.0 = perfect compliance)
@@ -223,6 +242,42 @@ const TOOL_DEFINITIONS = [
           state: { type: 'string' },
         },
         required: ['form_type'],
+      },
+    },
+  },
+  // ── Common Law Spectral Layer tools ──
+  {
+    type: 'function' as const,
+    function: {
+      name: 'retrieve_holdings',
+      description: 'Retrieve HoldingRefs from the CaseLawModernBERT + Qdrant spectral index (or seed fallback). Use for any legal_rule or interpretation claim. Returns holdings with stare_decisis_weight and treatment history (Shepardizing).',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Natural language or holding-focused query (e.g. "negotiable instrument unconditional promise UCC")' },
+          statute: { type: 'string', description: 'Optional statute filter e.g. "UCC 3-104"' },
+          jurisdiction: { type: 'string', description: 'Optional jurisdiction filter e.g. "US-11th-Circuit" or "AL"' },
+          top_k: { type: 'number', description: 'Number of holdings to return (default 5)' },
+        },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'retrieve_and_link',
+      description: 'One-shot: retrieve holdings for a statute + claim_id and return a ready InterpretationLink (required by Gate R5 for legal_rule / interpretation claims). Prefer this when you already know the claim_id and statute.',
+      parameters: {
+        type: 'object',
+        properties: {
+          claim_id: { type: 'string', description: 'The claim id this link will attach to (e.g. "c1")' },
+          statute_citation: { type: 'string', description: 'Statute being interpreted (e.g. "UCC 3-104")' },
+          query: { type: 'string', description: 'Retrieval query for holdings' },
+          jurisdiction: { type: 'string', description: 'Optional jurisdiction filter' },
+          top_k: { type: 'number' },
+        },
+        required: ['claim_id', 'statute_citation', 'query'],
       },
     },
   },
@@ -344,11 +399,41 @@ async function executeToolCall(
         }
         break;
       }
+      case 'retrieve_holdings': {
+        if (logAudit) logAudit('Common Law Retrieval', `Spectral search for holdings: "${args.query}"`, 'Arbiter', 'Pending');
+        const { holdings, step, source } = await retrieveHoldings({
+          query: args.query,
+          statute: args.statute,
+          jurisdiction: args.jurisdiction,
+          topK: args.top_k ?? 5,
+        });
+        result = {
+          ...step,
+          holdings,
+          source,
+          count: holdings.length,
+        };
+        break;
+      }
+      case 'retrieve_and_link': {
+        if (logAudit) logAudit('Common Law Link', `Building InterpretationLink for claim ${args.claim_id} / ${args.statute_citation}`, 'Arbiter', 'Pending');
+        const { link, step } = await retrieveAndLink(
+          args.claim_id,
+          args.statute_citation,
+          args.query,
+          { jurisdiction: args.jurisdiction, topK: args.top_k }
+        );
+        result = {
+          ...step,
+          interpretation_link: link,
+        };
+        break;
+      }
       default:
         result = { error: `Unknown tool: ${name}` };
     }
 
-    // Validate result against schema
+    // Validate result against schema when it looks like a ValidationStep
     if (result.rule_id) {
       const parsed = ValidationStepSchema.safeParse(result);
       if (!parsed.success) {
@@ -358,14 +443,14 @@ async function executeToolCall(
 
     if (logAudit && name !== 'consult_statute' && result.details) {
       logAudit(
-        `Result: ${name.replace('verify_', '').replace('analyze_', '')}`,
+        `Result: ${name.replace('verify_', '').replace('analyze_', '').replace('retrieve_', 'CL-')}`,
         result.details,
         'Arbiter',
         result.passed ? 'Verified' : 'Error'
       );
     }
   } catch (err: any) {
-    result = { error: err.message };
+    result = { error: err.message, rule_id: 'TOOL_EXECUTION_ERROR', passed: false, details: err.message, evidence_source: 'System', timestamp: new Date().toISOString() };
     if (logAudit) logAudit('Verification Error', `Tool execution failed: ${err.message}`, 'System', 'Error');
   }
 
@@ -434,6 +519,7 @@ function parseDraftResponse(rawContent: string): DraftResponse {
                 kind: ['fact','legal_rule','interpretation','instruction','speculation'].includes(c.kind) ? c.kind : 'interpretation',
                 severity: ['low','medium','high'].includes(c.severity) ? c.severity : 'medium',
                 evidence: Array.isArray(c.evidence) ? c.evidence : [],
+                interpretation_link: c.interpretation_link,
               }))
             : [],
         };
@@ -476,10 +562,11 @@ function buildRepairPrompt(draft: DraftResponse, failedReasons: string[]): strin
     `Instructions:\n` +
     `1. Rewrite draft_text to address every failed claim listed above.\n` +
     `2. Add explicit [interpretation] or [speculation] markers in draft_text for any interpretive claims.\n` +
-    `3. For unsupported factual/legal-rule claims: either cite a statute/tool result in evidence[], or rephrase with appropriate uncertainty (e.g. "arguably", "appears to").\n` +
-    `4. Do NOT introduce new unsupported facts.\n` +
-    `5. Preserve the sardonic, confident ArbiterOS tone — do not go full disclaimer-bot.\n` +
-    `6. Keep the response concise.\n\n` +
+    `3. For unsupported factual/legal-rule claims: either cite a statute/tool result/holding in evidence[], or rephrase with appropriate uncertainty (e.g. "arguably", "appears to").\n` +
+    `4. For any legal_rule or interpretation claim missing InterpretationLink: call retrieve_and_link (or use previous tool results) and populate interpretation_link.\n` +
+    `5. Do NOT introduce new unsupported facts.\n` +
+    `6. Preserve the sardonic, confident ArbiterOS tone — do not go full disclaimer-bot.\n` +
+    `7. Keep the response concise.\n\n` +
     `Output the corrected response as raw JSON only (same DraftResponseSchema format). No code fences.`
   );
 }
@@ -608,7 +695,7 @@ export const sendLegalMessage = async (
     ];
 
     try {
-      const repairResponse = await callChatCompletion(repairMessages, config, undefined, config.model);
+      const repairResponse = await callChatCompletion(repairMessages, config, TOOL_DEFINITIONS, config.model);
       const repairContent = repairResponse.choices?.[0]?.message?.content || finalText;
       const repairedDraft = parseDraftResponse(repairContent);
       const repairedDecision = await runValidationGate(repairedDraft, gateState ?? {});
