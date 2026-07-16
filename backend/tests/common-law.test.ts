@@ -37,17 +37,23 @@ afterEach(() => {
 
 describe('common law routes', () => {
   it('returns 1024-dimensional embeddings from /embed', async () => {
+    const longOpinion = Array.from(
+      { length: 250 },
+      (_, index) => `Full opinion section ${index} on unconditional promise and holder in due course.`,
+    ).join(' ');
     const app = await createApp();
     const response = await app.inject({
       method: 'POST',
       url: '/embed',
-      payload: { texts: ['negotiable instrument unconditional promise'] },
+      payload: {
+        texts: Array.from({ length: 9 }, (_, index) => `${longOpinion} ${index}`),
+      },
     });
 
     expect(response.statusCode).toBe(200);
     const payload = response.json() as { embeddings: number[][] };
-    expect(payload.embeddings).toHaveLength(1);
-    expect(payload.embeddings[0]).toHaveLength(1024);
+    expect(payload.embeddings).toHaveLength(9);
+    expect(payload.embeddings.every((embedding) => embedding.length === 1024)).toBe(true);
   });
 
   it('reports common-law collection health from Qdrant', async () => {

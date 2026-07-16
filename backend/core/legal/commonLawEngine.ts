@@ -64,6 +64,18 @@ export interface CommonLawQueryResult {
 }
 
 const FETCH_TIMEOUT_MS = 10_000;
+export const EMBED_BATCH_SIZE = 8;
+
+export function chunkItems<T>(items: T[], size: number): T[][] {
+  if (size <= 0) {
+    throw new Error('chunk size must be positive');
+  }
+
+  return Array.from(
+    { length: Math.ceil(items.length / size) },
+    (_, index) => items.slice(index * size, index * size + size),
+  );
+}
 
 function buildCorpusText(holding: SeedHolding): string {
   return [
@@ -205,9 +217,27 @@ function buildInterpretationLinks(holdings: HoldingSearchResult[]): Interpretati
   }));
 }
 
+export function reduceToTopologyDim(embedding: number[], targetDim = 8): number[] {
+  // Placeholder for the future topology mapping phase; keep live retrieval on full vectors for now.
+  void targetDim;
+  return [...embedding];
+}
+
+async function embedBatch(texts: string[], dimensions: number): Promise<number[][]> {
+  return texts.map((text) => deterministicEmbedding(text, dimensions));
+}
+
 export async function embedTexts(texts: string[]): Promise<number[][]> {
   const { COMMON_LAW_VECTOR_SIZE } = getConfig();
-  return texts.map((text) => deterministicEmbedding(text, COMMON_LAW_VECTOR_SIZE));
+  const batches = chunkItems(texts, EMBED_BATCH_SIZE);
+  const embeddings: number[][] = [];
+
+  for (const batch of batches) {
+    const batchEmbeddings = await embedBatch(batch, COMMON_LAW_VECTOR_SIZE);
+    embeddings.push(...batchEmbeddings);
+  }
+
+  return embeddings;
 }
 
 export async function checkCollectionHealth(): Promise<CommonLawHealth> {

@@ -42,6 +42,8 @@ Response shape:
 
 The current local implementation uses a deterministic 1024-dimensional embedder so the full local flow works without an external model runtime.
 
+The `/embed` route processes texts in fixed batches of `8`. Dynamic or text-length-based batching is intentionally avoided for now so local inference behavior stays predictable while the topology layer is still being mapped.
+
 ## Seed and Fallback Behavior
 
 Bootstrap script:
@@ -76,6 +78,12 @@ The Drive bootstrap path is separate from the small local seed path:
 - `bootstrap:caslaw-drive` streams a mounted external corpus into the same collection
 
 This keeps the validation layer from failing silently. If the collection is missing or empty, the system still produces explicit retrieval state and gate evidence.
+
+Topology preparation is limited to a placeholder helper in `backend/core/legal/commonLawEngine.ts`:
+
+- `reduceToTopologyDim(embedding, targetDim = 8)`
+
+It is currently a no-op stub and is not part of live retrieval yet.
 
 ## Gate Integration
 

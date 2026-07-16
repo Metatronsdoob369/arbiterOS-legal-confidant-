@@ -226,6 +226,8 @@ ArbiterOS now exposes the local CommonLawSpectralEngine directly from the backen
 - `POST /api/common-law/query` — holdings retrieval with interpretation links
 - `POST /api/common-law/bootstrap` — create/seed the local fallback holdings collection
 
+The local `/embed` path uses a fixed batch size of `8`. This is intentionally conservative and avoids dynamic batching so long-form opinions stay predictable on local hardware.
+
 ### Local bring-up
 
 ```bash
@@ -249,6 +251,8 @@ npm run bootstrap:caslaw-drive -- --drive-mount /mnt/gdrive/Caselaw --limit 5000
 ```
 
 The Drive bootstrap supports `.parquet`, `.jsonl`, `.ndjson`, and `.json` inputs and normalizes non-numeric record IDs into deterministic Qdrant-safe UUIDs.
+
+Topology mapping is not enabled yet. `backend/core/legal/commonLawEngine.ts` now exposes a `reduceToTopologyDim(embedding, targetDim = 8)` placeholder for the next phase, but current retrieval still operates on the full 1024-dimensional vectors.
 
 ### Browser / console checks
 
