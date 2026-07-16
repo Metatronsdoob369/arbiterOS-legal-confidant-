@@ -50,11 +50,30 @@ Bootstrap script:
 npm run bootstrap:common-law
 ```
 
+Google Drive bootstrap script:
+
+```bash
+rclone mount gdrive: /mnt/gdrive --daemon
+npm run bootstrap:caslaw-drive -- --drive-mount /mnt/gdrive/Caselaw --limit 5000
+```
+
+Supported mounted input formats:
+
+- `.parquet`
+- `.jsonl`
+- `.ndjson`
+- `.json`
+
 Behavior:
 
 1. Ensure the `case-law-holdings` collection exists in local Qdrant.
 2. Seed a small holdings corpus for UCC 3-104 and related common-law checks.
 3. Fall back to the seeded in-memory corpus if local Qdrant is unavailable.
+
+The Drive bootstrap path is separate from the small local seed path:
+
+- `bootstrap:common-law` seeds the built-in starter subset
+- `bootstrap:caslaw-drive` streams a mounted external corpus into the same collection
 
 This keeps the validation layer from failing silently. If the collection is missing or empty, the system still produces explicit retrieval state and gate evidence.
 

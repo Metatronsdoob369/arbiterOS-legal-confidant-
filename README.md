@@ -239,6 +239,17 @@ npm run bootstrap:common-law
 npm run dev
 ```
 
+### Google Drive bootstrap
+
+If you have a mounted Drive corpus, you can stream it directly into local Qdrant:
+
+```bash
+rclone mount gdrive: /mnt/gdrive --daemon
+npm run bootstrap:caslaw-drive -- --drive-mount /mnt/gdrive/Caselaw --limit 5000
+```
+
+The Drive bootstrap supports `.parquet`, `.jsonl`, `.ndjson`, and `.json` inputs and normalizes non-numeric record IDs into deterministic Qdrant-safe UUIDs.
+
 ### Browser / console checks
 
 ```js
