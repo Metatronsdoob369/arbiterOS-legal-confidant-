@@ -8,6 +8,9 @@
  * returned by the legal engine. If it ain't in the schema, it ain't real.
  * 
  * "Contracts > Prompts" — Domicile Architecture DNA
+ *
+ * Common Law extension: Holdings and InterpretationLinks make judicial
+ * treatment a first-class, graph-backed, spectral object.
  */
 
 import { z } from 'zod';
@@ -109,6 +112,89 @@ export const FormGenerationSchema = z.object({
 export type FormGenerationInput = z.infer<typeof FormGenerationSchema>;
 
 // ═══════════════════════════════════════════
+// COMMON LAW — HOLDING & TREATMENT GRAPH
+// ═══════════════════════════════════════════
+
+/**
+ * Shepardizing treatment types (positive / negative / neutral).
+ * Source: CourtListener / traditional Shepard's signals.
+ */
+export const TreatmentTypeSchema = z.enum([
+  'followed',
+  'distinguished',
+  'overruled',
+  'limited',
+  'criticized',
+  'questioned',
+  'superseded',
+  'neutral',
+  'vacated',
+  'reversed',
+]);
+export type TreatmentType = z.infer<typeof TreatmentTypeSchema>;
+
+export const CourtLevelSchema = z.enum([
+  'scotus',
+  'federal_circuit',
+  'federal_district',
+  'state_supreme',
+  'state_appellate',
+  'state_trial',
+]);
+export type CourtLevel = z.infer<typeof CourtLevelSchema>;
+
+export const TreatmentEdgeSchema = z.object({
+  citing_opinion_id: z.string(),
+  treatment: TreatmentTypeSchema,
+  citing_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  weight_contribution: z.number().min(-1).max(1).optional(),
+});
+export type TreatmentEdge = z.infer<typeof TreatmentEdgeSchema>;
+
+/**
+ * First-class common-law object. Holding is the law; statute is raw material.
+ */
+export const HoldingRefSchema = z.object({
+  opinion_id: z.string().describe('COLD / CourtListener unique ID or bluebook citation'),
+  holding_text: z.string().min(10).describe('Exact majority holding excerpt'),
+  statute_anchors: z.array(z.string()).default([]).describe('Linked statutes e.g. ["UCC 3-104"]'),
+  jurisdiction: z.string().describe('e.g. "US-11th-Circuit", "AL", "US-SCOTUS"'),
+  court_level: CourtLevelSchema,
+  decision_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  treatment_history: z.array(TreatmentEdgeSchema).default([]),
+  stare_decisis_weight: z.number().min(0).max(1).optional().describe('Computed graph weight'),
+  embedding: z.array(z.number()).optional().describe('CaseLawModernBERT vector (stored in Qdrant)'),
+  spectral_band: z.string().optional(),
+  provenance: z.object({
+    source: z.enum(['COLD', 'CourtListener', 'seed', 'manual']),
+    shard_id: z.string().optional(),
+    hash: z.string(),
+  }),
+}).strict();
+export type HoldingRef = z.infer<typeof HoldingRefSchema>;
+
+/**
+ * Links a claim to one or more holdings that interpret a statute.
+ * Gate requires this for legal_rule / interpretation claims.
+ */
+export const InterpretationLinkSchema = z.object({
+  claim_id: z.string(),
+  statute_citation: z.string(),
+  holding_refs: z.array(HoldingRefSchema).min(1),
+  synthesis: z.enum([
+    'binding',
+    'persuasive',
+    'distinguishable',
+    'overruled',
+    'insufficient_authority',
+  ]),
+  confidence: z.number().min(0).max(1).default(0.85),
+  spectral_distance: z.number().min(0).max(1).optional(),
+  graph_weight: z.number().min(0).max(1).describe('Aggregate stare_decisis_weight'),
+}).strict();
+export type InterpretationLink = z.infer<typeof InterpretationLinkSchema>;
+
+// ═══════════════════════════════════════════
 // AI RESPONSE CONTRACTS (What the AI gives back)
 // ═══════════════════════════════════════════
 
@@ -125,27 +211,23 @@ export const ChatResponseSchema = z.object({
 
 // ═══════════════════════════════════════════
 // VALIDATION GATE CONTRACTS
-// Contracts > Prompts: gate validates claims deterministically.
-// "If it ain't in the schema, it ain't real." — and now,
-// if it ain't backed by evidence, it ain't leaving the gate.
 // ═══════════════════════════════════════════
 
 /**
  * A single evidence reference backing an AI claim.
- * Ties every assertion to a verifiable source.
+ * Now includes 'holding' for common-law spectral objects.
  */
 export const EvidenceRefSchema = z.object({
-  kind: z.enum(['statute', 'library_item', 'evidence_node', 'tool_result', 'url'])
+  kind: z.enum(['statute', 'library_item', 'evidence_node', 'tool_result', 'url', 'holding'])
     .describe('Category of evidence source'),
-  ref: z.string().describe('Identifier or URL for the evidence source (e.g. "UCC 3-104", item ID, URL)'),
+  ref: z.string().describe('Identifier or URL for the evidence source (e.g. "UCC 3-104", opinion_id, URL)'),
   quote: z.string().optional().describe('Verbatim excerpt from the source that supports the claim'),
 });
 export type EvidenceRef = z.infer<typeof EvidenceRefSchema>;
 
 /**
  * An atomic claim extracted from the AI draft response.
- * Each claim must declare its kind, severity, and supporting evidence.
- * The gate validates claims deterministically — no model calls required.
+ * interpretation_link is required for legal_rule / interpretation under R5.
  */
 export const ClaimSchema = z.object({
   id: z.string().describe('Unique claim identifier within the response (e.g. "c1", "c2")'),
@@ -156,12 +238,13 @@ export const ClaimSchema = z.object({
     .describe('Risk severity if this claim is wrong: high = hard block or repair required'),
   evidence: z.array(EvidenceRefSchema).default([])
     .describe('Supporting evidence references; fact/legal_rule claims must have at least one'),
+  interpretation_link: InterpretationLinkSchema.optional()
+    .describe('Required for legal_rule and interpretation claims under R5 (common law)'),
 });
 export type Claim = z.infer<typeof ClaimSchema>;
 
 /**
  * The structured draft response produced by Arbiter before the gate processes it.
- * Separates the user-facing text from the machine-readable claim ledger.
  */
 export const DraftResponseSchema = z.object({
   draft_text: z.string().describe('The AI-drafted response text (markdown, with [CITATION:] and [SIGNATURE_FIELD:] tags as usual)'),
@@ -173,22 +256,12 @@ export const DraftResponseSchema = z.object({
 });
 export type DraftResponse = z.infer<typeof DraftResponseSchema>;
 
-/**
- * A single claim that failed gate validation, with the reason.
- */
 export const FailedClaimSchema = z.object({
   claim_id: z.string().describe('ID of the claim that failed'),
   reason: z.string().describe('Human-readable explanation of why the claim failed'),
 });
 export type FailedClaim = z.infer<typeof FailedClaimSchema>;
 
-/**
- * The final gate decision after validating a DraftResponse.
- * - pass: all claims verified; draft ships unchanged.
- * - soften: low/medium claims unsupported; gate adds uncertainty markers.
- * - block: high-severity failures; response replaced with verification-mode message.
- * - repair_request: fixable failures (e.g. unlabeled interpretation); one repair round runs.
- */
 export const GateDecisionSchema = z.object({
   decision: z.enum(['pass', 'soften', 'block', 'repair_request'])
     .describe('Gate outcome determining what reaches the user'),
