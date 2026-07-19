@@ -53,7 +53,18 @@ The main event. Ask it anything. Upload documents. Get clause-by-clause risk ana
 | `verify_negotiability` | UCC 3-104 negotiable instrument validation |
 | `analyze_clause_risks` | USC/UCC/Common Law risk scanning |
 | `consult_statute` | Retrieves raw statutory text from the Law Library |
-| `draft_verified_form` | Generates validated legal forms (Promissory Notes, Security Agreements, etc.) |
+| `draft_verified_form` | Generates validated legal forms (Promissory Notes, Security Agreements, etc.) via `/api/drafts` |
+
+### 📄 Local Word Export (SaaS-Free)
+Drafting stays on the ArbiterOS backend — no OpenCase, Google Docs, or Word add-ins.
+
+- Zod-contracted form templates (`FormGenerationSchema` discriminated union)
+- Core commercial set: `nda`, `service_agreement`, `consulting_agreement`, `ip_assignment` (plus UCC instruments)
+- R5 local validation stubs on commercial templates (CourtListener holdings deferred to spectral track)
+- `POST /api/drafts/forms` — validate + render markdown draft
+- `POST /api/drafts/export` — Word `.docx` only after validation passes
+- `GET /api/drafts/:id/download` — authenticated artifact download
+- Provenance slots reserved for upcoming spectral / CourtListener holdings
 
 ### 🔗 Evidence Board
 A visual whiteboard for connecting the dots. Drag nodes around. Draw connections between evidence, witnesses, statutes, and arguments. Build your conspiracy — *ahem*, case — visually.

@@ -83,30 +83,184 @@ export const ClauseAnalysisSchema = z.object({
 });
 
 // ═══════════════════════════════════════════
-// FORM GENERATION
+// FORM GENERATION (discriminated by form_type)
 // ═══════════════════════════════════════════
 
-export const FormGenerationSchema = z.object({
-  form_type: z.enum([
-    'promissory_note_ucc',
-    'security_agreement_ucc',
-    'bill_of_sale_ucc',
-    'contractor_agreement',
-  ]).describe('Type of legal form to generate'),
-  amount: z.number().optional(),
-  lender: z.string().optional(),
-  borrower: z.string().optional(),
-  seller: z.string().optional(),
-  buyer: z.string().optional(),
-  client: z.string().optional(),
-  contractor: z.string().optional(),
-  collateral: z.string().optional(),
-  goods_description: z.string().optional(),
-  services: z.string().optional(),
+const FormBaseFields = {
   date: z.string().optional(),
   state: z.string().optional(),
+};
+
+export const PromissoryNoteFormSchema = z.object({
+  form_type: z.literal('promissory_note_ucc'),
+  amount: z.number().positive(),
+  lender: z.string().trim().min(1),
+  borrower: z.string().trim().min(1),
+  ...FormBaseFields,
 });
+
+export const SecurityAgreementFormSchema = z.object({
+  form_type: z.literal('security_agreement_ucc'),
+  collateral: z.string().trim().min(4),
+  debtor: z.string().trim().min(1).optional(),
+  secured_party: z.string().trim().min(1).optional(),
+  obligation: z.string().optional(),
+  ...FormBaseFields,
+});
+
+export const BillOfSaleFormSchema = z.object({
+  form_type: z.literal('bill_of_sale_ucc'),
+  seller: z.string().trim().min(1),
+  buyer: z.string().trim().min(1),
+  amount: z.number().positive().optional(),
+  goods_description: z.string().trim().min(1),
+  ...FormBaseFields,
+});
+
+export const ContractorAgreementFormSchema = z.object({
+  form_type: z.literal('contractor_agreement'),
+  client: z.string().trim().min(1),
+  contractor: z.string().trim().min(1),
+  services: z.string().trim().min(1),
+  ...FormBaseFields,
+});
+
+export const NdaFormSchema = z.object({
+  form_type: z.literal('nda'),
+  disclosing_party: z.string().trim().min(1),
+  receiving_party: z.string().trim().min(1),
+  purpose: z.string().trim().min(3),
+  term_years: z.number().positive().max(50),
+  mutual: z.boolean().optional().default(true),
+  ...FormBaseFields,
+});
+
+export const ServiceAgreementFormSchema = z.object({
+  form_type: z.literal('service_agreement'),
+  client: z.string().trim().min(1),
+  provider: z.string().trim().min(1),
+  services: z.string().trim().min(3),
+  fee: z.number().nonnegative().optional(),
+  payment_terms: z.string().trim().min(1).optional(),
+  start_date: z.string().optional(),
+  end_date: z.string().optional(),
+  ...FormBaseFields,
+});
+
+export const ConsultingAgreementFormSchema = z.object({
+  form_type: z.literal('consulting_agreement'),
+  client: z.string().trim().min(1),
+  consultant: z.string().trim().min(1),
+  scope: z.string().trim().min(3),
+  fee: z.number().nonnegative().optional(),
+  retainer: z.number().nonnegative().optional(),
+  deliverables: z.string().trim().min(1).optional(),
+  ...FormBaseFields,
+});
+
+export const IpAssignmentFormSchema = z.object({
+  form_type: z.literal('ip_assignment'),
+  assignor: z.string().trim().min(1),
+  assignee: z.string().trim().min(1),
+  work_description: z.string().trim().min(3),
+  consideration: z.string().trim().min(1).optional(),
+  effective_date: z.string().optional(),
+  ...FormBaseFields,
+});
+
+export const FormGenerationSchema = z.discriminatedUnion('form_type', [
+  PromissoryNoteFormSchema,
+  SecurityAgreementFormSchema,
+  BillOfSaleFormSchema,
+  ContractorAgreementFormSchema,
+  NdaFormSchema,
+  ServiceAgreementFormSchema,
+  ConsultingAgreementFormSchema,
+  IpAssignmentFormSchema,
+]);
 export type FormGenerationInput = z.infer<typeof FormGenerationSchema>;
+export type PromissoryNoteFormInput = z.infer<typeof PromissoryNoteFormSchema>;
+export type SecurityAgreementFormInput = z.infer<typeof SecurityAgreementFormSchema>;
+export type BillOfSaleFormInput = z.infer<typeof BillOfSaleFormSchema>;
+export type ContractorAgreementFormInput = z.infer<typeof ContractorAgreementFormSchema>;
+export type NdaFormInput = z.infer<typeof NdaFormSchema>;
+export type ServiceAgreementFormInput = z.infer<typeof ServiceAgreementFormSchema>;
+export type ConsultingAgreementFormInput = z.infer<typeof ConsultingAgreementFormSchema>;
+export type IpAssignmentFormInput = z.infer<typeof IpAssignmentFormSchema>;
+
+// ═══════════════════════════════════════════
+// DOCUMENT DRAFT / WORD EXPORT CONTRACTS
+// Provenance slots reserved for spectral / CourtListener later.
+// ═══════════════════════════════════════════
+
+export const DocumentCitationSchema = z.object({
+  label: z.string(),
+  citation: z.string(),
+  url: z.string().optional(),
+  quote: z.string().optional(),
+});
+export type DocumentCitation = z.infer<typeof DocumentCitationSchema>;
+
+export const DocumentHoldingRefSchema = z.object({
+  holding_id: z.string(),
+  court: z.string().optional(),
+  decision_date: z.string().optional(),
+  citation: z.string(),
+  text: z.string(),
+});
+export type DocumentHoldingRef = z.infer<typeof DocumentHoldingRefSchema>;
+
+export const DocumentSourceRefSchema = z.object({
+  kind: z.enum(['statute', 'opinion', 'docket', 'filing', 'library_item', 'url']),
+  ref: z.string(),
+  label: z.string().optional(),
+});
+export type DocumentSourceRef = z.infer<typeof DocumentSourceRefSchema>;
+
+export const DocumentProvenanceSchema = z.object({
+  citations: z.array(DocumentCitationSchema).default([]),
+  holdings: z.array(DocumentHoldingRefSchema).default([]),
+  source_refs: z.array(DocumentSourceRefSchema).default([]),
+});
+export type DocumentProvenance = z.infer<typeof DocumentProvenanceSchema>;
+
+export const DocumentDraftSchema = z.object({
+  id: z.string(),
+  form: FormGenerationSchema,
+  markdown: z.string(),
+  validation_steps: z.array(ValidationStepSchema),
+  passed: z.boolean(),
+  provenance: DocumentProvenanceSchema.default({
+    citations: [],
+    holdings: [],
+    source_refs: [],
+  }),
+  created_at: z.string(),
+});
+export type DocumentDraft = z.infer<typeof DocumentDraftSchema>;
+
+export const DocumentExportRequestSchema = z.union([
+  z.object({
+    draft_id: z.string().min(1),
+    format: z.literal('docx'),
+  }).strict(),
+  z.object({
+    draft: DocumentDraftSchema,
+    format: z.literal('docx'),
+  }).strict(),
+]);
+export type DocumentExportRequest = z.infer<typeof DocumentExportRequestSchema>;
+
+export const DocumentExportResultSchema = z.object({
+  draft_id: z.string(),
+  processed_file_id: z.string(),
+  filename: z.string(),
+  mime_type: z.literal('application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+  size_bytes: z.number().int().nonnegative(),
+  checksum: z.string(),
+  artifact_path: z.string(),
+});
+export type DocumentExportResult = z.infer<typeof DocumentExportResultSchema>;
 
 // ═══════════════════════════════════════════
 // AI RESPONSE CONTRACTS (What the AI gives back)

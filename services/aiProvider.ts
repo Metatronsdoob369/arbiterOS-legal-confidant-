@@ -11,6 +11,7 @@ import { Message, Role, AuditEntry } from '../types';
 import {
   AuditScoreSchema,
   ValidationStepSchema,
+  FormGenerationSchema,
   DraftResponseSchema,
   ClaimSchema,
   type AuditScore,
@@ -18,17 +19,18 @@ import {
   type LibraryItem,
   type EvidenceNode,
   type GateDecision,
+  type ValidationStep as SchemaValidationStep,
 } from '../schemas/legalSchemas';
 import {
   verifyOrdinary,
   verifyNecessary,
   verifyNegotiability,
   analyzeContractRisks,
-  generateVerifiedForm,
   consultStatute,
   type ValidationStep,
   type InstrumentTerms,
 } from './legalEngine';
+import { createDraftForm } from './draftsClient';
 import { commonLawEngine } from './commonLawEngine';
 import { runValidationGate, type GateInputState } from './validationGate';
 
@@ -226,13 +228,22 @@ const TOOL_DEFINITIONS = [
     type: 'function' as const,
     function: {
       name: 'draft_verified_form',
-      description: 'Generates a validated legal form template (Promissory Note, Security Agreement, etc.).',
+      description: 'Generates a validated legal form template. Required fields depend on form_type (UCC instruments, NDA, service/consulting, IP assignment).',
       parameters: {
         type: 'object',
         properties: {
           form_type: {
             type: 'string',
-            enum: ['promissory_note_ucc', 'security_agreement_ucc', 'bill_of_sale_ucc', 'contractor_agreement'],
+            enum: [
+              'promissory_note_ucc',
+              'security_agreement_ucc',
+              'bill_of_sale_ucc',
+              'contractor_agreement',
+              'nda',
+              'service_agreement',
+              'consulting_agreement',
+              'ip_assignment',
+            ],
           },
           amount: { type: 'number' },
           lender: { type: 'string' },
@@ -241,9 +252,31 @@ const TOOL_DEFINITIONS = [
           buyer: { type: 'string' },
           client: { type: 'string' },
           contractor: { type: 'string' },
+          provider: { type: 'string' },
+          consultant: { type: 'string' },
+          debtor: { type: 'string' },
+          secured_party: { type: 'string' },
+          obligation: { type: 'string' },
           collateral: { type: 'string' },
           goods_description: { type: 'string' },
           services: { type: 'string' },
+          disclosing_party: { type: 'string' },
+          receiving_party: { type: 'string' },
+          purpose: { type: 'string' },
+          term_years: { type: 'number' },
+          mutual: { type: 'boolean' },
+          fee: { type: 'number' },
+          payment_terms: { type: 'string' },
+          start_date: { type: 'string' },
+          end_date: { type: 'string' },
+          scope: { type: 'string' },
+          retainer: { type: 'number' },
+          deliverables: { type: 'string' },
+          assignor: { type: 'string' },
+          assignee: { type: 'string' },
+          work_description: { type: 'string' },
+          consideration: { type: 'string' },
+          effective_date: { type: 'string' },
           date: { type: 'string' },
           state: { type: 'string' },
         },
@@ -329,7 +362,8 @@ async function callChatCompletion(
 async function executeToolCall(
   name: string,
   args: any,
-  logAudit?: (action: string, details: string, source: AuditEntry['source'], status?: AuditEntry['status']) => void
+  logAudit?: (action: string, details: string, source: AuditEntry['source'], status?: AuditEntry['status']) => void,
+  onDraftCreated?: (draftId: string, passed: boolean) => void,
 ): Promise<any> {
   let result: ValidationStep | any = {};
 
@@ -367,11 +401,34 @@ async function executeToolCall(
       }
       case 'draft_verified_form': {
         if (logAudit) logAudit('Form Generation', `Drafting validated ${args.form_type}...`, 'Arbiter', 'Pending');
-        const formResult = await generateVerifiedForm(args.form_type, args);
-        result = formResult.validation;
-        if (formResult.validation.passed) {
-          result.generated_content = formResult.markdown;
+        const parsedForm = FormGenerationSchema.safeParse(args);
+        if (!parsedForm.success) {
+          result = {
+            rule_id: 'FORM_GEN',
+            passed: false,
+            details: `FAILED: Invalid form payload — ${parsedForm.error.issues.map((i) => i.message).join('; ')}`,
+            evidence_source: 'FormGenerationSchema',
+            timestamp: new Date().toISOString(),
+          };
+          break;
         }
+        const formResult = await createDraftForm(parsedForm.data);
+        const primaryStep: SchemaValidationStep = formResult.validation_steps[0] ?? {
+          rule_id: 'FORM_GEN',
+          passed: formResult.passed,
+          details: formResult.passed ? 'Form generated.' : 'Form generation failed.',
+          evidence_source: 'System',
+          timestamp: new Date().toISOString(),
+        };
+        result = {
+          ...primaryStep,
+          draft_id: formResult.draft_id,
+          validation_steps: formResult.validation_steps,
+        };
+        if (formResult.passed) {
+          result.generated_content = formResult.generated_content ?? formResult.markdown;
+        }
+        onDraftCreated?.(formResult.draft_id, formResult.passed);
         break;
       }
       default:
@@ -418,6 +475,8 @@ async function executeToolCall(
 export interface ChatResponse {
   text: string;
   audioData?: Uint8Array;
+  /** Passed form drafts available for Word download */
+  draftIds?: string[];
 }
 
 export interface CriticResponse {
@@ -568,6 +627,7 @@ export const sendLegalMessage = async (
   let turns = 0;
   const maxTurns = 5;
   let finalText = '';
+  const draftIds: string[] = [];
 
   while (turns <= maxTurns) {
     const modelToUse = isShadowCounsel
@@ -601,7 +661,16 @@ export const sendLegalMessage = async (
       // Execute each tool call and add results
       for (const toolCall of assistantMessage.tool_calls) {
         const args = JSON.parse(toolCall.function.arguments);
-        const result = await executeToolCall(toolCall.function.name, args, logAudit);
+        const result = await executeToolCall(
+          toolCall.function.name,
+          args,
+          logAudit,
+          (draftId, passed) => {
+            if (passed && !draftIds.includes(draftId)) {
+              draftIds.push(draftId);
+            }
+          },
+        );
 
         messages.push({
           role: 'tool',
@@ -715,7 +784,10 @@ export const sendLegalMessage = async (
     );
   }
 
-  return { text: gateDecision.final_text };
+  return {
+    text: gateDecision.final_text,
+    draftIds: draftIds.length > 0 ? draftIds : undefined,
+  };
 };
 
 /**

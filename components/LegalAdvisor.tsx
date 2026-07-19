@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Message, Role } from '../types';
 import { sendLegalMessage, runArbiterAudit } from '../services/aiProvider';
+import { draftDownloadUrl } from '../services/draftsClient';
 import { decodeAudioData, playAudioBuffer } from '../services/audio';
 import { useAudit } from '../contexts/AuditContext';
 import { ArbiterBadge } from './ArbiterBadge';
@@ -142,7 +143,8 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
         role: Role.MODEL,
         text: response.text,
         timestamp: new Date(),
-        audioData: response.audioData
+        audioData: response.audioData,
+        draftIds: response.draftIds,
       };
 
       setHistory(prev => [...prev, modelMsg]);
@@ -169,6 +171,28 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
     } finally {
       setIsLoading(false);
       setLoadingStage('');
+    }
+  };
+
+  const handleDownloadDraft = async (draftId: string) => {
+    try {
+      const response = await fetch(draftDownloadUrl(draftId), { credentials: 'include' });
+      if (!response.ok) {
+        throw new Error(`Download failed (${response.status})`);
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `draft-${draftId.slice(0, 8)}.docx`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      addEntry('Word Export', `Downloaded draft ${draftId.slice(0, 8)}`, 'Advisor', 'Verified');
+    } catch (error) {
+      console.error(error);
+      addEntry('Word Export', 'Failed to download .docx', 'System', 'Error');
     }
   };
 
@@ -548,6 +572,26 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
                 <div className="text-sm leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
                    {renderMessageText(msg.text)}
                 </div>
+                {msg.draftIds && msg.draftIds.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2" data-testid="draft-download-actions">
+                    {msg.draftIds.map((draftId) => (
+                      <button
+                        key={draftId}
+                        type="button"
+                        data-testid={`download-docx-${draftId}`}
+                        onClick={() => handleDownloadDraft(draftId)}
+                        className="px-3 py-1.5 text-[10px] uppercase tracking-widest rounded-md transition-colors"
+                        style={{
+                          background: 'rgba(212,175,55,0.12)',
+                          border: '1px solid #d4af37',
+                          color: '#d4af37',
+                        }}
+                      >
+                        Download .docx
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {msg.audioData && (

@@ -12,6 +12,8 @@ export interface Message {
   images?: string[]; // base64 data URIs
   audioData?: Uint8Array; // Raw PCM for TTS playback
   isError?: boolean;
+  /** Passed document drafts available for local Word download */
+  draftIds?: string[];
 }
 
 export type ImageSize = '1K' | '2K' | '4K';
