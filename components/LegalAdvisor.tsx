@@ -19,7 +19,7 @@ const MessageBubble = React.memo<{
   msg: Message;
   nightMode: boolean;
   isSpeaking: boolean;
-  onPlayAudio: (audioData: Uint8Array) => void
+  onPlayAudio: (msgId: string, audioData: Uint8Array) => void
 }>(({ msg, nightMode, isSpeaking, onPlayAudio }) => {
   const renderMessageText = (text: string) => {
     const parts = text.split(/(\[(?:SIGNATURE_FIELD|CITATION):.*?\])/g);
@@ -131,7 +131,7 @@ const MessageBubble = React.memo<{
         {msg.audioData && (
           <div className="mt-2 flex items-center gap-2 text-[9px] uppercase tracking-widest cursor-pointer transition-colors"
                style={{ color: '#5a4030' }}
-               onClick={() => onPlayAudio(msg.audioData!)}>
+               onClick={() => onPlayAudio(msg.id, msg.audioData!)}>
              <span className="w-2 h-2 border border-current rounded-full flex items-center justify-center">
                {isSpeaking ? <span className="w-1 h-1 bg-current rounded-full animate-ping"/> : <span className="w-1 h-1 bg-current rounded-full"/>}
              </span>
@@ -151,7 +151,7 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
   const [selectedFiles, setSelectedFiles] = useState<StagedFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState<string>(''); 
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
   const [searchEnabled, setSearchEnabled] = useState(false);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [shadowCounsel, setShadowCounsel] = useState(false);
@@ -291,7 +291,7 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
         }
       );
 
-      if (response.audioData) playAudioResponse(response.audioData);
+      if (response.audioData) playAudioResponse(modelMsg.id, response.audioData);
 
     } catch (error) {
       console.error(error);
@@ -302,19 +302,19 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
     }
   };
 
-  const playAudioResponse = React.useCallback(async (audioData: Uint8Array) => {
+  const playAudioResponse = React.useCallback(async (msgId: string, audioData: Uint8Array) => {
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
     }
     if (audioContextRef.current.state === 'suspended') await audioContextRef.current.resume();
 
     try {
-      setIsSpeaking(true);
+      setSpeakingMsgId(msgId);
       const buffer = await decodeAudioData(audioData, audioContextRef.current);
       const source = playAudioBuffer(audioContextRef.current, buffer);
-      source.onended = () => setIsSpeaking(false);
+      source.onended = () => setSpeakingMsgId(null);
     } catch (e) {
-      setIsSpeaking(false);
+      setSpeakingMsgId(null);
     }
   }, []);
 
@@ -579,7 +579,7 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
             key={msg.id}
             msg={msg}
             nightMode={nightMode}
-            isSpeaking={isSpeaking}
+            isSpeaking={speakingMsgId === msg.id}
             onPlayAudio={playAudioResponse}
           />
         ))}

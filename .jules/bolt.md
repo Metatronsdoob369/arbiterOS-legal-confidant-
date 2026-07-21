@@ -7,3 +7,6 @@
 ## 2026-07-05 - [React.memo missing on heavy markdown lists]
 **Learning:** Rendering complex markdown in a list without `React.memo` combined with a fast-changing state like an input field causes massive lag, because typing triggers a full re-parse and re-render of the entire chat history.
 **Action:** Extract list items that do heavy rendering (like markdown parsing) into their own component and wrap them with `React.memo`. Ensure props like callbacks are wrapped in `React.useCallback` in the parent so they don't break memoization.
+## 2026-07-21 - [O(1) Audio State Updates in LegalAdvisor]
+**Learning:** Passing a global boolean `isSpeaking` state to a list of memoized `MessageBubble` components causes O(N) re-renders (the entire chat history) whenever audio starts or stops, destroying the benefits of `React.memo`.
+**Action:** Replace the global boolean state with an ID-based state (`speakingMsgId`). By passing `isSpeaking={speakingMsgId === msg.id}`, only the specific bubble playing audio re-renders (O(1) instead of O(N)).
