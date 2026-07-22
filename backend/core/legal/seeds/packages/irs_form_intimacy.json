@@ -1,0 +1,146 @@
+{
+  "package_id": "irs_form_intimacy",
+  "title": "IRS Form Intimacy",
+  "outcome": "Know which IRS forms exist in sensitive ranges, where official PDFs live, and which fill strategies are institutional versus contested.",
+  "course_kind": "primer",
+  "vector_ready": false,
+  "source_notebooks": [
+    "Tax and property TaxSystem Implementation",
+    "The Unconfused Man and his Person"
+  ],
+  "steps": [
+    {
+      "id": "ifi-catalog-habit",
+      "title": "Use IRS.gov as the catalog of record",
+      "order": 1,
+      "forms": [],
+      "lines": [
+        {
+          "line_id": "ifi-official-source",
+          "text": "Prefer current forms and instructions published at IRS.gov; note the revision date on every download."
+        }
+      ],
+      "speed_bumps": [
+        "Third-party reprints and out-of-date software packages may omit sparse or infrequently used forms."
+      ],
+      "flags": [],
+      "epistemic": "settled"
+    },
+    {
+      "id": "ifi-8xxx-sensitivity",
+      "title": "Map 8xxx-range sensitivity",
+      "order": 2,
+      "forms": [
+        {
+          "form_id": "8300",
+          "title": "Form 8300 — Report of Cash Payments Over $10,000",
+          "official_url": "https://www.irs.gov/forms-pubs/about-form-8300",
+          "sensitivity": "sensitive"
+        },
+        {
+          "form_id": "8594",
+          "title": "Form 8594 — Asset Acquisition Statement",
+          "official_url": "https://www.irs.gov/forms-pubs/about-form-8594",
+          "sensitivity": "sparse"
+        },
+        {
+          "form_id": "8832",
+          "title": "Form 8832 — Entity Classification Election",
+          "official_url": "https://www.irs.gov/forms-pubs/about-form-8832",
+          "sensitivity": "sparse"
+        }
+      ],
+      "lines": [
+        {
+          "line_id": "ifi-8xxx-band",
+          "text": "Many Form 8xxx series items are information, fiduciary, foreign, or election forms that consumer tax software underserves; treat sparse and sensitive bands as requiring the official instructions."
+        }
+      ],
+      "speed_bumps": [
+        "Form availability and filing thresholds change; always check the current instructions for who must file and where."
+      ],
+      "flags": [],
+      "epistemic": "institutional"
+    },
+    {
+      "id": "ifi-8822b-official",
+      "title": "Form 8822-B — official purpose",
+      "order": 3,
+      "forms": [
+        {
+          "form_id": "8822-B",
+          "title": "Form 8822-B — Change of Address or Responsible Party — Business",
+          "official_url": "https://www.irs.gov/forms-pubs/about-form-8822-b",
+          "sensitivity": "common"
+        }
+      ],
+      "lines": [
+        {
+          "line_id": "ifi-8822b-purpose",
+          "text": "Use Form 8822-B to notify the IRS of a business address change or a change in the responsible party, following the current form instructions and mailing address."
+        }
+      ],
+      "speed_bumps": [
+        "Responsible-party rules and where to file depend on the entity type and the reason for the change; read the instructions before mailing."
+      ],
+      "flags": [],
+      "epistemic": "institutional",
+      "delivery": {
+        "method": "Mail or electronic path stated in current Form 8822-B instructions",
+        "destination": "IRS address listed for the applicable box on the form"
+      }
+    },
+    {
+      "id": "ifi-8822b-contested",
+      "title": "Inventory contested 8822-B fill strategies separately",
+      "order": 4,
+      "forms": [
+        {
+          "form_id": "8822-B",
+          "title": "Form 8822-B — Change of Address or Responsible Party — Business",
+          "official_url": "https://www.irs.gov/forms-pubs/about-form-8822-b",
+          "sensitivity": "sensitive"
+        }
+      ],
+      "lines": [
+        {
+          "line_id": "ifi-8822b-contested-fill",
+          "text": "Fills that rename the responsible party to a Treasury office or relocate the business domicile to a Treasury street address as a jurisdictional strategy are contested and are not the default institutional use of Form 8822-B."
+        }
+      ],
+      "speed_bumps": [
+        "Official instructions describe address and responsible-party changes for the business; they do not authorize unverified relocation theories."
+      ],
+      "flags": [
+        "Contested — inventory with caveats; not settled procedure.",
+        "Do not treat contested responsible-party fills as the recommended playbook."
+      ],
+      "epistemic": "contested"
+    },
+    {
+      "id": "ifi-frivolous-screen",
+      "title": "Know IRM frivolous and fictitious-instrument screens",
+      "order": 5,
+      "forms": [],
+      "lines": [
+        {
+          "line_id": "ifi-irm-frivolous",
+          "text": "IRS internal materials describe screening for frivolous returns and fictitious obligations; those screens are reasons for flags, not targets to game."
+        }
+      ],
+      "evidence_hooks": [
+        {
+          "kind": "irm",
+          "ref": "IRM 25.25.10 Frivolous Return Program (confirm current citation)"
+        }
+      ],
+      "speed_bumps": [
+        "Penalties and enforcement paths attach to frivolous positions and fictitious instruments."
+      ],
+      "flags": [
+        "IRM frivolous / fictitious-instrument screens — inventory only, not a recommended playbook."
+      ],
+      "epistemic": "perilous"
+    }
+  ]
+}

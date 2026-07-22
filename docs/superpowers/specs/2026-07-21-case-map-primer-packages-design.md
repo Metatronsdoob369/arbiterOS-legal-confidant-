@@ -77,8 +77,8 @@ v1 ships these named packs as transition-procedure courses.
 | 5 | `property_tax_procedure` | Property Tax Procedure | Assessment protest, pay-under-protest/refund, redemption petitions (e.g. Alabama Code 40 paths) as procedural map + form packages. |
 | 6 | `irs_form_intimacy` | IRS Form Intimacy (8xxx focus) | Catalog + sensitivity bands for sparse/sensitive ranges. **Named hook: Form 8822-B** (Change of Address or Responsible Party — Business) — official purpose and fill paths as `institutional`; contested “jurisdictional relocation / Treasury as responsible party” fills tagged `contested`/`perilous`, never default. |
 
-**v1 ship target:** packs **1–4**.  
-**Next primers:** 5–6 once schema + Case Map UI consume packs.
+**v1 ship target:** packs **1–4** (implemented).  
+**Next primers:** packs **5–6** (`property_tax_procedure`, `irs_form_intimacy`) — **implemented** as seed JSON on the same loader/Case Map path.
 
 Adding a new pack after this lands = new seed JSON + optional Register lines + optional Library sources — not a new app area.
 

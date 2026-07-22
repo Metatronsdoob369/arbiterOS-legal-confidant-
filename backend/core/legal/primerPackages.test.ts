@@ -65,11 +65,13 @@ describe('primerPackages loader', () => {
     __resetPrimerPackagesCacheForTests();
   });
 
-  it('lists the four v1 primer package_ids', () => {
+  it('lists all six primer package_ids', () => {
     const ids = listPrimerPackages().map((p) => p.package_id).sort();
     expect(ids).toEqual([
       'contract_navigation',
+      'irs_form_intimacy',
       'proper_debt_discharge',
+      'property_tax_procedure',
       'securities_control',
       'transition_essentials',
     ]);
@@ -92,5 +94,24 @@ describe('primerPackages loader', () => {
     expect(tagged.every((step) => step.flags.length > 0 || step.speed_bumps.length > 0)).toBe(
       true,
     );
+  });
+
+  it('loads property_tax_procedure with institutional protest or redemption steps', () => {
+    const pack = getPrimerPackage('property_tax_procedure');
+    expect(pack.title).toBe('Property Tax Procedure');
+    expect(pack.steps.length).toBeGreaterThanOrEqual(3);
+    expect(pack.steps.some((step) => step.epistemic === 'institutional')).toBe(true);
+  });
+
+  it('loads irs_form_intimacy with Form 8822-B and tags contested fills', () => {
+    const pack = getPrimerPackage('irs_form_intimacy');
+    expect(pack.title).toBe('IRS Form Intimacy');
+    const form8822 = pack.steps.flatMap((step) => step.forms).find((form) => form.form_id === '8822-B');
+    expect(form8822?.title).toMatch(/8822-B|Change of Address/i);
+    const tagged = pack.steps.filter(
+      (step) => step.epistemic === 'contested' || step.epistemic === 'perilous',
+    );
+    expect(tagged.length).toBeGreaterThan(0);
+    expect(tagged.every((step) => step.flags.length > 0)).toBe(true);
   });
 });
