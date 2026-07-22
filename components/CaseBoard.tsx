@@ -1,162 +1,207 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import type { EpistemicBand, PackageStep, PrimerPackage } from '../schemas/legalSchemas';
+import { listPackages } from '../services/packagesClient';
 
-type Status = 'discovery' | 'analysis' | 'drafting' | 'execution';
+const badgeStyles: Record<EpistemicBand, string> = {
+  settled: 'border-[#756958] bg-[#3d2b1f]/60 text-[#ded5c4]',
+  institutional: 'border-[#5c5348] bg-[#2a211b] text-[#c6bda9]',
+  contested: 'border-[#9b762e] bg-[#5c4217]/50 text-[#f1ce7b]',
+  perilous: 'border-[#9b4944] bg-[#572724]/60 text-[#ffb4ac]',
+};
 
-interface Task {
-  id: string;
-  content: string;
-  category: 'evidence' | 'legal' | 'risk';
-  status: Status;
+function sortSteps(steps: PackageStep[]) {
+  return [...steps].sort((left, right) => left.order - right.order);
 }
 
-const COLUMNS: { id: Status; label: string; color: string }[] = [
-  { id: 'discovery', label: 'Discovery & Evidence', color: 'border-blue-500' },
-  { id: 'analysis', label: 'Legal Analysis', color: 'border-yellow-500' },
-  { id: 'drafting', label: 'Drafting & Review', color: 'border-indigo-500' },
-  { id: 'execution', label: 'Execution & Filing', color: 'border-green-500' },
-];
-
-const INITIAL_TASKS: Task[] = [
-  { id: '1', content: 'Upload Promissory Note for UCC Scan', category: 'evidence', status: 'discovery' },
-  { id: '2', content: 'Identify Governing State Law', category: 'legal', status: 'discovery' },
-  { id: '3', content: 'Analyze "Confession of Judgment" Risk', category: 'risk', status: 'analysis' },
-  { id: '4', content: 'Verify Negotiability (UCC 3-104)', category: 'legal', status: 'analysis' },
-  { id: '5', content: 'Draft Security Agreement', category: 'legal', status: 'drafting' },
-];
-
 export const CaseBoard: React.FC = () => {
-  const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
-  const [newTaskContent, setNewTaskContent] = useState('');
-  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [packages, setPackages] = useState<PrimerPackage[]>([]);
+  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
+  const [completedSteps, setCompletedSteps] = useState<Record<string, boolean>>({});
+  const [error, setError] = useState<string | null>(null);
 
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
-    setDraggedTaskId(taskId);
-    e.dataTransfer.effectAllowed = 'move';
-  };
+  useEffect(() => {
+    let active = true;
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault(); // Necessary to allow dropping
-  };
+    void listPackages()
+      .then((nextPackages) => {
+        if (!active) return;
+        setPackages(nextPackages);
+        setSelectedPackageId((currentId) => currentId ?? nextPackages[0]?.package_id ?? null);
+      })
+      .catch((cause: unknown) => {
+        if (active) {
+          setError(cause instanceof Error ? cause.message : 'Unable to load primer packages.');
+        }
+      });
 
-  const handleDrop = (e: React.DragEvent, status: Status) => {
-    e.preventDefault();
-    if (draggedTaskId) {
-      setTasks(prev => prev.map(t => 
-        t.id === draggedTaskId ? { ...t, status } : t
-      ));
-      setDraggedTaskId(null);
-    }
-  };
-
-  const addTask = () => {
-    if (!newTaskContent.trim()) return;
-    const newTask: Task = {
-      id: Date.now().toString(),
-      content: newTaskContent,
-      category: 'legal',
-      status: 'discovery'
+    return () => {
+      active = false;
     };
-    setTasks([...tasks, newTask]);
-    setNewTaskContent('');
-  };
+  }, []);
 
-  const deleteTask = (id: string) => {
-    setTasks(tasks.filter(t => t.id !== id));
-  };
-
-  const getCategoryColor = (cat: Task['category']) => {
-    switch (cat) {
-      case 'evidence': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
-      case 'legal': return 'text-neutral-400 bg-neutral-800 border-neutral-700';
-      case 'risk': return 'text-red-400 bg-red-400/10 border-red-400/20';
-    }
-  };
+  const selectedPackage = packages.find((item) => item.package_id === selectedPackageId);
 
   return (
-    <div data-testid="view-case-board" className="h-full flex flex-col bg-black font-mono p-4 md:p-8 overflow-hidden">
-      {/* Header */}
-      <div className="mb-8 border-b border-neutral-800 pb-6 flex justify-between items-end">
-        <div>
-          <h2 data-testid="heading-case-board" className="text-3xl font-bold text-white mb-2 uppercase tracking-tight">Strategic Case Map</h2>
-          <p className="text-neutral-500 text-xs tracking-wider">
-            Drag and drop to organize your legal strategy. Build your map through research.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <input 
-            type="text" 
-            value={newTaskContent}
-            onChange={(e) => setNewTaskContent(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addTask()}
-            placeholder="Add new research item..."
-            className="bg-neutral-900 border border-neutral-700 text-white text-xs px-4 py-2 rounded-md outline-none focus:border-white min-w-[200px]"
-          />
-          <button 
-            onClick={addTask}
-            className="px-4 py-2 bg-white text-black text-xs font-bold uppercase rounded-md hover:bg-neutral-200"
-          >
-            Add Node
-          </button>
-        </div>
-      </div>
+    <main
+      data-testid="view-case-board"
+      className="h-full overflow-y-auto bg-[#0d0806] px-4 py-6 text-[#e8dfce] md:px-8 md:py-10"
+    >
+      <header className="mb-8 border-b border-[#3d2b1f] pb-6">
+        <p className="mb-2 font-mono text-xs uppercase tracking-[0.2em] text-[#d4af37]">Private Confidant</p>
+        <h2 data-testid="heading-case-board" className="font-['Merriweather'] text-3xl font-bold text-[#f3ead7]">
+          Case Map
+        </h2>
+        <p className="mt-2 text-sm text-[#b8aa95]">Primer packages — procedural goals</p>
+      </header>
 
-      {/* Board */}
-      <div className="flex-1 overflow-x-auto overflow-y-hidden">
-        <div className="flex gap-6 h-full min-w-[1000px]">
-          {COLUMNS.map(column => (
-            <div 
-              key={column.id}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, column.id)}
-              className="flex-1 flex flex-col min-w-[250px] bg-neutral-900/30 border border-neutral-800 rounded-lg backdrop-blur-sm"
-            >
-              {/* Column Header */}
-              <div className={`p-4 border-b border-neutral-800 ${column.color.replace('border', 'border-t-4')} bg-black/50`}>
-                <div className="flex justify-between items-center">
-                  <h3 className="text-xs font-bold text-white uppercase tracking-widest">{column.label}</h3>
-                  <span className="text-[10px] text-neutral-500 font-mono">
-                    {tasks.filter(t => t.status === column.id).length}
-                  </span>
-                </div>
+      <div className="grid gap-8 lg:grid-cols-[minmax(15rem,0.7fr)_minmax(0,2fr)]">
+        <aside aria-label="Primer package catalog" className="space-y-3">
+          <h3 className="font-mono text-xs uppercase tracking-[0.18em] text-[#d4af37]">Package catalog</h3>
+          {packages.map((item) => {
+            const selected = item.package_id === selectedPackageId;
+            return (
+              <button
+                key={item.package_id}
+                type="button"
+                data-testid={`package-card-${item.package_id}`}
+                onClick={() => setSelectedPackageId(item.package_id)}
+                className={`w-full rounded border p-4 text-left transition-colors ${
+                  selected
+                    ? 'border-[#d4af37] bg-[#3d2b1f]/70'
+                    : 'border-[#3d2b1f] bg-[#17100c] hover:border-[#806741]'
+                }`}
+              >
+                <span className="block font-['Merriweather'] text-base text-[#f3ead7]">{item.title}</span>
+                <span className="mt-2 block text-sm leading-6 text-[#b8aa95]">{item.outcome}</span>
+              </button>
+            );
+          })}
+          {!error && packages.length === 0 && (
+            <p className="rounded border border-[#3d2b1f] bg-[#17100c] p-4 text-sm text-[#b8aa95]">
+              Loading primer packages…
+            </p>
+          )}
+        </aside>
+
+        <section aria-live="polite">
+          {error && (
+            <p className="rounded border border-[#9b4944] bg-[#572724]/50 p-4 text-sm text-[#ffb4ac]">
+              {error}
+            </p>
+          )}
+
+          {selectedPackage && (
+            <div>
+              <div className="mb-5">
+                <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#d4af37]">
+                  {selectedPackage.course_kind} package
+                </p>
+                <h3 className="mt-2 font-['Merriweather'] text-2xl text-[#f3ead7]">{selectedPackage.title}</h3>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-[#b8aa95]">{selectedPackage.outcome}</p>
               </div>
 
-              {/* Drop Zone */}
-              <div className="flex-1 p-3 space-y-3 overflow-y-auto scrollbar-hide">
-                {tasks.filter(t => t.status === column.id).map(task => (
-                  <div
-                    key={task.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, task.id)}
-                    className="group bg-black border border-neutral-800 p-3 rounded hover:border-neutral-600 cursor-grab active:cursor-grabbing shadow-lg transition-all hover:-translate-y-1"
+              <ol className="space-y-4">
+                {sortSteps(selectedPackage.steps).map((step) => (
+                  <li
+                    key={step.id}
+                    data-testid={`package-step-${step.id}`}
+                    className="rounded border border-[#3d2b1f] bg-[#17100c] p-5"
                   >
-                    <div className="flex justify-between items-start mb-2">
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded border uppercase tracking-wider ${getCategoryColor(task.category)}`}>
-                        {task.category}
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <label className="flex cursor-pointer items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={completedSteps[step.id] ?? false}
+                          onChange={() =>
+                            setCompletedSteps((current) => ({
+                              ...current,
+                              [step.id]: !current[step.id],
+                            }))
+                          }
+                          className="mt-1 h-4 w-4 accent-[#d4af37]"
+                        />
+                        <span>
+                          <span className="block font-['Merriweather'] text-lg text-[#f3ead7]">{step.title}</span>
+                          {step.delivery && (step.delivery.method || step.delivery.destination) && (
+                            <span className="mt-1 block text-sm text-[#b8aa95]">
+                              Delivery: {[step.delivery.method, step.delivery.destination].filter(Boolean).join(' · ')}
+                            </span>
+                          )}
+                        </span>
+                      </label>
+                      <span className={`w-fit rounded border px-2 py-1 font-mono text-[11px] uppercase tracking-wide ${badgeStyles[step.epistemic]}`}>
+                        {step.epistemic}
                       </span>
-                      <button 
-                        onClick={() => deleteTask(task.id)}
-                        className="text-neutral-700 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        ×
-                      </button>
                     </div>
-                    <p className="text-xs text-neutral-300 leading-relaxed">
-                      {task.content}
-                    </p>
-                  </div>
+
+                    {step.epistemic === 'perilous' && (
+                      <p className="mt-4 rounded border border-[#9b4944] bg-[#572724]/50 p-3 text-sm text-[#ffb4ac]">
+                        Flagged — inventory only, not a recommended playbook.
+                      </p>
+                    )}
+
+                    {step.lines.length > 0 && (
+                      <section className="mt-4">
+                        <h4 className="font-mono text-xs uppercase tracking-[0.16em] text-[#d4af37]">Register lines</h4>
+                        <ul className="mt-2 space-y-2">
+                          {step.lines.map((line) => (
+                            <li key={line.line_id} className="border-l-2 border-[#806741] pl-3 font-mono text-sm leading-6 text-[#d8cdbb]">
+                              “{line.text}”
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
+
+                    {step.forms.length > 0 && (
+                      <section className="mt-4">
+                        <h4 className="font-mono text-xs uppercase tracking-[0.16em] text-[#d4af37]">Forms</h4>
+                        <ul className="mt-2 space-y-1 text-sm">
+                          {step.forms.map((form) => (
+                            <li key={form.form_id}>
+                              {form.official_url ? (
+                                <a
+                                  href={form.official_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-[#d4af37] underline decoration-[#806741] underline-offset-4 hover:text-[#f3ead7]"
+                                >
+                                  {form.title}
+                                </a>
+                              ) : (
+                                <span className="text-[#d8cdbb]">{form.title}</span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
+
+                    {step.speed_bumps.length > 0 && (
+                      <section className="mt-4">
+                        <h4 className="font-mono text-xs uppercase tracking-[0.16em] text-[#d4af37]">Speed bumps</h4>
+                        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-[#d8cdbb]">
+                          {step.speed_bumps.map((speedBump) => <li key={speedBump}>{speedBump}</li>)}
+                        </ul>
+                      </section>
+                    )}
+
+                    {step.flags.length > 0 && (
+                      <section className="mt-4">
+                        <h4 className="font-mono text-xs uppercase tracking-[0.16em] text-[#e69a8c]">Flags</h4>
+                        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-[#ffb4ac]">
+                          {step.flags.map((flag) => <li key={flag}>{flag}</li>)}
+                        </ul>
+                      </section>
+                    )}
+                  </li>
                 ))}
-                
-                {tasks.filter(t => t.status === column.id).length === 0 && (
-                  <div className="h-full flex items-center justify-center border-2 border-dashed border-neutral-800/50 rounded m-2">
-                    <span className="text-[10px] text-neutral-700 uppercase tracking-widest">Drop Here</span>
-                  </div>
-                )}
-              </div>
+              </ol>
             </div>
-          ))}
-        </div>
+          )}
+        </section>
       </div>
-    </div>
+    </main>
   );
 };
