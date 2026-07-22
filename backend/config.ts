@@ -38,6 +38,8 @@ const ConfigSchema = z.object({
   REGISTER_LEXICON_PATH: z.string().default('backend/core/legal/seeds/private-confidant.v1.json'),
   REGISTER_PROPOSALS_DIR: z.string().default('data/lexicon/proposals'),
   PRIMER_PACKAGES_DIR: z.string().default('backend/core/legal/seeds/packages'),
+  DOCS_CATALOG_DIR: z.string().default('backend/core/legal/seeds/docs'),
+  DOCS_FULLTEXT_DB_PATH: z.string().default('data/docs/irs_forms.sqlite'),
   PRIVATE_CONFIDANT: z.boolean().default(true),
 });
 

@@ -1,0 +1,20 @@
+{
+  "departments": [
+    {
+      "department_id": "irs_treasury",
+      "dir": "irs_treasury"
+    },
+    {
+      "department_id": "fred_fed",
+      "dir": "fred_fed"
+    },
+    {
+      "department_id": "ucc",
+      "dir": "ucc"
+    },
+    {
+      "department_id": "cfr",
+      "dir": "cfr"
+    }
+  ]
+}

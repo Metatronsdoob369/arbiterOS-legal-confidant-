@@ -516,6 +516,72 @@ export const PrimerPackageSchema = z.object({
 export type PrimerPackage = z.infer<typeof PrimerPackageSchema>;
 export type PackageStep = z.infer<typeof PackageStepSchema>;
 
+// ═══════════════════════════════════════════
+// DOCS CATALOG (Documentation curate spine)
+// ═══════════════════════════════════════════
+
+export const DocsDepartmentIdSchema = z.enum([
+  'irs_treasury',
+  'fred_fed',
+  'ucc',
+  'cfr',
+]);
+export type DocsDepartmentId = z.infer<typeof DocsDepartmentIdSchema>;
+
+export const DocsModuleStatusSchema = z.enum(['populated', 'stub']);
+export type DocsModuleStatus = z.infer<typeof DocsModuleStatusSchema>;
+
+export const DocsEntryKindSchema = z.enum([
+  'form',
+  'instruction',
+  'publication',
+  'other',
+]);
+export type DocsEntryKind = z.infer<typeof DocsEntryKindSchema>;
+
+export const DocsCatalogRefSchema = z.object({
+  catalog_id: z.string().min(1),
+  title: z.string().min(1),
+  status: DocsModuleStatusSchema,
+  entry_count: z.number().int().nonnegative().default(0),
+  source: z.string().optional(),
+  description: z.string().optional(),
+}).strict();
+export type DocsCatalogRef = z.infer<typeof DocsCatalogRefSchema>;
+
+export const DocsDepartmentModuleSchema = z.object({
+  department_id: DocsDepartmentIdSchema,
+  title: z.string().min(1),
+  summary: z.string().min(1),
+  status: DocsModuleStatusSchema,
+  catalogs: z.array(DocsCatalogRefSchema).default([]),
+}).strict();
+export type DocsDepartmentModule = z.infer<typeof DocsDepartmentModuleSchema>;
+
+export const DocsCatalogEntrySchema = z.object({
+  entry_id: z.string().min(1),
+  department_id: DocsDepartmentIdSchema,
+  catalog_id: z.string().min(1),
+  file_name: z.string().min(1),
+  title: z.string().min(1),
+  official_url: z.string().url(),
+  kind: DocsEntryKindSchema,
+  text_preview: z.string().default(''),
+  source: z.string().min(1),
+}).strict();
+export type DocsCatalogEntry = z.infer<typeof DocsCatalogEntrySchema>;
+
+export const DocsCatalogIndexSchema = z.object({
+  catalog_id: z.string().min(1),
+  department_id: DocsDepartmentIdSchema,
+  title: z.string().min(1),
+  source: z.string().min(1),
+  ingested_at: z.string().min(1),
+  entry_count: z.number().int().nonnegative(),
+  entries: z.array(DocsCatalogEntrySchema),
+}).strict();
+export type DocsCatalogIndex = z.infer<typeof DocsCatalogIndexSchema>;
+
 export const InterpretationLinkSchema = z.object({
   holding_id: z.string().describe('Resolved holding identifier returned by retrieve_holdings'),
   citation: z.string().describe('Holding citation or stable corpus label'),
