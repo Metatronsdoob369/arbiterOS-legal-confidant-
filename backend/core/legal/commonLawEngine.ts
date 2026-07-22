@@ -320,6 +320,41 @@ export async function bootstrapSeedHoldings(): Promise<{
   };
 }
 
+let autoBootstrapAttempted = false;
+let autoBootstrapInFlight: Promise<{ seeded: boolean; health: CommonLawHealth }> | null = null;
+
+export function __resetCommonLawBootstrapForTests() {
+  autoBootstrapAttempted = false;
+  autoBootstrapInFlight = null;
+}
+
+async function maybeAutoBootstrap(): Promise<{ seeded: boolean; health: CommonLawHealth } | null> {
+  if (autoBootstrapAttempted) {
+    return null;
+  }
+  if (!autoBootstrapInFlight) {
+    autoBootstrapInFlight = bootstrapSeedHoldings()
+      .catch(() => ({
+        seeded: false as const,
+        health: {
+          reachable: false,
+          exists: false,
+          collection: getConfig().COMMON_LAW_COLLECTION,
+          qdrantUrl: getConfig().COMMON_LAW_QDRANT_URL,
+          embedEndpoint: getConfig().COMMON_LAW_EMBED_ENDPOINT,
+          vectorSize: getConfig().COMMON_LAW_VECTOR_SIZE,
+          pointsCount: 0,
+          seededFallbackReady: COMMON_LAW_SEED_HOLDINGS.length > 0,
+        },
+      }))
+      .finally(() => {
+        autoBootstrapAttempted = true;
+        autoBootstrapInFlight = null;
+      });
+  }
+  return autoBootstrapInFlight;
+}
+
 async function searchQdrant(
   queryVector: number[],
   topK: number,
@@ -375,8 +410,8 @@ export async function queryHoldings(input: CommonLawQueryInput): Promise<CommonL
   let holdings = await searchQdrant(queryVector, topK);
 
   if (holdings.length === 0 && config.COMMON_LAW_AUTO_BOOTSTRAP) {
-    const bootstrapped = await bootstrapSeedHoldings();
-    if (bootstrapped.seeded) {
+    const bootstrapped = await maybeAutoBootstrap();
+    if (bootstrapped?.seeded) {
       holdings = await searchQdrant(queryVector, topK);
       fallbackMode = holdings.length > 0 ? 'seeded_collection' : 'none';
     }

@@ -14,6 +14,7 @@ import {
   saveDraftToDisk,
 } from '../../core/legal/formGeneration';
 import { exportDraftToWord } from '../../core/legal/legalExport';
+import { runFormTemplate } from '../../core/legal/templates';
 import { createArtifactPath } from '../../core/storage/artifacts';
 
 export async function registerDraftRoutes(app: FastifyInstance) {
@@ -77,15 +78,23 @@ export async function registerDraftRoutes(app: FastifyInstance) {
 
     let draft = 'draft_id' in parsedBody.data
       ? loadDraftFromDisk(user.id, parsedBody.data.draft_id)
-      : DocumentDraftSchema.parse(parsedBody.data.draft);
+      : null;
+
+    if (!draft && 'draft' in parsedBody.data) {
+      // Never trust client-supplied passed/validation — re-run the template gate.
+      const inline = DocumentDraftSchema.parse(parsedBody.data.draft);
+      const validated = await runFormTemplate(inline.form);
+      draft = DocumentDraftSchema.parse({
+        ...inline,
+        markdown: validated.markdown,
+        validation_steps: validated.validation_steps,
+        passed: validated.passed,
+      });
+      saveDraftToDisk(user.id, draft);
+    }
 
     if (!draft) {
       return reply.code(404).send({ message: 'Draft not found' });
-    }
-
-    // Persist inline drafts so download can resolve them later.
-    if (!('draft_id' in parsedBody.data)) {
-      saveDraftToDisk(user.id, draft);
     }
 
     if (!draft.passed) {

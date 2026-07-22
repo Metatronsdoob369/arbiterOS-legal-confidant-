@@ -2,6 +2,29 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
 
+/** Env-safe boolean: "false"/"0"/"no"/"off" → false (unlike z.coerce.boolean / Boolean()). */
+export function parseEnvBoolean(value: unknown, fallback: boolean): boolean {
+  if (value === undefined || value === null) {
+    return fallback;
+  }
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return value !== 0;
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['true', '1', 'yes', 'on'].includes(normalized)) {
+      return true;
+    }
+    if (['false', '0', 'no', 'off', ''].includes(normalized)) {
+      return false;
+    }
+  }
+  return fallback;
+}
+
 const ConfigSchema = z.object({
   ARBITER_BACKEND_PORT: z.coerce.number().int().positive().default(4881),
   ARBITER_DB_PATH: z.string().default('data/arbiter.db'),
@@ -11,10 +34,10 @@ const ConfigSchema = z.object({
   COMMON_LAW_COLLECTION: z.string().min(1).default('case-law-holdings'),
   COMMON_LAW_VECTOR_SIZE: z.coerce.number().int().positive().default(1024),
   COMMON_LAW_EMBED_ENDPOINT: z.string().url().default('http://127.0.0.1:4881/embed'),
-  COMMON_LAW_AUTO_BOOTSTRAP: z.coerce.boolean().default(true),
+  COMMON_LAW_AUTO_BOOTSTRAP: z.boolean().default(true),
   REGISTER_LEXICON_PATH: z.string().default('backend/core/legal/seeds/private-confidant.v1.json'),
   REGISTER_PROPOSALS_DIR: z.string().default('data/lexicon/proposals'),
-  PRIVATE_CONFIDANT: z.coerce.boolean().default(true),
+  PRIVATE_CONFIDANT: z.boolean().default(true),
 });
 
 export type BackendConfig = z.infer<typeof ConfigSchema>;
@@ -91,8 +114,7 @@ export function getConfig(): BackendConfig {
       process.env.COMMON_LAW_EMBED_ENDPOINT
       ?? process.env.VITE_EMBED_ENDPOINT
       ?? 'http://127.0.0.1:4881/embed',
-    COMMON_LAW_AUTO_BOOTSTRAP:
-      process.env.COMMON_LAW_AUTO_BOOTSTRAP
-      ?? 'true',
+    COMMON_LAW_AUTO_BOOTSTRAP: parseEnvBoolean(process.env.COMMON_LAW_AUTO_BOOTSTRAP, true),
+    PRIVATE_CONFIDANT: parseEnvBoolean(process.env.PRIVATE_CONFIDANT, true),
   });
 }

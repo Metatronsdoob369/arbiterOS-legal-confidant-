@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../app';
+import { __resetCommonLawBootstrapForTests } from '../core/legal/commonLawEngine';
 
 const originalEnv = {
   ARBITER_DB_PATH: process.env.ARBITER_DB_PATH,
@@ -21,6 +22,7 @@ beforeEach(() => {
   process.env.COMMON_LAW_VECTOR_SIZE = '1024';
   process.env.COMMON_LAW_EMBED_ENDPOINT = 'http://127.0.0.1:4881/embed';
   process.env.COMMON_LAW_AUTO_BOOTSTRAP = 'true';
+  __resetCommonLawBootstrapForTests();
 });
 
 afterEach(() => {
@@ -32,6 +34,7 @@ afterEach(() => {
   process.env.COMMON_LAW_VECTOR_SIZE = originalEnv.COMMON_LAW_VECTOR_SIZE;
   process.env.COMMON_LAW_EMBED_ENDPOINT = originalEnv.COMMON_LAW_EMBED_ENDPOINT;
   process.env.COMMON_LAW_AUTO_BOOTSTRAP = originalEnv.COMMON_LAW_AUTO_BOOTSTRAP;
+  __resetCommonLawBootstrapForTests();
   vi.unstubAllGlobals();
 });
 
@@ -111,6 +114,59 @@ describe('common law routes', () => {
       authority_kind: 'holding',
       silenced: false,
     });
+  });
+
+  it('memoizes failed auto-bootstrap across repeated empty queries', async () => {
+    let pointsUpserts = 0;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const requestUrl = input.toString();
+
+      if (requestUrl.includes('/points/search') && init?.method === 'POST') {
+        return new Response(JSON.stringify({ result: [] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (requestUrl.endsWith('/collections/case-law-holdings') && init?.method === 'GET') {
+        return new Response(JSON.stringify({ result: { points_count: 0 } }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (requestUrl.endsWith('/collections/case-law-holdings') && init?.method === 'PUT') {
+        return new Response(JSON.stringify({ status: 'ok' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (requestUrl.includes('/collections/case-law-holdings/points') && init?.method === 'PUT') {
+        pointsUpserts += 1;
+        return new Response(JSON.stringify({ status: 'error' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      throw new Error(`unexpected fetch: ${requestUrl}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    const app = await createApp();
+    const payload = {
+      query: 'negotiable instrument unconditional promise',
+      statute: 'UCC 3-104',
+    };
+
+    const first = await app.inject({ method: 'POST', url: '/api/common-law/query', payload });
+    const second = await app.inject({ method: 'POST', url: '/api/common-law/query', payload });
+
+    expect(first.statusCode).toBe(200);
+    expect(second.statusCode).toBe(200);
+    expect(pointsUpserts).toBe(1);
   });
 
   it('bootstraps the Qdrant collection and upserts the seed holdings', async () => {

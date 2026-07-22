@@ -27,6 +27,7 @@ export async function registerRegisterRoutes(app: FastifyInstance) {
   app.get('/api/register/health', async () => getRegisterLexiconHealth());
 
   app.post('/api/register/translate', async (request, reply) => {
+    await (app as any).requireSession(request);
     const parsed = RegisterTranslateRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.code(400).send({ message: 'Invalid register translate payload' });
@@ -43,6 +44,7 @@ export async function registerRegisterRoutes(app: FastifyInstance) {
   });
 
   app.post('/api/register/research', async (request, reply) => {
+    await (app as any).requireSession(request);
     const parsed = RegisterResearchRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.code(400).send({ message: 'Invalid register research payload' });
@@ -59,6 +61,7 @@ export async function registerRegisterRoutes(app: FastifyInstance) {
   });
 
   app.post('/api/register/propose', async (request, reply) => {
+    await (app as any).requireSession(request);
     const parsed = RegisterProposeRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.code(400).send({ message: 'Invalid register propose payload', issues: parsed.error.issues });
@@ -75,6 +78,7 @@ export async function registerRegisterRoutes(app: FastifyInstance) {
   });
 
   app.get('/api/register/proposals', async (request, reply) => {
+    await (app as any).requireSession(request);
     const parsed = ListQuerySchema.safeParse(request.query ?? {});
     if (!parsed.success) {
       return reply.code(400).send({ message: 'Invalid proposals query' });
@@ -83,6 +87,7 @@ export async function registerRegisterRoutes(app: FastifyInstance) {
   });
 
   app.get('/api/register/proposals/:id', async (request, reply) => {
+    await (app as any).requireSession(request);
     const { id } = request.params as { id: string };
     try {
       return getRegisterProposal(id);
@@ -94,6 +99,7 @@ export async function registerRegisterRoutes(app: FastifyInstance) {
   });
 
   app.post('/api/register/proposals/:id/merge', async (request, reply) => {
+    await (app as any).requireSession(request);
     const { id } = request.params as { id: string };
     try {
       return mergeRegisterProposal(id);
@@ -105,6 +111,7 @@ export async function registerRegisterRoutes(app: FastifyInstance) {
   });
 
   app.post('/api/register/proposals/:id/reject', async (request, reply) => {
+    await (app as any).requireSession(request);
     const { id } = request.params as { id: string };
     const parsed = RejectBodySchema.safeParse(request.body ?? {});
     if (!parsed.success) {
