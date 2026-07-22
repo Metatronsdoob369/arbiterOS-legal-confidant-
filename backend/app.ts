@@ -16,6 +16,7 @@ import { registerCommonLawRoutes } from './modules/common-law/routes';
 import { registerLegalRoutes } from './modules/legal/routes';
 import { registerDraftRoutes } from './modules/drafts/routes';
 import { registerRegisterRoutes } from './modules/register/routes';
+import { registerPackageRoutes } from './modules/packages/routes';
 
 export async function createApp() {
   const config = getConfig();
@@ -57,6 +58,7 @@ export async function createApp() {
   await registerLegalRoutes(app);
   await registerDraftRoutes(app);
   await registerRegisterRoutes(app);
+  await registerPackageRoutes(app);
 
   app.get('/api/health', async () => ({ status: 'ok' }));
 
