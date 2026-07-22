@@ -469,6 +469,53 @@ export const RegisterProposalSchema = z.object({
 }).strict();
 export type RegisterProposal = z.infer<typeof RegisterProposalSchema>;
 
+export const EpistemicBandSchema = z.enum(['settled', 'institutional', 'contested', 'perilous']);
+export type EpistemicBand = z.infer<typeof EpistemicBandSchema>;
+
+export const PackageFormRefSchema = z.object({
+  form_id: z.string().min(1),
+  title: z.string().min(1),
+  official_url: z.string().url().optional(),
+  sensitivity: z.enum(['common', 'sparse', 'sensitive']).optional(),
+}).strict();
+
+export const PackageLineSchema = z.object({
+  line_id: z.string().min(1),
+  text: z.string().min(1),
+  register_ref: z.string().optional(),
+}).strict();
+
+export const PackageStepSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  order: z.number().int().nonnegative(),
+  forms: z.array(PackageFormRefSchema).default([]),
+  lines: z.array(PackageLineSchema).default([]),
+  evidence_hooks: z.array(z.object({
+    kind: z.string().min(1),
+    ref: z.string().min(1),
+  }).strict()).optional(),
+  speed_bumps: z.array(z.string()).default([]),
+  flags: z.array(z.string()).default([]),
+  epistemic: EpistemicBandSchema,
+  delivery: z.object({
+    method: z.string().optional(),
+    destination: z.string().optional(),
+  }).strict().optional(),
+}).strict();
+
+export const PrimerPackageSchema = z.object({
+  package_id: z.string().min(1),
+  title: z.string().min(1),
+  outcome: z.string().min(1),
+  course_kind: z.enum(['primer', 'advanced']),
+  steps: z.array(PackageStepSchema).min(1),
+  source_notebooks: z.array(z.string()).optional(),
+  vector_ready: z.boolean().default(false),
+}).strict();
+export type PrimerPackage = z.infer<typeof PrimerPackageSchema>;
+export type PackageStep = z.infer<typeof PackageStepSchema>;
+
 export const InterpretationLinkSchema = z.object({
   holding_id: z.string().describe('Resolved holding identifier returned by retrieve_holdings'),
   citation: z.string().describe('Holding citation or stable corpus label'),
