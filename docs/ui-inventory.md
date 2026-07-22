@@ -12,9 +12,9 @@ View switching is handled by a `View` enum in `App.tsx` via `useState`.
 | View enum value | Sidebar label | Component file | `data-testid` (nav btn) | `data-testid` (container) |
 |---|---|---|---|---|
 | `advisor` | Counsel | `components/LegalAdvisor.tsx` | `nav-btn-advisor` | `view-advisor` |
+| `case_board` | Case Map | `components/CaseBoard.tsx` | `nav-btn-case_board` | `view-case_board` |
 | `evidence` | Evidence | `components/EvidenceBoard.tsx` | `nav-btn-evidence` | `view-evidence` |
 | `library` | Library | `components/Library.tsx` | `nav-btn-library` | `view-library` |
-| `case_board` | Case Map | `components/CaseBoard.tsx` | `nav-btn-case_board` | `view-case_board` |
 | `studio` | Forensics | `components/ImageGen.tsx` | `nav-btn-studio` | `view-studio` |
 | `audit` | Ledger | `components/AuditLog.tsx` | `nav-btn-audit` | `view-audit` |
 
@@ -25,7 +25,7 @@ View switching is handled by a `View` enum in `App.tsx` via `useState`.
 | `LegalAdvisor` | Main chat interface — sends legal queries, uploads documents, plays TTS audio, runs the Arbiter audit |
 | `EvidenceBoard` | Interactive SVG canvas — drag/connect evidence nodes, witnesses, statutes, arguments |
 | `Library` | Knowledge-base CRUD — store, pin, tag, and search legal references |
-| `CaseBoard` | Kanban board — drag tasks through Discovery → Analysis → Drafting → Execution |
+| `CaseBoard` | Packet-first primer packages (transition procedure courses) — package picker + step checklist |
 | `ImageGen` | Legal concept visualizer — generates diagrams via the AI image API |
 | `AuditLog` | Governance ledger — Recharts telemetry, compliance controls, full audit trail |
 | `ArbiterBadge` | Animated status badge used inside `LegalAdvisor` |

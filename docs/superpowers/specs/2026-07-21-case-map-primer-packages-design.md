@@ -1,7 +1,7 @@
 # Case Map Primer Packages + Documentation Spine
 
 **Date:** 2026-07-21  
-**Status:** Draft for review (persona cross-ref folded in)  
+**Status:** Implemented (v1 schema + Case Map UI)  
 **Product:** ArbiterOS Legal Confidant  
 **Related:** Register Mirror (Private Confidant), silence-first authority lanes, Unconfused Man research ingest
 
