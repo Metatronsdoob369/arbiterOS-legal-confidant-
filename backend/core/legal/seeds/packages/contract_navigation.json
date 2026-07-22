@@ -1,0 +1,77 @@
+{
+  "package_id": "contract_navigation",
+  "title": "Contract Navigation",
+  "outcome": "Read a contract in sequence and preserve the records needed for a measured response.",
+  "course_kind": "primer",
+  "vector_ready": false,
+  "steps": [
+    {
+      "id": "cn-identify-parties",
+      "title": "Identify the parties and roles",
+      "order": 1,
+      "forms": [],
+      "lines": [
+        {
+          "line_id": "cn-party-names",
+          "text": "List the named parties, signatories, notices contacts, and any entities acting through representatives."
+        }
+      ],
+      "speed_bumps": [
+        "A trade name, parent company, and signing individual may not be the same legal party."
+      ],
+      "flags": [],
+      "epistemic": "settled"
+    },
+    {
+      "id": "cn-obligations-consideration",
+      "title": "Map obligations and consideration",
+      "order": 2,
+      "forms": [],
+      "lines": [
+        {
+          "line_id": "cn-promises-exchange",
+          "text": "Mark each party's promised performance, payment or other consideration, conditions, and deadlines."
+        }
+      ],
+      "speed_bumps": [
+        "Reading only a summary can omit terms incorporated by reference."
+      ],
+      "flags": [],
+      "epistemic": "settled"
+    },
+    {
+      "id": "cn-default-notice-cure",
+      "title": "Check default, notice, and cure provisions",
+      "order": 3,
+      "forms": [],
+      "lines": [
+        {
+          "line_id": "cn-notice-cure",
+          "text": "Follow the contract's stated notice address, delivery method, deadline, and opportunity to cure where applicable."
+        }
+      ],
+      "speed_bumps": [
+        "A notice sent to the wrong address or without required delivery evidence may not satisfy the contract."
+      ],
+      "flags": [],
+      "epistemic": "institutional"
+    },
+    {
+      "id": "cn-remedies-filing",
+      "title": "Locate remedies and filing terms",
+      "order": 4,
+      "forms": [],
+      "lines": [
+        {
+          "line_id": "cn-remedies-forum",
+          "text": "Record the contract's remedies, dispute-resolution process, governing-law clause, forum, and any filing deadlines."
+        }
+      ],
+      "speed_bumps": [
+        "A contractual filing clause may be limited by mandatory law or court rules."
+      ],
+      "flags": [],
+      "epistemic": "institutional"
+    }
+  ]
+}

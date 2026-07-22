@@ -1,5 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { PrimerPackageSchema } from '../../../schemas/legalSchemas';
+import {
+  __resetPrimerPackagesCacheForTests,
+  getPrimerPackage,
+  listPrimerPackages,
+} from './primerPackages';
 
 describe('PrimerPackageSchema', () => {
   it('accepts a minimal valid package', () => {
@@ -52,5 +57,40 @@ describe('PrimerPackageSchema', () => {
       ],
     });
     expect(parsed.success).toBe(false);
+  });
+});
+
+describe('primerPackages loader', () => {
+  beforeEach(() => {
+    __resetPrimerPackagesCacheForTests();
+  });
+
+  it('lists the four v1 primer package_ids', () => {
+    const ids = listPrimerPackages().map((p) => p.package_id).sort();
+    expect(ids).toEqual([
+      'contract_navigation',
+      'proper_debt_discharge',
+      'securities_control',
+      'transition_essentials',
+    ]);
+  });
+
+  it('loads transition_essentials with a settled signature step', () => {
+    const pack = getPrimerPackage('transition_essentials');
+    expect(pack.title).toBe('Transition Essentials');
+    expect(
+      pack.steps.some((step) => step.epistemic === 'settled' && step.lines.length > 0),
+    ).toBe(true);
+  });
+
+  it('marks commercial-redemption coaching steps as perilous or contested on debt discharge', () => {
+    const pack = getPrimerPackage('proper_debt_discharge');
+    const tagged = pack.steps.filter(
+      (step) => step.epistemic === 'perilous' || step.epistemic === 'contested',
+    );
+    expect(tagged.length).toBeGreaterThan(0);
+    expect(tagged.every((step) => step.flags.length > 0 || step.speed_bumps.length > 0)).toBe(
+      true,
+    );
   });
 });

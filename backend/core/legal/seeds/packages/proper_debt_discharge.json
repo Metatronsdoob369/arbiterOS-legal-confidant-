@@ -1,0 +1,79 @@
+{
+  "package_id": "proper_debt_discharge",
+  "title": "Debt Resolution Basics",
+  "outcome": "Review ordinary debt-resolution paths and document communications with the creditor.",
+  "course_kind": "primer",
+  "vector_ready": false,
+  "steps": [
+    {
+      "id": "pdd-payoff",
+      "title": "Confirm the payoff amount",
+      "order": 1,
+      "forms": [],
+      "lines": [
+        {
+          "line_id": "pdd-payoff-statement",
+          "text": "Request a dated payoff statement that identifies the balance, the good-through date, and accepted payment instructions."
+        }
+      ],
+      "speed_bumps": [
+        "A current balance may differ from a payoff amount because interest and fees can continue to accrue."
+      ],
+      "flags": [],
+      "epistemic": "settled"
+    },
+    {
+      "id": "pdd-hardship-settlement",
+      "title": "Ask about hardship or settlement options",
+      "order": 2,
+      "forms": [],
+      "lines": [
+        {
+          "line_id": "pdd-hardship-options",
+          "text": "A creditor may offer hardship, payment-plan, or settlement options under its own policies."
+        }
+      ],
+      "speed_bumps": [
+        "Obtain written terms and consider possible tax, credit-reporting, or collection consequences before accepting."
+      ],
+      "flags": [],
+      "epistemic": "institutional"
+    },
+    {
+      "id": "pdd-dispute-validation",
+      "title": "Document a dispute or validation request",
+      "order": 3,
+      "forms": [],
+      "lines": [
+        {
+          "line_id": "pdd-dispute-records",
+          "text": "State the specific account, disputed amount, and supporting records, then retain a copy and delivery evidence."
+        }
+      ],
+      "speed_bumps": [
+        "Deadlines and rights vary by debt type, jurisdiction, and the status of collection activity."
+      ],
+      "flags": [],
+      "epistemic": "settled"
+    },
+    {
+      "id": "pdd-commercial-redemption",
+      "title": "Inventory commercial-redemption theories separately",
+      "order": 4,
+      "forms": [],
+      "lines": [
+        {
+          "line_id": "pdd-commercial-redemption",
+          "text": "Commercial-redemption theories that claim a personal filing or private instrument automatically eliminates a debt are contested and are not an ordinary debt-resolution path."
+        }
+      ],
+      "speed_bumps": [
+        "Do not substitute an unverified theory for a creditor-approved payment, settlement, or legally available dispute process."
+      ],
+      "flags": [
+        "Claims involving fictitious financial instruments can lead to civil or criminal consequences; obtain qualified legal advice before acting."
+      ],
+      "epistemic": "perilous"
+    }
+  ]
+}

@@ -37,6 +37,7 @@ const ConfigSchema = z.object({
   COMMON_LAW_AUTO_BOOTSTRAP: z.boolean().default(true),
   REGISTER_LEXICON_PATH: z.string().default('backend/core/legal/seeds/private-confidant.v1.json'),
   REGISTER_PROPOSALS_DIR: z.string().default('data/lexicon/proposals'),
+  PRIMER_PACKAGES_DIR: z.string().default('backend/core/legal/seeds/packages'),
   PRIVATE_CONFIDANT: z.boolean().default(true),
 });
 
