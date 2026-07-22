@@ -5,7 +5,3 @@ export async function listPackages(): Promise<PrimerPackage[]> {
   const payload = await apiFetch<{ packages: PrimerPackage[] }>('/api/packages');
   return payload.packages;
 }
-
-export async function getPackage(packageId: string): Promise<PrimerPackage> {
-  return apiFetch<PrimerPackage>(`/api/packages/${encodeURIComponent(packageId)}`);
-}

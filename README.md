@@ -75,8 +75,8 @@ A visual whiteboard for connecting the dots. Drag nodes around. Draw connections
 ### 📚 The Library
 Store quotes, law snippets, articles, books, papers. Pin the important stuff. Tag everything. Search it later when you need that one FTC citation you know you saved somewhere.
 
-### 📋 Case Map (Kanban)
-Organize your legal strategy with drag-and-drop columns: Discovery → Analysis → Drafting → Execution.
+### 📋 Case Map (Primer Packages)
+Browse packet-first primer packages that organize procedural goals into inventory steps, register lines, forms, speed bumps, and clearly marked caveats.
 
 ### 🗺️ Forensic Maps
 Generate legal concept visualizations — Negotiability Flow, Corporate Veil, Security Interest, Chain of Title.
@@ -316,7 +316,7 @@ arbiterOS-legal-confidant/
 │   ├── LegalAdvisor.tsx       # Main chat (mahogany + large bar)
 │   ├── EvidenceBoard.tsx      # Visual whiteboard for case building
 │   ├── Library.tsx            # Legal reference storage
-│   ├── CaseBoard.tsx          # Kanban case management
+│   ├── CaseBoard.tsx          # Packet-first primer package browser
 │   ├── ImageGen.tsx           # Legal concept visualizer
 │   ├── AuditLog.tsx           # Governance ledger + telemetry
 │   └── ArbiterBadge.tsx       # Animated badge

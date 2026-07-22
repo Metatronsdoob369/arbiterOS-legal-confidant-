@@ -141,6 +141,12 @@ export const CaseBoard: React.FC = () => {
                       </p>
                     )}
 
+                    {step.epistemic === 'contested' && (
+                      <p className="mt-4 rounded border border-[#9b762e] bg-[#5c4217]/40 p-3 text-sm text-[#f1ce7b]">
+                        Contested — inventory with caveats; not settled procedure.
+                      </p>
+                    )}
+
                     {step.lines.length > 0 && (
                       <section className="mt-4">
                         <h4 className="font-mono text-xs uppercase tracking-[0.16em] text-[#d4af37]">Register lines</h4>

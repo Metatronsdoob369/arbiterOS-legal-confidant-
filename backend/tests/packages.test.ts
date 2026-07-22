@@ -65,6 +65,19 @@ describe('packages routes', () => {
     expect(body.packages.map((p) => p.package_id)).toContain('contract_navigation');
   });
 
+  it('returns transition essentials for an authenticated user', async () => {
+    const app = await createApp();
+    const token = await login(app);
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/packages/transition_essentials',
+      cookies: { arbiter_session: token },
+    });
+    expect(response.statusCode).toBe(200);
+    const body = response.json() as { package_id: string };
+    expect(body.package_id).toBe('transition_essentials');
+  });
+
   it('returns 404 for unknown package id when authenticated', async () => {
     const app = await createApp();
     const token = await login(app);
