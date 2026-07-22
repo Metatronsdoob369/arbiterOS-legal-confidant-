@@ -289,7 +289,7 @@ export const ChatResponseSchema = z.object({
  * Ties every assertion to a verifiable source.
  */
 export const EvidenceRefSchema = z.object({
-  kind: z.enum(['statute', 'holding', 'library_item', 'evidence_node', 'tool_result', 'url'])
+  kind: z.enum(['statute', 'holding', 'library_item', 'evidence_node', 'tool_result', 'url', 'register_sense'])
     .describe('Category of evidence source'),
   ref: z.string().describe('Identifier or URL for the evidence source (e.g. "UCC 3-104", item ID, URL)'),
   quote: z.string().optional().describe('Verbatim excerpt from the source that supports the claim'),
@@ -297,6 +297,177 @@ export const EvidenceRefSchema = z.object({
     .describe('Relative evidentiary force when the source is a holding or tool result'),
 });
 export type EvidenceRef = z.infer<typeof EvidenceRefSchema>;
+
+// ═══════════════════════════════════════════
+// REGISTER MIRROR (Private Confidant Lexicon)
+// Plain English ↔ institutional / statutory senses.
+// ═══════════════════════════════════════════
+
+export const RegisterEpistemicSchema = z.enum(['settled', 'institutional', 'plain', 'contested']);
+export const RegisterBandSchema = z.enum([
+  'plain',
+  'institutional',
+  'statute',
+  'fiscal',
+  'capacity',
+  'contested',
+]);
+export const RegisterMatrixSchema = z.enum([
+  'money_credit',
+  'private_public_lien',
+  'identity_split',
+  'procedural',
+  'discharge',
+  'capacity',
+  'fiscal',
+]);
+
+export const RegisterSenseSchema = z.object({
+  register: RegisterBandSchema,
+  epistemic: RegisterEpistemicSchema,
+  definition: z.string().min(1),
+  authority_cite: z.string().min(1),
+  source_refs: z.array(z.string()).default([]),
+}).strict();
+export type RegisterSense = z.infer<typeof RegisterSenseSchema>;
+
+export const RegisterEntrySchema = z.object({
+  term_id: z.string().min(1),
+  surface_forms: z.array(z.string().min(1)).min(1),
+  matrix: RegisterMatrixSchema.optional(),
+  senses: z.array(RegisterSenseSchema).min(1),
+  confusion_with: z.array(z.string()).default([]),
+  mirror_hint: z.string().min(1),
+  procedural_triggers: z.array(z.string()).default([]),
+}).strict();
+export type RegisterEntry = z.infer<typeof RegisterEntrySchema>;
+
+export const RegisterLexiconSchema = z.object({
+  schema_version: z.literal('0.1.0'),
+  lexicon_id: z.string().min(1),
+  version: z.string().min(1),
+  description: z.string().optional(),
+  entries: z.array(RegisterEntrySchema).min(1),
+}).strict();
+export type RegisterLexicon = z.infer<typeof RegisterLexiconSchema>;
+
+export const RegisterTranslateRequestSchema = z.object({
+  text: z.string().trim().min(1).max(8000),
+}).strict();
+export type RegisterTranslateRequest = z.infer<typeof RegisterTranslateRequestSchema>;
+
+export const RegisterMatchedTermSchema = z.object({
+  term_id: z.string(),
+  surface: z.string(),
+  user_usage_echo: z.string(),
+  matrix: RegisterMatrixSchema.optional(),
+  plain_sense: RegisterSenseSchema.optional(),
+  senses_by_band: z.object({
+    settled: z.array(RegisterSenseSchema),
+    institutional: z.array(RegisterSenseSchema),
+    contested: z.array(RegisterSenseSchema),
+  }),
+  confusion_notes: z.array(z.string()),
+  procedural_reminders: z.array(z.string()),
+  mirror_hint: z.string(),
+  posture: z.literal('mirror_then_distinguish'),
+}).strict();
+export type RegisterMatchedTerm = z.infer<typeof RegisterMatchedTermSchema>;
+
+export const RegisterMirrorResultSchema = z.object({
+  matched_terms: z.array(RegisterMatchedTermSchema),
+  unanswered_spans: z.array(z.string()),
+  provenance: z.object({
+    lexicon_id: z.string(),
+    lexicon_version: z.string(),
+    source_path: z.string(),
+    source_refs: z.array(z.string()),
+  }).strict(),
+}).strict();
+export type RegisterMirrorResult = z.infer<typeof RegisterMirrorResultSchema>;
+
+/** Capture → propose → human merge. Never silent-write the live pack. */
+export const RegisterProposalModeSchema = z.enum(['create', 'amend']);
+export const RegisterProposalStatusSchema = z.enum(['pending', 'merged', 'rejected']);
+
+export const RegisterProposeRequestSchema = z.object({
+  trigger_text: z.string().trim().min(1).max(8000),
+  notes: z.string().trim().max(4000).optional(),
+  mode: RegisterProposalModeSchema.default('create'),
+  entry: RegisterEntrySchema,
+}).strict();
+export type RegisterProposeRequest = z.infer<typeof RegisterProposeRequestSchema>;
+
+/** Quick research — clarity before propose. Case/orthography aware. */
+export const RegisterResearchRequestSchema = z.object({
+  term: z.string().trim().min(1).max(512),
+  context: z.string().trim().max(4000).optional(),
+  corpus_hint: z.string().trim().max(128).optional(),
+}).strict();
+export type RegisterResearchRequest = z.infer<typeof RegisterResearchRequestSchema>;
+
+export const RegisterResearchHitSchema = z.object({
+  term_id: z.string(),
+  surface_forms: z.array(z.string()),
+  exact_case_match: z.boolean(),
+  matrix: RegisterMatrixSchema.optional(),
+  mirror_hint: z.string(),
+  senses_by_band: z.object({
+    settled: z.array(RegisterSenseSchema),
+    institutional: z.array(RegisterSenseSchema),
+    contested: z.array(RegisterSenseSchema),
+  }),
+  confusion_notes: z.array(z.string()),
+}).strict();
+export type RegisterResearchHit = z.infer<typeof RegisterResearchHitSchema>;
+
+export const RegisterResearchResultSchema = z.object({
+  query_term: z.string(),
+  context: z.string().optional(),
+  corpus_hint: z.string().optional(),
+  orthography: z.object({
+    as_given: z.string(),
+    lower: z.string(),
+    title: z.string(),
+    upper: z.string(),
+    case_variants_differ: z.boolean(),
+  }).strict(),
+  in_lexicon: z.boolean(),
+  hits: z.array(RegisterResearchHitSchema),
+  case_gap: z.object({
+    noted: z.boolean(),
+    detail: z.string(),
+  }).strict(),
+  clarity_summary: z.string(),
+  propose_ready: z.object({
+    recommended: z.boolean(),
+    mode: RegisterProposalModeSchema,
+    suggested_term_id: z.string(),
+    suggested_surface_forms: z.array(z.string()),
+    stub_notes: z.string(),
+  }).strict(),
+  posture: z.literal('clarify_before_propose'),
+  provenance: z.object({
+    lexicon_id: z.string(),
+    lexicon_version: z.string(),
+    source_path: z.string(),
+  }).strict(),
+}).strict();
+export type RegisterResearchResult = z.infer<typeof RegisterResearchResultSchema>;
+
+export const RegisterProposalSchema = z.object({
+  id: z.string().min(1),
+  status: RegisterProposalStatusSchema,
+  mode: RegisterProposalModeSchema,
+  created_at: z.string().min(1),
+  updated_at: z.string().min(1),
+  trigger_text: z.string().min(1),
+  notes: z.string().optional(),
+  entry: RegisterEntrySchema,
+  reject_reason: z.string().optional(),
+  merged_into_version: z.string().optional(),
+}).strict();
+export type RegisterProposal = z.infer<typeof RegisterProposalSchema>;
 
 export const InterpretationLinkSchema = z.object({
   holding_id: z.string().describe('Resolved holding identifier returned by retrieve_holdings'),

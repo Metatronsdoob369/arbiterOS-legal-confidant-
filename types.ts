@@ -14,6 +14,8 @@ export interface Message {
   isError?: boolean;
   /** Passed document drafts available for local Word download */
   draftIds?: string[];
+  /** Surfaces the Register Lexicon already matched this turn (UI reassurance highlight) */
+  registerSurfaces?: string[];
 }
 
 export type ImageSize = '1K' | '2K' | '4K';
@@ -30,7 +32,7 @@ export interface AuditEntry {
   timestamp: Date;
   action: string;      // e.g., "Legal Inquiry", "Contract Analysis"
   details: string;     // Brief description
-  source: 'Advisor' | 'Studio' | 'System' | 'Arbiter';
+  source: 'Advisor' | 'Studio' | 'System' | 'Arbiter' | 'Private Confidant';
   status: 'Verified' | 'Pending' | 'Error' | 'Refining';
   hash: string;        // Simulated transaction hash
   metadata?: ArbiterMetadata;

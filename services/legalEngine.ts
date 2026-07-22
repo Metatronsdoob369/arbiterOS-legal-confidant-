@@ -2,7 +2,7 @@
 // Ported from LegalPackages/auditor.ts.tsx
 // Implements the "Faith-Less" Verifiable Law Database Logic and UCC/USC "Contracts in Code"
 
-import { queryWhiteGlove } from './whitegloveClient';
+import { queryLawCorpus, type StatuteResult } from './lawCorpusClient';
 
 export interface ValidationStep {
   rule_id: string;
@@ -14,13 +14,13 @@ export interface ValidationStep {
 }
 
 // --- 0. THE SOURCE OF TRUTH ---
-// Queries the WhiteGlove local retrieval server (joecwales/whiteglove-legal-2026).
-// Falls back to a hardcoded seed library when the server is not running.
-// Set WHITEGLOVE_URL env var to point at a remote instance.
+// Queries the optional law-corpus retrieval boundary (LAW_CORPUS_URL).
+// Falls back to a hardcoded seed library when the upstream is not running.
+// Silence-first: see result.silence (schemas/silenceFirst.ts).
 
 // The "RAG" Tool - strictly retrieves text, does not interpret.
-export const consultStatute = async (query: string): Promise<{ found: boolean; title?: string; text?: string; citation?: string }> => {
-  return queryWhiteGlove(query);
+export const consultStatute = async (query: string): Promise<StatuteResult> => {
+  return queryLawCorpus(query);
 };
 
 

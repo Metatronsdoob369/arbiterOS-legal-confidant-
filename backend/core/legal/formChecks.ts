@@ -1,5 +1,5 @@
 import type { ValidationStep } from '../../../schemas/legalSchemas';
-import { queryLegalCorpus } from './whitegloveGateway';
+import { queryLegalCorpus } from './lawCorpusGateway';
 
 export type InstrumentTerms = {
   promise_type: 'conditional' | 'unconditional';

@@ -4,6 +4,10 @@ import {
   COMMON_LAW_SEED_HOLDINGS,
   type SeedHolding,
 } from './commonLawSeed';
+import {
+  holdingsToSilenceEnvelope,
+  type SilenceFirstResult,
+} from '../../../schemas/silenceFirst';
 
 type QdrantCollectionInfo = {
   result?: {
@@ -61,6 +65,8 @@ export interface CommonLawQueryResult {
   fallbackMode: 'none' | 'seeded_collection' | 'seeded_in_memory';
   holdings: HoldingSearchResult[];
   interpretationLinks: InterpretationLink[];
+  /** Silence-first envelope (philosophy contract v1). */
+  silence: SilenceFirstResult;
 }
 
 const FETCH_TIMEOUT_MS = 10_000;
@@ -391,5 +397,10 @@ export async function queryHoldings(input: CommonLawQueryInput): Promise<CommonL
     fallbackMode,
     holdings,
     interpretationLinks: buildInterpretationLinks(holdings),
+    silence: holdingsToSilenceEnvelope({
+      holdings,
+      silence_policy: 'strict',
+      provenance: `${config.COMMON_LAW_COLLECTION}:${fallbackMode}`,
+    }),
   };
 }

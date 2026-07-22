@@ -106,6 +106,11 @@ describe('common law routes', () => {
     expect(payload.fallbackMode).toBe('seeded_in_memory');
     expect(payload.holdings[0]?.statute).toBe('UCC 3-104');
     expect(payload.interpretationLinks[0]?.relation).toBe('supports');
+    expect(payload.silence).toMatchObject({
+      contract_version: '1.0',
+      authority_kind: 'holding',
+      silenced: false,
+    });
   });
 
   it('bootstraps the Qdrant collection and upserts the seed holdings', async () => {

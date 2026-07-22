@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema://arbiteros/silence-first/v1",
+  "title": "Silence-First Philosophy Contract v1",
+  "description": "Portable authority-retrieval envelope: silenced means no LLM-invented authority for that claim. Engines may use Hamming, cosine, or strength bands.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "authority_kind", "silence_policy", "found", "silenced", "reason"],
+  "properties": {
+    "contract_version": { "const": "1.0" },
+    "authority_kind": {
+      "type": "string",
+      "enum": ["statute", "holding", "corpus_shard", "working_set", "register"]
+    },
+    "silence_policy": {
+      "type": "string",
+      "enum": ["strict", "permissive"]
+    },
+    "found": {
+      "type": "boolean",
+      "description": "Whether a candidate shard/text was located at all."
+    },
+    "silenced": {
+      "type": "boolean",
+      "description": "When true, the agent must not invent authority for this claim; procedural help may continue."
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable explanation of match or silence."
+    },
+    "score": {
+      "type": "number",
+      "description": "Engine-specific score; interpret via metric."
+    },
+    "metric": {
+      "type": "string",
+      "enum": ["hamming_ratio", "cosine", "strength", "unknown"]
+    },
+    "citation": { "type": "string" },
+    "title": { "type": "string" },
+    "text": { "type": "string" },
+    "provenance": {
+      "type": "string",
+      "description": "Upstream id, collection, or gateway source tag."
+    }
+  }
+}

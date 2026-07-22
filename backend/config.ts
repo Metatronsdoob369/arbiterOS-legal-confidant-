@@ -12,6 +12,9 @@ const ConfigSchema = z.object({
   COMMON_LAW_VECTOR_SIZE: z.coerce.number().int().positive().default(1024),
   COMMON_LAW_EMBED_ENDPOINT: z.string().url().default('http://127.0.0.1:4881/embed'),
   COMMON_LAW_AUTO_BOOTSTRAP: z.coerce.boolean().default(true),
+  REGISTER_LEXICON_PATH: z.string().default('backend/core/legal/seeds/private-confidant.v1.json'),
+  REGISTER_PROPOSALS_DIR: z.string().default('data/lexicon/proposals'),
+  PRIVATE_CONFIDANT: z.coerce.boolean().default(true),
 });
 
 export type BackendConfig = z.infer<typeof ConfigSchema>;

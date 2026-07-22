@@ -87,12 +87,13 @@ test.describe('Navigation — sidebar', () => {
   });
 
   const views: Array<{ btn: string; viewId: string; heading: string }> = [
-    { btn: 'nav-btn-advisor',    viewId: 'view-advisor',    heading: 'view-legal-advisor' },
-    { btn: 'nav-btn-evidence',   viewId: 'view-evidence',   heading: 'heading-evidence-board' },
-    { btn: 'nav-btn-library',    viewId: 'view-library',    heading: 'heading-library' },
-    { btn: 'nav-btn-case_board', viewId: 'view-case_board', heading: 'heading-case-board' },
-    { btn: 'nav-btn-studio',     viewId: 'view-studio',     heading: 'heading-image-gen' },
-    { btn: 'nav-btn-audit',      viewId: 'view-audit',      heading: 'heading-audit-log' },
+    { btn: 'nav-btn-advisor',    viewId: 'view-advisor',            heading: 'view-legal-advisor' },
+    { btn: 'nav-btn-private',    viewId: 'view-private_confidant',  heading: 'view-private-confidant' },
+    { btn: 'nav-btn-evidence',   viewId: 'view-evidence',           heading: 'heading-evidence-board' },
+    { btn: 'nav-btn-library',    viewId: 'view-library',            heading: 'heading-library' },
+    { btn: 'nav-btn-case_board', viewId: 'view-case_board',         heading: 'heading-case-board' },
+    { btn: 'nav-btn-studio',     viewId: 'view-studio',             heading: 'heading-image-gen' },
+    { btn: 'nav-btn-audit',      viewId: 'view-audit',              heading: 'heading-audit-log' },
   ];
 
   for (const { btn, viewId, heading } of views) {

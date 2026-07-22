@@ -295,17 +295,18 @@ async function processClaim(
   for (const ev of claim.evidence) {
     if (ev.kind === 'statute') {
       const lookup = await consultStatute(ev.ref);
-      if (!lookup.found) {
-        // Statute cited but not in the law library — cannot verify the claim
+      const silenced = lookup.silence?.silenced === true || !lookup.found;
+      if (silenced) {
+        // Statute cited but corpus silent / not found — cannot verify the claim
         failedClaims.push({
           claim_id: claim.id,
-          reason: `R2: Statute "${ev.ref}" cited in claim [${claim.id}] but not found in the law library.`,
+          reason: `R2: Statute "${ev.ref}" cited in claim [${claim.id}] but law corpus is silent (silence-first).`,
         });
         steps.push({
-          rule_id: 'R2_STATUTE_NOT_FOUND',
+          rule_id: 'R2_STATUTE_SILENCED',
           passed: false,
-          details: `Statute ref "${ev.ref}" for claim [${claim.id}] could not be resolved via legalEngine.consultStatute.`,
-          evidence_source: 'gate:R2:legalEngine',
+          details: `Statute ref "${ev.ref}" for claim [${claim.id}] silenced: ${lookup.silence?.reason ?? 'not found'}.`,
+          evidence_source: 'gate:R2:silence-first',
           timestamp: now(),
         });
       } else {

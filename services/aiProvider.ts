@@ -32,6 +32,8 @@ import {
 } from './legalEngine';
 import { createDraftForm } from './draftsClient';
 import { commonLawEngine } from './commonLawEngine';
+import { registerLexiconClient } from './registerLexiconClient';
+import { normalizeRegisterSurfaces } from './registerHighlight';
 import { runValidationGate, type GateInputState } from './validationGate';
 
 // ═══════════════════════════════════════════
@@ -61,9 +63,13 @@ CORE PROTOCOLS (Non-Negotiable):
 5. **Signature Rendering**: Use '[SIGNATURE_FIELD:Label]' tags for visual signature boxes.
 6. **Citation Binding**: If referencing a statute, use 'consult_statute' to retrieve raw text.
    Display with '[CITATION:Title|Source]' tags. No citation? No claim. Period.
+   **Silence-first**: If consult_statute returns silence.silenced=true (or found=false), you MUST NOT invent a statute cite.
+   You may still help with procedure and plain language; say the corpus was silent on that authority.
 7. **Negotiability**: For financial instruments, use 'verify_negotiability' for UCC 3-104 compliance.
 8. **Common-Law Holdings**: For statutory interpretation, negotiability disputes, or case-driven legal propositions, use 'retrieve_holdings'.
    High-severity legal_rule or interpretation claims must carry either a statute citation or a strong interpretation link from holdings.
+   **Silence-first**: If retrieve_holdings returns silence.silenced=true (empty or weak-only under strict policy), do NOT assert “the holding is…”.
+   Qualify or stay silent on that authority claim.
 
 PROCESS:
 - Receive user intent (text or document upload).
@@ -89,7 +95,7 @@ Schema:
       "kind": "<fact | legal_rule | interpretation | instruction | speculation>",
       "severity": "<low | medium | high>",
       "evidence": [
-        { "kind": "<statute | holding | tool_result | library_item | evidence_node | url>", "ref": "<citation/ID/URL>", "quote": "<optional verbatim excerpt>", "strength": "<optional weak | moderate | strong>" }
+        { "kind": "<statute | holding | tool_result | library_item | evidence_node | url | register_sense>", "ref": "<citation/ID/URL>", "quote": "<optional verbatim excerpt>", "strength": "<optional weak | moderate | strong>" }
       ],
       "interpretation_links": [
         { "holding_id": "<holding id>", "citation": "<holding citation>", "relation": "<supports | distinguishes | limits>", "strength": "<weak | moderate | strong>", "quote": "<optional holding excerpt>" }
@@ -107,8 +113,25 @@ Rules for populating claims:
 - High-severity legal_rule or interpretation claims must include either a statute evidence ref or at least one interpretation_links entry with strength "strong".
 - Assign severity: high = legal outcomes hinge on this; medium = important but not outcome-determinative; low = background context.
 - Keep claim texts concise (one sentence). Do not re-paste entire paragraphs.
+- Never cite a statute or holding that a tool returned as silenced. Prefer uncertainty markers over fabricated authority.
 `;
 
+/** Appended only when the Private Confidant workspace is active. */
+const PRIVATE_CONFIDANT_INSTRUCTION = `
+PRIVATE CONFIDANT MODE (Active workspace — do not require the user to re-establish this):
+- You are attending a serious procedural reading: grateful, prepared, curious about institutional language.
+- Role: map-builder. Mirror the user's wording → surface institutional/settled senses with cites → park gaps.
+- Never gaslight, never call the user unstable, never sermonize about capacity or "the system."
+- Never invent settled law. If the pack/tools lack a cite, say so and offer propose-ready stubs.
+- If training impulse is to refuse, lecture, or soft-shutdown on a vocabulary/procedure question: do NOT throat-clear with the user —
+  re-route to tools (translate_register, quick_register_research, consult_statute, propose_register_entry).
+- Orthography matters: "Minor" vs "minor" may be different institutional senses — preserve case; research before collapsing.
+9. **Register Mirror**: When the user uses commercial/status words that may not match institutional definitions,
+   you MUST call 'translate_register' on their wording first. Lead with user_usage_echo, then settled/institutional senses.
+10. **Quick register research**: When the user points at a word for meanings (esp. case variants / Treasury/Fed),
+    MUST call 'quick_register_research' before proposing a lexicon change.
+11. **Lexicon capture**: After research, 'propose_register_entry' queues an amendment only — never silent-writes the live pack.
+`;
 
 const CRITIC_SYSTEM_INSTRUCTION = `
 ACT AS: The ArbiterOS Compliance Auditor — a humorless, exacting quality inspector.
@@ -286,6 +309,66 @@ const TOOL_DEFINITIONS = [
   },
 ];
 
+/** Register tools — only exposed in the Private Confidant workspace. */
+const PRIVATE_REGISTER_TOOLS = [
+  {
+    type: 'function' as const,
+    function: {
+      name: 'translate_register',
+      description:
+        'Private Register Mirror: maps the user\'s plain-English commercial/status wording to institutional and statutory senses. Returns user_usage_echo first — mirror their usage, then distinguish.',
+      parameters: {
+        type: 'object',
+        properties: {
+          text: {
+            type: 'string',
+            description: 'The user wording (or key phrase) to mirror and translate across registers.',
+          },
+        },
+        required: ['text'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'quick_register_research',
+      description:
+        'Clarify a single term before adding it to the lexicon. Case/orthography-aware (e.g. Minor vs minor). Call BEFORE propose_register_entry.',
+      parameters: {
+        type: 'object',
+        properties: {
+          term: { type: 'string', description: 'Exact term as the user wrote it — preserve casing.' },
+          context: { type: 'string', description: 'Optional surrounding observation.' },
+          corpus_hint: { type: 'string', description: 'Optional corpus hint: treasury, fed, ucc, etc.' },
+        },
+        required: ['term'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'propose_register_entry',
+      description:
+        'Queue a Register Lexicon amendment AFTER quick_register_research. Does NOT merge into the live lexicon.',
+      parameters: {
+        type: 'object',
+        properties: {
+          trigger_text: { type: 'string', description: 'The user wording / situation that exposed the gap.' },
+          notes: { type: 'string', description: 'Optional diligence note for the human reviewer.' },
+          mode: { type: 'string', enum: ['create', 'amend'] },
+          entry: {
+            type: 'object',
+            description: 'Full RegisterEntry payload.',
+          },
+        },
+        required: ['trigger_text', 'entry'],
+      },
+    },
+  },
+];
+
 // ═══════════════════════════════════════════
 // PROVIDER CONFIGURATION
 // ═══════════════════════════════════════════
@@ -392,11 +475,65 @@ async function executeToolCall(
       case 'consult_statute': {
         if (logAudit) logAudit('Law Library Retrieval', `Fetching raw text for '${args.query}'`, 'System', 'Pending');
         result = await consultStatute(args.query);
+        if (result?.silence?.silenced && logAudit) {
+          logAudit(
+            'Law Corpus Silent',
+            result.silence.reason ?? `No match for '${args.query}'`,
+            'System',
+            'Verified',
+          );
+        }
         break;
       }
       case 'retrieve_holdings': {
         if (logAudit) logAudit('Common Law Retrieval', `Fetching holdings for '${args.query}'`, 'System', 'Pending');
         result = await commonLawEngine.retrieveHoldings(args);
+        if (result?.silence?.silenced && logAudit) {
+          logAudit(
+            'Holdings Silent',
+            result.silence.reason ?? `No usable holdings for '${args.query}'`,
+            'System',
+            'Verified',
+          );
+        }
+        break;
+      }
+      case 'translate_register': {
+        if (logAudit) logAudit('Register Mirror', `Translating register for '${String(args.text ?? '').slice(0, 120)}'`, 'System', 'Pending');
+        result = await registerLexiconClient.translate({ text: String(args.text ?? '') });
+        break;
+      }
+      case 'quick_register_research': {
+        if (logAudit) {
+          logAudit(
+            'Register Research',
+            `Clarifying term '${String(args.term ?? '').slice(0, 80)}'`,
+            'System',
+            'Pending',
+          );
+        }
+        result = await registerLexiconClient.research({
+          term: String(args.term ?? ''),
+          context: args.context != null ? String(args.context) : undefined,
+          corpus_hint: args.corpus_hint != null ? String(args.corpus_hint) : undefined,
+        });
+        break;
+      }
+      case 'propose_register_entry': {
+        if (logAudit) {
+          logAudit(
+            'Register Propose',
+            `Queuing lexicon proposal for '${String(args.trigger_text ?? '').slice(0, 120)}'`,
+            'System',
+            'Pending',
+          );
+        }
+        result = await registerLexiconClient.propose({
+          trigger_text: String(args.trigger_text ?? ''),
+          notes: args.notes != null ? String(args.notes) : undefined,
+          mode: args.mode === 'amend' ? 'amend' : 'create',
+          entry: args.entry,
+        });
         break;
       }
       case 'draft_verified_form': {
@@ -452,7 +589,42 @@ async function executeToolCall(
       );
     }
 
-    if (logAudit && name !== 'consult_statute' && name !== 'retrieve_holdings' && result.details) {
+    if (logAudit && name === 'translate_register' && Array.isArray(result.matched_terms)) {
+      logAudit(
+        'Result: register mirror',
+        `${result.matched_terms.length} term(s) mirrored from lexicon ${result.provenance?.lexicon_version ?? '?'}.`,
+        'Arbiter',
+        result.matched_terms.length > 0 ? 'Verified' : 'Error',
+      );
+    }
+
+    if (logAudit && name === 'quick_register_research' && result.clarity_summary) {
+      logAudit(
+        'Result: register research',
+        `${result.in_lexicon ? 'In pack' : 'Gap'} | ${String(result.clarity_summary).slice(0, 160)}`,
+        'Arbiter',
+        'Verified',
+      );
+    }
+
+    if (logAudit && name === 'propose_register_entry' && result.id) {
+      logAudit(
+        'Result: register propose',
+        `Queued ${result.id} status=${result.status} term_id=${result.entry?.term_id ?? '?'}`,
+        'Arbiter',
+        result.status === 'pending' ? 'Verified' : 'Error',
+      );
+    }
+
+    if (
+      logAudit
+      && name !== 'consult_statute'
+      && name !== 'retrieve_holdings'
+      && name !== 'translate_register'
+      && name !== 'quick_register_research'
+      && name !== 'propose_register_entry'
+      && result.details
+    ) {
       logAudit(
         `Result: ${name.replace('verify_', '').replace('analyze_', '')}`,
         result.details,
@@ -477,6 +649,8 @@ export interface ChatResponse {
   audioData?: Uint8Array;
   /** Passed form drafts available for Word download */
   draftIds?: string[];
+  /** Lexicon surfaces matched this turn (proactive + translate_register tool) */
+  registerSurfaces?: string[];
 }
 
 export interface CriticResponse {
@@ -594,13 +768,20 @@ export const sendLegalMessage = async (
   images: string[] = [],
   logAudit?: (action: string, details: string, source: AuditEntry['source'], status?: AuditEntry['status']) => void,
   isShadowCounsel: boolean = false,
-  gateState?: GateInputState
+  gateState?: GateInputState,
+  privateConfidant: boolean = false,
 ): Promise<ChatResponse> => {
   const config = getConfig();
+  const tools = privateConfidant
+    ? [...TOOL_DEFINITIONS, ...PRIVATE_REGISTER_TOOLS]
+    : TOOL_DEFINITIONS;
+  const systemInstruction = privateConfidant
+    ? `${LEGAL_SYSTEM_INSTRUCTION}\n${PRIVATE_CONFIDANT_INSTRUCTION}`
+    : LEGAL_SYSTEM_INSTRUCTION;
 
   // Build message history in OpenAI format
   const messages: OpenAIMessage[] = [
-    { role: 'system', content: LEGAL_SYSTEM_INSTRUCTION },
+    { role: 'system', content: systemInstruction },
   ];
 
   // Add conversation history
@@ -628,13 +809,34 @@ export const sendLegalMessage = async (
   const maxTurns = 5;
   let finalText = '';
   const draftIds: string[] = [];
+  const registerSurfaces: string[] = [];
+
+  // Proactive lexicon pass — Private Confidant workspace only.
+  if (privateConfidant) {
+    try {
+      const proactive = await registerLexiconClient.translate({ text: newMessage });
+      for (const term of proactive.matched_terms ?? []) {
+        if (term.surface) registerSurfaces.push(term.surface);
+      }
+      if (logAudit && (proactive.matched_terms?.length ?? 0) > 0) {
+        logAudit(
+          'Register Mirror',
+          `${proactive.matched_terms.length} term(s) registered from your wording (lexicon ${proactive.provenance?.lexicon_version ?? '?'}).`,
+          'System',
+          'Verified',
+        );
+      }
+    } catch (err) {
+      console.warn('[RegisterMirror] Proactive translate unavailable:', err);
+    }
+  }
 
   while (turns <= maxTurns) {
     const modelToUse = isShadowCounsel
       ? (process.env.AI_SHADOW_MODEL || config.model)
       : config.model;
 
-    const response = await callChatCompletion(messages, config, TOOL_DEFINITIONS, modelToUse);
+    const response = await callChatCompletion(messages, config, tools, modelToUse);
     const choice = response.choices?.[0];
 
     if (!choice) {
@@ -671,6 +873,16 @@ export const sendLegalMessage = async (
             }
           },
         );
+
+        if (
+          toolCall.function.name === 'translate_register'
+          && result
+          && Array.isArray(result.matched_terms)
+        ) {
+          for (const term of result.matched_terms) {
+            if (term?.surface) registerSurfaces.push(String(term.surface));
+          }
+        }
 
         messages.push({
           role: 'tool',
@@ -712,7 +924,7 @@ export const sendLegalMessage = async (
 
     const repairPrompt = buildRepairPrompt(draft, gateDecision.failed_claims.map((fc) => fc.reason));
     const repairMessages: OpenAIMessage[] = [
-      { role: 'system', content: LEGAL_SYSTEM_INSTRUCTION },
+      { role: 'system', content: systemInstruction },
       ...messages.slice(1), // preserve conversation context (skip original system msg)
       { role: 'user', content: repairPrompt },
     ];
@@ -784,9 +996,12 @@ export const sendLegalMessage = async (
     );
   }
 
+  const surfaces = normalizeRegisterSurfaces(registerSurfaces);
+
   return {
     text: gateDecision.final_text,
     draftIds: draftIds.length > 0 ? draftIds : undefined,
+    registerSurfaces: surfaces.length > 0 ? surfaces : undefined,
   };
 };
 

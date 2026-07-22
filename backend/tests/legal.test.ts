@@ -6,6 +6,7 @@ const originalEnv = {
   ARBITER_DB_PATH: process.env.ARBITER_DB_PATH,
   ARBITER_SESSION_SECRET: process.env.ARBITER_SESSION_SECRET,
   ARBITER_SESSION_COOKIE: process.env.ARBITER_SESSION_COOKIE,
+  LAW_CORPUS_URL: process.env.LAW_CORPUS_URL,
   WHITEGLOVE_URL: process.env.WHITEGLOVE_URL,
 };
 
@@ -13,13 +14,15 @@ beforeEach(() => {
   process.env.ARBITER_DB_PATH = ':memory:';
   process.env.ARBITER_SESSION_SECRET = 'test-session-secret-12345';
   process.env.ARBITER_SESSION_COOKIE = 'arbiter_session';
-  process.env.WHITEGLOVE_URL = 'http://lawlibra.local:4880';
+  process.env.LAW_CORPUS_URL = 'http://lawlibra.local:4880';
+  delete process.env.WHITEGLOVE_URL;
 });
 
 afterEach(() => {
   process.env.ARBITER_DB_PATH = originalEnv.ARBITER_DB_PATH;
   process.env.ARBITER_SESSION_SECRET = originalEnv.ARBITER_SESSION_SECRET;
   process.env.ARBITER_SESSION_COOKIE = originalEnv.ARBITER_SESSION_COOKIE;
+  process.env.LAW_CORPUS_URL = originalEnv.LAW_CORPUS_URL;
   process.env.WHITEGLOVE_URL = originalEnv.WHITEGLOVE_URL;
   vi.unstubAllGlobals();
 });
@@ -129,6 +132,12 @@ describe('legal backend routes', () => {
       title: 'Negotiable Instruments',
       citation: 'Ala. Code § 7-3-104',
       source: 'whiteglove-manifold',
+      silence: expect.objectContaining({
+        contract_version: '1.0',
+        authority_kind: 'statute',
+        silenced: false,
+        found: true,
+      }),
     });
     expect(fetchMock).toHaveBeenCalledWith('http://lawlibra.local:4880/api/legal/query', expect.any(Object));
 

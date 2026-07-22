@@ -5,6 +5,7 @@ import { Message, Role } from '../types';
 import { sendLegalMessage, runArbiterAudit } from '../services/aiProvider';
 import { draftDownloadUrl } from '../services/draftsClient';
 import { decodeAudioData, playAudioBuffer } from '../services/audio';
+import { segmentRegisterHighlights } from '../services/registerHighlight';
 import { useAudit } from '../contexts/AuditContext';
 import { ArbiterBadge } from './ArbiterBadge';
 
@@ -14,7 +15,13 @@ interface StagedFile {
   path?: string;
 }
 
-export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = false }) => {
+export type AdvisorMode = 'counsel' | 'private';
+
+export const LegalAdvisor: React.FC<{ nightMode?: boolean; mode?: AdvisorMode }> = ({
+  nightMode = false,
+  mode = 'counsel',
+}) => {
+  const privateMode = mode === 'private';
   const { addEntry, clearLog } = useAudit();
   // Start empty to remove visual clutter on load
   const [history, setHistory] = useState<Message[]>([]);
@@ -132,12 +139,15 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
         userMsg.text, 
         userMsg.images,
         addEntry,
-        shadowCounsel
+        shadowCounsel,
+        undefined,
+        privateMode,
       );
       
       setLoadingStage('ARBITER CRITIC: AUDITING RESPONSE...');
       const auditResult = await runArbiterAudit(response.text);
 
+      const surfaces = privateMode ? response.registerSurfaces : undefined;
       const modelMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: Role.MODEL,
@@ -145,15 +155,23 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
         timestamp: new Date(),
         audioData: response.audioData,
         draftIds: response.draftIds,
+        registerSurfaces: surfaces,
       };
 
-      setHistory(prev => [...prev, modelMsg]);
+      setHistory((prev) => [
+        ...prev.map((msg) =>
+          msg.id === userMsg.id
+            ? { ...msg, registerSurfaces: surfaces }
+            : msg
+        ),
+        modelMsg,
+      ]);
 
       const latency = Date.now() - startTime;
       addEntry(
-        'Counsel Dispensed', 
+        privateMode ? 'Private Confidant Reply' : 'Counsel Dispensed',
         `Audit Score: ${(auditResult.score * 100).toFixed(0)}%`, 
-        'Arbiter',
+        privateMode ? 'Private Confidant' : 'Arbiter',
         auditResult.score > 0.8 ? 'Verified' : 'Refining',
         {
           criticScore: auditResult.score,
@@ -210,6 +228,34 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
     } catch (e) {
       setIsSpeaking(false);
     }
+  };
+
+  const renderRegisteredPlain = (text: string, surfaces?: string[]) => {
+    if (!surfaces || surfaces.length === 0) {
+      return text;
+    }
+    return segmentRegisterHighlights(text, surfaces).map((segment, index) =>
+      segment.registered ? (
+        <mark
+          key={`reg-${index}`}
+          data-testid="register-surface"
+          title="Registered by the private confidant lexicon"
+          className="register-surface"
+          style={{
+            background: 'transparent',
+            color: 'inherit',
+            borderBottom: '2px solid rgba(212, 175, 55, 0.85)',
+            boxShadow: 'inset 0 -0.35em 0 rgba(212, 175, 55, 0.18)',
+            borderRadius: '1px',
+            padding: '0 1px',
+          }}
+        >
+          {segment.text}
+        </mark>
+      ) : (
+        <React.Fragment key={`plain-${index}`}>{segment.text}</React.Fragment>
+      ),
+    );
   };
 
   const renderMessageText = (text: string) => {
@@ -274,10 +320,15 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
   };
 
   return (
-    <div data-testid="view-legal-advisor" className="flex flex-col h-full relative overflow-hidden" style={{
+    <div
+      data-testid={privateMode ? 'view-private-confidant' : 'view-legal-advisor'}
+      className="flex flex-col h-full relative overflow-hidden"
+      style={{
       background: nightMode
         ? 'radial-gradient(ellipse 800px 600px at 50% 20%, rgba(42,28,18,0.95) 0%, #0d0806 60%)'
-        : 'linear-gradient(180deg, #1a0f0a 0%, #0d0806 100%)',
+        : privateMode
+          ? 'linear-gradient(180deg, #1a120c 0%, #0d0806 100%)'
+          : 'linear-gradient(180deg, #1a0f0a 0%, #0d0806 100%)',
       fontFamily: "'Inter', sans-serif",
     }}>
       
@@ -299,9 +350,22 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
 
       {/* HEADER SECTION: Badge + THE BIG INPUT */}
       <div className="flex flex-col items-center justify-center pt-6 pb-4 z-40 w-full">
-         <div className="mb-5 transform hover:scale-105 transition-transform duration-500">
+         <div className="mb-3 transform hover:scale-105 transition-transform duration-500">
             <ArbiterBadge />
          </div>
+         {privateMode && (
+           <div
+             data-testid="private-mode-badge"
+             className="mb-4 px-3 py-1 rounded-full text-[9px] uppercase tracking-[0.2em]"
+             style={{
+               color: '#d4af37',
+               border: '1px solid rgba(212,175,55,0.45)',
+               background: 'rgba(212,175,55,0.08)',
+             }}
+           >
+             Private Confidant · Register Mode
+           </div>
+         )}
 
          {/* ═══ THE COUNSEL BAR — Large, Heavy, Mahogany ═══ */}
          <div className="w-full max-w-2xl mx-auto px-4">
@@ -347,7 +411,11 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
                       handleSend();
                     }
                   }}
-                  placeholder="State your case, counselor..."
+                  placeholder={
+                    privateMode
+                      ? 'Point at a word, a casing, a policy phrase — we map it before we keep it...'
+                      : 'State your case, counselor...'
+                  }
                   rows={3}
                   className="w-full bg-transparent text-sm font-sans resize-none outline-none leading-relaxed scrollbar-hide"
                   style={{
@@ -420,79 +488,134 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
 
             {/* Quick Actions — Brass tags */}
             <div className="flex gap-2 mt-3 text-[10px] flex-wrap justify-center overflow-visible z-50">
-              <button 
-                onClick={() => {
-                  setPendingAction('ANALYZE_RISK');
-                  fileInputRef.current?.click();
-                }}
-                className="px-3 py-1.5 rounded-lg flex items-center gap-2 group transition-all hover:-translate-y-0.5"
-                style={{
-                  background: '#1e1410',
-                  border: '1px solid #14b8a6',
-                  color: '#14b8a6',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                }}
-              >
-                <svg className="group-hover:animate-bounce" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                Upload & Analyze
-              </button>
+              {privateMode ? (
+                <>
+                  <button
+                    onClick={() =>
+                      handleSend(
+                        'Mirror how I used “money” here, then distinguish the institutional sense if it differs.',
+                      )
+                    }
+                    className="px-3 py-1.5 rounded-lg transition-all hover:-translate-y-0.5"
+                    style={{
+                      background: '#1e1410',
+                      border: '1px solid rgba(212,175,55,0.45)',
+                      color: '#d4af37',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                    }}
+                  >
+                    Mirror a Term
+                  </button>
+                  <button
+                    onClick={() =>
+                      handleSend(
+                        'Clarify “Minor” vs “minor” before we propose anything — case matters.',
+                      )
+                    }
+                    className="px-3 py-1.5 rounded-lg transition-all hover:-translate-y-0.5"
+                    style={{
+                      background: '#1e1410',
+                      border: '1px solid #3d2b1f',
+                      color: '#8b7355',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                    }}
+                  >
+                    Clarify Casing
+                  </button>
+                  <button
+                    onClick={() =>
+                      setInputText(
+                        'I noticed a phrase that may need a lexicon entry. Research it first, then propose if clear.',
+                      )
+                    }
+                    className="px-3 py-1.5 rounded-lg transition-all hover:-translate-y-0.5"
+                    style={{
+                      background: '#1e1410',
+                      border: '1px solid #3d2b1f',
+                      color: '#8b7355',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                    }}
+                  >
+                    Propose After Research
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button 
+                    onClick={() => {
+                      setPendingAction('ANALYZE_RISK');
+                      fileInputRef.current?.click();
+                    }}
+                    className="px-3 py-1.5 rounded-lg flex items-center gap-2 group transition-all hover:-translate-y-0.5"
+                    style={{
+                      background: '#1e1410',
+                      border: '1px solid #14b8a6',
+                      color: '#14b8a6',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                    }}
+                  >
+                    <svg className="group-hover:animate-bounce" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Upload & Analyze
+                  </button>
 
-              <div className="relative">
-                <button 
-                  onClick={() => setDraftMenuOpen(!draftMenuOpen)}
-                  className="px-3 py-1.5 rounded-lg flex items-center gap-2 transition-all hover:-translate-y-0.5"
-                  style={{
-                    background: '#1e1410',
-                    border: '1px solid #3d2b1f',
-                    color: '#d4af37',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                  }}
-                >
-                  <span>Draft Instruments</span>
-                  <svg className={`w-3 h-3 transition-transform ${draftMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                </button>
-                
-                {draftMenuOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-60 rounded-xl overflow-hidden flex flex-col p-1 z-[60]" style={{
-                    background: 'linear-gradient(135deg, #2a1c12 0%, #1e1410 100%)',
-                    border: '1px solid #3d2b1f',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(212,175,55,0.1)',
-                  }}>
-                    <div className="px-3 py-2 text-[9px] uppercase tracking-widest font-bold mb-1" style={{ color: '#5a4030', borderBottom: '1px solid #3d2b1f' }}>
-                      Select Template
-                    </div>
-                    <button onClick={() => handleSend("Generate a UCC compliant Promissory Note for $10,000 between generic parties.")} className="text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-2" style={{ color: '#e8dcc8' }}>
-                      <span className="w-2 h-2 rounded-full" style={{ background: '#2563eb' }}></span>
-                      Promissory Note ($10k)
+                  <div className="relative">
+                    <button 
+                      onClick={() => setDraftMenuOpen(!draftMenuOpen)}
+                      className="px-3 py-1.5 rounded-lg flex items-center gap-2 transition-all hover:-translate-y-0.5"
+                      style={{
+                        background: '#1e1410',
+                        border: '1px solid #3d2b1f',
+                        color: '#d4af37',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                      }}
+                    >
+                      <span>Draft Instruments</span>
+                      <svg className={`w-3 h-3 transition-transform ${draftMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                     </button>
-                    <button onClick={() => handleSend("Generate a UCC Article 9 Security Agreement. Collateral: '2023 Ford F-150 VIN#12345'.")} className="text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-2" style={{ color: '#e8dcc8' }}>
-                      <span className="w-2 h-2 rounded-full" style={{ background: '#6366f1' }}></span>
-                      Security Agreement
-                    </button>
-                    <button onClick={() => handleSend("Draft a Bill of Sale for 500 Industrial Widgets. Price $2000.")} className="text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-2" style={{ color: '#e8dcc8' }}>
-                      <span className="w-2 h-2 rounded-full" style={{ background: '#16a34a' }}></span>
-                      Bill of Sale
-                    </button>
-                    <button onClick={() => handleSend("Draft an Independent Contractor Agreement for generic web services.")} className="text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-2" style={{ color: '#e8dcc8' }}>
-                      <span className="w-2 h-2 rounded-full" style={{ background: '#eab308' }}></span>
-                      Contractor Agreement
-                    </button>
+                    
+                    {draftMenuOpen && (
+                      <div className="absolute top-full left-0 mt-2 w-60 rounded-xl overflow-hidden flex flex-col p-1 z-[60]" style={{
+                        background: 'linear-gradient(135deg, #2a1c12 0%, #1e1410 100%)',
+                        border: '1px solid #3d2b1f',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(212,175,55,0.1)',
+                      }}>
+                        <div className="px-3 py-2 text-[9px] uppercase tracking-widest font-bold mb-1" style={{ color: '#5a4030', borderBottom: '1px solid #3d2b1f' }}>
+                          Select Template
+                        </div>
+                        <button onClick={() => handleSend("Generate a UCC compliant Promissory Note for $10,000 between generic parties.")} className="text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-2" style={{ color: '#e8dcc8' }}>
+                          <span className="w-2 h-2 rounded-full" style={{ background: '#2563eb' }}></span>
+                          Promissory Note ($10k)
+                        </button>
+                        <button onClick={() => handleSend("Generate a UCC Article 9 Security Agreement. Collateral: '2023 Ford F-150 VIN#12345'.")} className="text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-2" style={{ color: '#e8dcc8' }}>
+                          <span className="w-2 h-2 rounded-full" style={{ background: '#6366f1' }}></span>
+                          Security Agreement
+                        </button>
+                        <button onClick={() => handleSend("Draft a Bill of Sale for 500 Industrial Widgets. Price $2000.")} className="text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-2" style={{ color: '#e8dcc8' }}>
+                          <span className="w-2 h-2 rounded-full" style={{ background: '#16a34a' }}></span>
+                          Bill of Sale
+                        </button>
+                        <button onClick={() => handleSend("Draft an Independent Contractor Agreement for generic web services.")} className="text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-2" style={{ color: '#e8dcc8' }}>
+                          <span className="w-2 h-2 rounded-full" style={{ background: '#eab308' }}></span>
+                          Contractor Agreement
+                        </button>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              <button 
-                onClick={() => setInputText("Where do I sign on this type of document?")}
-                className="px-3 py-1.5 rounded-lg transition-all hover:-translate-y-0.5"
-                style={{
-                  background: '#1e1410',
-                  border: '1px solid #3d2b1f',
-                  color: '#8b7355',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                }}
-              >
-                Show Signature Areas
-              </button>
+                  <button 
+                    onClick={() => setInputText("Where do I sign on this type of document?")}
+                    className="px-3 py-1.5 rounded-lg transition-all hover:-translate-y-0.5"
+                    style={{
+                      background: '#1e1410',
+                      border: '1px solid #3d2b1f',
+                      color: '#8b7355',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                    }}
+                  >
+                    Show Signature Areas
+                  </button>
+                </>
+              )}
             </div>
          </div>
          
@@ -523,7 +646,7 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
                 <svg className="w-8 h-8" fill="none" stroke="#5a4030" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
               </div>
               <div className="text-[10px] uppercase tracking-[0.3em] font-bold" style={{ color: '#3d2b1f' }}>
-                Awaiting Counsel
+                {privateMode ? 'Awaiting Your Wording' : 'Awaiting Counsel'}
               </div>
             </div>
           </div>
@@ -537,7 +660,7 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
                 <div className="mb-3 opacity-60">
                   <div className="text-[9px] uppercase tracking-widest flex items-center gap-2" style={{ color: '#d4af37' }}>
                     <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#d4af37' }}></span>
-                    Arbiter Counsel
+                    {privateMode ? 'Private Confidant' : 'Arbiter Counsel'}
                   </div>
                 </div>
               )}
@@ -570,8 +693,27 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean }> = ({ nightMode = fa
                 color: '#e8dcc8',
               }}>
                 <div className="text-sm leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
-                   {renderMessageText(msg.text)}
+                  {msg.role === Role.USER ? (
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap mb-0">
+                      {renderRegisteredPlain(
+                        msg.text,
+                        privateMode ? msg.registerSurfaces : undefined,
+                      )}
+                    </p>
+                  ) : (
+                    renderMessageText(msg.text)
+                  )}
                 </div>
+                {privateMode && msg.role === Role.USER && msg.registerSurfaces && msg.registerSurfaces.length > 0 && (
+                  <div
+                    className="mt-2 text-[9px] uppercase tracking-widest"
+                    style={{ color: '#a89060' }}
+                    data-testid="register-receipt"
+                  >
+                    Lexicon registered {msg.registerSurfaces.length} term
+                    {msg.registerSurfaces.length === 1 ? '' : 's'}
+                  </div>
+                )}
                 {msg.draftIds && msg.draftIds.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2" data-testid="draft-download-actions">
                     {msg.draftIds.map((draftId) => (

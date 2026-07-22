@@ -39,6 +39,9 @@ Response shape:
 - `fallbackMode`
 - `vectorSize`
 - `collection`
+- `silence` — Silence-First v1 envelope (`authority_kind: "holding"`). Empty or weak-only under strict policy ⇒ `silenced: true`.
+
+See [`docs/contracts/silence-first.v1.md`](../contracts/silence-first.v1.md) and [`authority-lanes.v1.md`](../contracts/authority-lanes.v1.md).
 
 The current local implementation uses a deterministic 1024-dimensional embedder so the full local flow works without an external model runtime.
 

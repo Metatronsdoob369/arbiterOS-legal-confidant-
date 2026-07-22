@@ -1,4 +1,5 @@
 import { apiFetch } from './localApiClient';
+import type { SilenceFirstResult } from '../schemas/silenceFirst';
 
 export interface InterpretationLink {
   holding_id: string;
@@ -51,6 +52,7 @@ export interface CommonLawQueryResult {
   fallbackMode: 'none' | 'seeded_collection' | 'seeded_in_memory';
   holdings: HoldingSearchResult[];
   interpretationLinks: InterpretationLink[];
+  silence?: SilenceFirstResult;
 }
 
 export const commonLawEngine = {

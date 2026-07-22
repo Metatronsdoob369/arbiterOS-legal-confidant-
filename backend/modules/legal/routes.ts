@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { writeAuditEvent } from '../../core/audit/writeAuditEvent';
-import { getLegalRetrievalHealth, queryLegalCorpus } from '../../core/legal/whitegloveGateway';
+import { getLegalRetrievalHealth, queryLegalCorpus } from '../../core/legal/lawCorpusGateway';
 
 const LegalQuerySchema = z.object({
   query: z.string().trim().min(1).max(2048),
@@ -32,6 +32,7 @@ export async function registerLegalRoutes(app: FastifyInstance) {
         queryLength: parsedBody.data.query.length,
         found: result.found,
         source: result.source,
+        silenced: result.silence?.silenced ?? !result.found,
       },
     });
 

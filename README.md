@@ -54,6 +54,9 @@ The main event. Ask it anything. Upload documents. Get clause-by-clause risk ana
 | `analyze_clause_risks` | USC/UCC/Common Law risk scanning |
 | `consult_statute` | Retrieves raw statutory text from the Law Library |
 | `draft_verified_form` | Generates validated legal forms (Promissory Notes, Security Agreements, etc.) via `/api/drafts` |
+| `translate_register` | Private Register Mirror — echoes your wording, then maps plain English ↔ institutional/statutory senses (capacity, money/credit, lien vs UCC-1, payment vs discharge, Fed/Treasury ops) |
+| `quick_register_research` | Clarify a term (case-aware, e.g. Minor vs minor) before proposing — pack hits, case_gap, propose_ready |
+| `propose_register_entry` | Queues a lexicon amendment after research (human merge via `/api/register/proposals/:id/merge` — never silent-writes the live pack) |
 
 ### 📄 Local Word Export (SaaS-Free)
 Drafting stays on the ArbiterOS backend — no OpenCase, Google Docs, or Word add-ins.
@@ -178,7 +181,7 @@ Test files live in the `e2e/` directory:
 | `AI_MODEL` | `gpt-4o` | Primary model for legal counsel |
 | `AI_SHADOW_MODEL` | Same as `AI_MODEL` | Heavy model for Shadow Counsel mode |
 | `AI_CRITIC_MODEL` | Same as `AI_MODEL` | Model for the compliance auditor |
-| `VITE_WHITEGLOVE_URL` | `http://localhost:4880` | Optional WhiteGlove retrieval endpoint |
+| `LAW_CORPUS_URL` / `VITE_LAW_CORPUS_URL` | `http://localhost:4880` | Optional law-corpus retrieval upstream (`WHITEGLOVE_URL` / `LAWLIBRA_URL` still accepted as aliases) |
 | `VITE_QDRANT_URL` | `http://127.0.0.1:6333` | Local Qdrant endpoint for the CommonLawSpectralEngine |
 | `VITE_COMMON_LAW_COLLECTION` | `case-law-holdings` | Local holdings collection name |
 | `VITE_EMBED_ENDPOINT` | `http://127.0.0.1:4881/embed` | Local embed endpoint mounted on the ArbiterOS backend |
