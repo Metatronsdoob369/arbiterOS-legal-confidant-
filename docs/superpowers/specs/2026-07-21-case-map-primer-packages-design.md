@@ -1,7 +1,7 @@
 # Case Map Primer Packages + Documentation Spine
 
 **Date:** 2026-07-21  
-**Status:** Draft for review  
+**Status:** Draft for review (persona cross-ref folded in)  
 **Product:** ArbiterOS Legal Confidant  
 **Related:** Register Mirror (Private Confidant), silence-first authority lanes, Unconfused Man research ingest
 
@@ -11,7 +11,9 @@
 
 Case Map and Evidence currently compete as peer nav areas with overlapping “build the case” demos and little product distinction. Documentation is not one surface — it is three spines (ingest, curate, produce) that float off Counsel without owning procedure.
 
-Research notebooks (especially *The Unconfused Man and his Person*) already encode the missing unit: **named form/procedure packages** with destinations, accompanying docs, and exact verbiage — not a second whiteboard.
+**Core failure mode:** documentation *floats* without dictating proper procedure. Unthinking use of forms/notes without a packet leaves the user with artifacts and no walk.
+
+Research notebooks (especially *The Unconfused Man and his Person*) already encode the missing unit: **named form/procedure packages** with destinations, accompanying docs, and exact verbiage — not a second whiteboard. Persona-generated notes in those notebooks are flowerly and often stigma-colored; we keep the **mechanics** (forms, lines, packages, IRM traps), discard the sermon.
 
 ## 2. Decision
 
@@ -58,22 +60,24 @@ type PrimerPackage = {
 };
 ```
 
-**Gate rule:** Private may inventory and explain `contested` steps with silence-first caveats. Steps tagged `perilous` surface as **flags** (e.g. IRM frivolous / fictitious instrument screens), not as recommended playbooks.
+**Gate rule (silence-first shield):** Private may inventory and explain `contested` steps with silence-first caveats. Steps tagged `perilous` surface as **flags** — especially IRM **frivolous return** and **fictitious instrument** screens — not as recommended playbooks. Informed, not ensnared: the user sees the trap map without being coached into automated retaliation paths.
 
 ## 4. Primer set (value-add starter)
 
-v1 ships these named packs as transition-procedure courses:
+v1 ships these named packs as transition-procedure courses.
 
-| # | `package_id` | Title | Outcome (sketch) |
-|---|--------------|-------|------------------|
-| 1 | `transition_essentials` | Transition Essentials | Records/status hygiene: what you hold, agent signature duality, FOIA/ledger habit |
-| 2 | `securities_control` | Securities Control | Control of commercial paper you already touch: notes, indorsement vocabulary, HIDC basics, UCC-1/3 awareness |
-| 3 | `proper_debt_discharge` | Proper Debt Discharge | Legitimate discharge paths (payoff, settlement, dispute, statutory redemption/bankruptcy where applicable); contested commercial-redemption theories tagged, not coached |
-| 4 | `contract_navigation` | Contract Navigation | Read, classify, and walk a contract: parties, obligations, default, notice, remedy — with register lines and form hooks where filings attach |
-| 5 | `property_tax_procedure` | Property Tax Procedure | Assessment protest, pay-under-protest/refund, redemption petitions (e.g. Alabama Code 40 paths) as procedural map |
-| 6 | `irs_form_intimacy` | IRS Form Intimacy (8xxx focus) | Catalog + sensitivity bands for sparse/sensitive form ranges; official PDF access |
+### 4.1 Pack mechanics (from persona cross-ref; rhetoric stripped)
 
-**v1 ship target:** packs **1–4** (Essentials, Securities, Debt Discharge, **Contract Navigation**).  
+| # | `package_id` | Title | Outcome + mechanics |
+|---|--------------|-------|---------------------|
+| 1 | `transition_essentials` | Transition Essentials | **Duality of status / records hygiene.** Enforce agent/representative signature practice (UCC 3-402: signature shows unambiguously it is made on behalf of the represented person). FOIA/ledger habit to track the commercial entity’s paper trail. Outcome: user can sign and file without collapsing principal into debtor by accident. |
+| 2 | `securities_control` | Securities Control | **Instruction-manual literacy for paper you already touch.** Indorsement vocabulary, Holder in Due Course (HIDC) basics, UCC-1/3 awareness, qualified indorsement concepts as *settled UCC mechanics* — with any “discharge the Fed via endorsement” leap tagged `contested`/`perilous`. Outcome: user can identify and control instruments, not invent value. |
+| 3 | `proper_debt_discharge` | Proper Debt Discharge | **Legitimate paths first.** Payoff, settlement, dispute, statutory redemption/bankruptcy where applicable. Contested commercial-redemption theories inventoried and tagged, never coached as settled fact. Outcome: user knows which door is open without walking into IRM traps blind. |
+| 4 | `contract_navigation` | Contract Navigation | **Walk adhesion and negotiated contracts.** Classify parties, obligations, default triggers, notice, remedy; hook register lines and filing forms where the agreement requires them. Bridges produce (what you sign/file) and Case Map (how you walk the agreement). |
+| 5 | `property_tax_procedure` | Property Tax Procedure | Assessment protest, pay-under-protest/refund, redemption petitions (e.g. Alabama Code 40 paths) as procedural map + form packages. |
+| 6 | `irs_form_intimacy` | IRS Form Intimacy (8xxx focus) | Catalog + sensitivity bands for sparse/sensitive ranges. **Named hook: Form 8822-B** (Change of Address or Responsible Party — Business) — official purpose and fill paths as `institutional`; contested “jurisdictional relocation / Treasury as responsible party” fills tagged `contested`/`perilous`, never default. |
+
+**v1 ship target:** packs **1–4**.  
 **Next primers:** 5–6 once schema + Case Map UI consume packs.
 
 Adding a new pack after this lands = new seed JSON + optional Register lines + optional Library sources — not a new app area.
@@ -133,12 +137,28 @@ Each loop improves Private’s map of “what’s hot, thin, contested, perilous
 - Shipping vector index / heat map UI  
 - Replacing Counsel; packs hang off Case Map + Documentation
 
-## 10. Open follow-ups
+## 10. Persona cross-ref — keep vs discard
 
-- Exact seed content for packs 1–4 (sourced from notebooks + `.gov` forms)  
+| Keep (gold) | Discard (flower / stigma) |
+|-------------|---------------------------|
+| Floating docs without procedure is the failure mode | “Commercial matrix / unthinking masses” sermon |
+| Packet ↔ Register lines as the walk | Liberation mythology as product voice |
+| UCC 3-402 / agent signature as Transition Essential | “Insulate the sovereign man” as UI copy |
+| Indorsement / HIDC / UCC-1/3 as Securities literacy | “Dismantle perpetual debt” as default claim |
+| Legitimate discharge + tag contested | Coaching redemption theories as settled |
+| Adhesion contract walk for Contract Navigation | Adversary cosplay in user-facing text |
+| IRM frivolous/fictitious as perilous flags | Framing the product as warfare |
+| 8822-B as named IRS intimacy hook | Defaulting contested responsible-party fills |
+
+Product voice stays Private Confidant: clarity, patience, silence-first — not the notebook persona.
+
+## 11. Open follow-ups
+
+- Exact seed content for packs 1–4 (sourced from notebooks + `.gov` forms; strip persona voice on ingest)  
 - Zod schemas colocated with `legalSchemas` / register contracts  
 - Import path from `open-notebook-domicile` exports without inheriting LLM stigma voice  
+- Seed Form 8822-B official instructions + contested-fill flag table under pack 6  
 
-## 11. Approval
+## 12. Approval
 
-Approved direction (2026-07-21 conversation): packet-first Case Map; primer packages as transition courses; **Contract Navigation** added; recursive ingest→retag→vector loop as the compounding path for v2 Private.
+Approved direction (2026-07-21 conversation): packet-first Case Map; primer packages as transition courses; **Contract Navigation** added; recursive ingest→retag→vector loop as the compounding path for v2 Private. Persona cross-ref folded in as mechanics-only refinements (this revision).
