@@ -137,7 +137,7 @@ export function GrowthStairway({ canBegin = true, goalLabel, steps, onBegin }: G
                 style={{ animationDelay: getLandingAnimationDelay(index) }}
               >
                 <span>{shortenTitle(step.title)}</span>
-                <span className="growth-stairway__landing-order">{step.order + 1}</span>
+                <span className="growth-stairway__landing-order">{index + 1}</span>
               </div>
             ))}
           </div>
