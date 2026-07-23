@@ -9,4 +9,11 @@ describe('growth chrome modules', () => {
     expect(typeof card.GrowthAreaCard).toBe('function');
     expect(typeof tile.GrowthVehicleTile).toBe('function');
   });
+
+  it('exports stairway and stepper', async () => {
+    const stair = await import('./GrowthStairway');
+    const stepper = await import('./GrowthStepper');
+    expect(typeof stair.GrowthStairway).toBe('function');
+    expect(typeof stepper.GrowthStepper).toBe('function');
+  });
 });
