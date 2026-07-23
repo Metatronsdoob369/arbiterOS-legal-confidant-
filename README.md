@@ -75,8 +75,8 @@ A visual whiteboard for connecting the dots. Drag nodes around. Draw connections
 ### 📚 The Library
 Store quotes, law snippets, articles, books, papers. Pin the important stuff. Tag everything. Search it later when you need that one FTC citation you know you saved somewhere.
 
-### 📋 Case Map (Primer Packages)
-Browse packet-first primer packages that organize procedural goals into inventory steps, register lines, forms, speed bumps, and clearly marked caveats.
+### 📋 Growth (Primer Packages)
+Progressive stage machine: **Status Upgrades** → area cards → vehicle tiles → **Stairway** → counted climb. Reuses packet-first primer packages (inventory steps, register lines, forms, speed bumps, and clearly marked caveats). See [Growth stage machine design](docs/superpowers/specs/2026-07-23-growth-stage-machine-design.md).
 
 ### 🗺️ Forensic Maps
 Generate legal concept visualizations — Negotiability Flow, Corporate Veil, Security Interest, Chain of Title.
