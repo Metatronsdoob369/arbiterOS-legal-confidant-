@@ -1,6 +1,7 @@
 import { brand } from '../brand/tokens';
 
 export type GrowthStairwayProps = {
+  canBegin?: boolean;
   goalLabel: string;
   steps: Array<{ id: string; title: string; order: number }>;
   onBegin: () => void;
@@ -121,7 +122,7 @@ function getLandingAnimationDelay(index: number): string {
 }
 
 /** Reveals the ordered course as luminous landings before the user begins. */
-export function GrowthStairway({ goalLabel, steps, onBegin }: GrowthStairwayProps) {
+export function GrowthStairway({ canBegin = true, goalLabel, steps, onBegin }: GrowthStairwayProps) {
   return (
     <>
       <style>{stairwayStyles}</style>
@@ -143,9 +144,15 @@ export function GrowthStairway({ goalLabel, steps, onBegin }: GrowthStairwayProp
         </div>
         <h2 className="growth-stairway__title" id="growth-stairway-title">Your stairway</h2>
         <p className="growth-stairway__goal">{goalLabel}</p>
-        <button className="growth-stairway__begin" onClick={onBegin} type="button">
-          Begin the climb
-        </button>
+        {canBegin ? (
+          <button className="growth-stairway__begin" onClick={onBegin} type="button">
+            Begin the climb
+          </button>
+        ) : (
+          <p className="growth-stairway__goal">
+            This route has no steps to climb yet. Choose another status upgrade or return when it is ready.
+          </p>
+        )}
       </section>
     </>
   );

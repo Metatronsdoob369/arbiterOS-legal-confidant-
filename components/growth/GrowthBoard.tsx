@@ -58,6 +58,7 @@ export function GrowthBoard() {
   const selectedPackage = packages.find((item) => item.package_id === selectedPackageId) ?? null;
   const selectedSteps = selectedPackage ? sortPackageSteps(selectedPackage.steps) : [];
   const selectedVehicles = selectedPackage ? vehiclesForPackage(selectedPackage) : [];
+  const canClimb = canEnterClimb(Boolean(selectedVehicle), selectedSteps.length);
 
   function dissolvePeers(peerIds: string[], onComplete: () => void) {
     if (dissolvingIds.length > 0) {
@@ -210,12 +211,15 @@ export function GrowthBoard() {
 
         {stage === 3 && selectedPackage && (
           <GrowthStairway
+            canBegin={canClimb}
             goalLabel={selectedVehicle ? `${selectedVehicle.label}: ${selectedPackage.outcome}` : selectedPackage.outcome}
             onBegin={() => {
-              if (canEnterClimb(Boolean(selectedVehicle), selectedSteps.length)) {
-                setStepIndex(0);
-                setStage(4);
+              if (!canClimb) {
+                return;
               }
+
+              setStepIndex(0);
+              setStage(4);
             }}
             steps={selectedSteps}
           />

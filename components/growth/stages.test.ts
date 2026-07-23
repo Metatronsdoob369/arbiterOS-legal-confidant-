@@ -20,10 +20,13 @@ describe('previousGrowthStage', () => {
 });
 
 describe('canEnterClimb', () => {
-  it('requires a vehicle and at least one step', () => {
+  it('requires a vehicle', () => {
     expect(canEnterClimb(false, 3)).toBe(false);
-    expect(canEnterClimb(true, 0)).toBe(false);
     expect(canEnterClimb(true, 2)).toBe(true);
+  });
+
+  it('rejects an empty package even with a selected vehicle', () => {
+    expect(canEnterClimb(true, 0)).toBe(false);
   });
 });
 
