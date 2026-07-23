@@ -86,23 +86,39 @@ test.describe('Navigation — sidebar', () => {
     await loginAsBootstrapAdmin(page);
   });
 
-  const views: Array<{ btn: string; viewId: string; heading: string }> = [
+  const views: Array<{
+    btn: string;
+    viewId: string;
+    heading: string;
+    headingText?: RegExp;
+  }> = [
     { btn: 'nav-btn-advisor',    viewId: 'view-advisor',            heading: 'view-legal-advisor' },
     { btn: 'nav-btn-private',    viewId: 'view-private_confidant',  heading: 'view-private-confidant' },
     { btn: 'nav-btn-evidence',   viewId: 'view-evidence',           heading: 'heading-evidence-board' },
     { btn: 'nav-btn-library',    viewId: 'view-library',            heading: 'heading-library' },
-    { btn: 'nav-btn-case_board', viewId: 'view-case_board',         heading: 'heading-case-board' },
+    { btn: 'nav-btn-case_board', viewId: 'view-case_board',         heading: 'heading-case-board', headingText: /Growth/i },
     { btn: 'nav-btn-studio',     viewId: 'view-studio',             heading: 'heading-image-gen' },
     { btn: 'nav-btn-audit',      viewId: 'view-audit',              heading: 'heading-audit-log' },
   ];
 
-  for (const { btn, viewId, heading } of views) {
+  for (const { btn, viewId, heading, headingText } of views) {
     test(`clicking ${btn} shows the correct view`, async ({ page }) => {
       await page.getByTestId(btn).click();
       await expect(page.getByTestId(viewId).first()).toBeVisible();
       await expect(page.getByTestId(heading)).toBeVisible();
+      if (headingText) {
+        await expect(page.getByTestId(heading)).toHaveText(headingText);
+      }
     });
   }
+
+  test('Growth funnel reaches stairway from Status Upgrades', async ({ page }) => {
+    await page.getByTestId('nav-btn-case_board').click();
+    await page.getByTestId('growth-folder-status-upgrades').click();
+    await page.getByTestId(/growth-area-/).first().click();
+    await page.getByTestId(/growth-vehicle-/).first().click();
+    await expect(page.getByTestId('growth-stairway')).toBeVisible();
+  });
 });
 
 test.describe('Night mode', () => {
