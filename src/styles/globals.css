@@ -3,30 +3,37 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Global base styles ──────────────────────────────────────────────────── */
+/* ── Arbiter brand tokens (gunmetal / silver / champagne) ───────────────── */
+:root {
+  --near-black: #0a0a0c;
+  --gunmetal: #2a2e35;
+  --gunmetal-deep: #1c2026;
+  --silver: #cfd5de;
+  --silver-bright: #eef1f5;
+  --champagne: #c4a574;
+  --muted: #9aa1ab;
+  --line: rgba(207, 213, 222, 0.28);
+  --line-soft: rgba(207, 213, 222, 0.14);
+}
 
 @layer base {
   body {
-    font-family: 'Inter', system-ui, sans-serif;
-    background-color: #0d0806;
-    color: #e8dcc8;
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    background-color: var(--near-black);
+    color: var(--silver-bright);
   }
 
   h1, h2, h3, h4, h5, h6, .font-serif {
-    font-family: 'Merriweather', Georgia, serif;
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
   }
 
-  /* Gold text selection */
   ::selection {
-    background: rgba(212, 175, 55, 0.3);
-    color: #ffd700;
+    background: rgba(207, 213, 222, 0.28);
+    color: #ffffff;
   }
 }
 
-/* ── Custom utilities ────────────────────────────────────────────────────── */
-
 @layer utilities {
-  /* Hide scrollbar while keeping scroll functionality */
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
@@ -35,8 +42,6 @@
     scrollbar-width: none;
   }
 }
-
-/* ── Keyframe animations ─────────────────────────────────────────────────── */
 
 @keyframes shimmer {
   0%   { transform: translateX(-100%); }
@@ -50,4 +55,9 @@
 @keyframes pulse-soft {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.4; }
+}
+
+@keyframes slide-in-top {
+  0% { transform: translateY(-6px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
 }

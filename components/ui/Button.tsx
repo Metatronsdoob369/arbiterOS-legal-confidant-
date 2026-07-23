@@ -3,17 +3,17 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from './cn';
 
 const buttonVariants = cva(
-  // Base classes shared by all variants
-  'inline-flex items-center justify-center gap-2 rounded-md text-xs font-semibold uppercase tracking-wider transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 focus-visible:ring-offset-2 focus-visible:ring-offset-leather-950 disabled:pointer-events-none disabled:opacity-50',
+  // Metal as border — gunmetal fill, silver rim
+  'inline-flex items-center justify-center gap-2 rounded-md text-xs font-semibold uppercase tracking-wider transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-silver focus-visible:ring-offset-2 focus-visible:ring-offset-ink disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
         default:
-          'bg-gold-gradient text-leather-950 border border-gold-500 shadow-gold-soft hover:shadow-gold-glow active:scale-[0.98]',
+          'bg-gunmetal text-silver-bright border border-silver hover:bg-gunmetal-lit hover:border-silver-bright active:scale-[0.98]',
         ghost:
-          'bg-transparent text-leather-300 border border-transparent hover:border-mahogany-800 hover:text-gold-500 hover:bg-mahogany-900/40',
+          'bg-transparent text-silver-den border border-transparent hover:border-silver/25 hover:text-silver hover:bg-gunmetal/40',
         outline:
-          'bg-transparent text-gold-500 border border-gold-600 hover:bg-gold-500/10 hover:shadow-gold-soft active:scale-[0.98]',
+          'bg-transparent text-silver border border-silver/60 hover:bg-silver/10 hover:border-silver active:scale-[0.98]',
         destructive:
           'bg-red-900/40 text-red-300 border border-red-800 hover:bg-red-900/60',
       },

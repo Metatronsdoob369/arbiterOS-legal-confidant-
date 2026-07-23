@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Arbiter — Composer (simple silver)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --void: #07090d;
+      --graph: #0d121a;
+      --panel: #131a24;
+      --mute: #8b93a0;
+      --fore: #f2f4f7;
+      --lumen: #d7e0ea;
+      --silver: #b8c0cc;
+      --silver-den: #8a93a0;
+      --gold: #c5a572;
+      --line: rgba(184, 192, 204, 0.28);
+      --line-soft: rgba(184, 192, 204, 0.14);
+      --horizon: radial-gradient(120% 90% at 50% 130%, rgba(215, 224, 234, 0.12), transparent 55%);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "IBM Plex Sans", system-ui, sans-serif;
+      background:
+        radial-gradient(900px 420px at 50% -10%, rgba(215, 224, 234, 0.06), transparent 50%),
+        var(--void);
+      color: var(--fore);
+    }
+    .page {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 1.25rem 1rem 2.5rem;
+    }
+    h1 {
+      margin: 0;
+      font-family: Newsreader, Georgia, serif;
+      font-size: 1.35rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .lede {
+      margin: 0.4rem 0 1.25rem;
+      color: var(--mute);
+      font-size: 0.88rem;
+      line-height: 1.45;
+      max-width: 52ch;
+    }
+    .label {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.64rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mute);
+      margin: 1.35rem 0 0.65rem;
+    }
+
+    /* Lumen “lamp” card — the piece you liked */
+    .lumen-card {
+      position: relative;
+      border-radius: 14px;
+      border: 1px solid var(--line-soft);
+      background:
+        var(--horizon),
+        linear-gradient(180deg, rgba(28, 37, 51, 0.92), rgba(13, 18, 26, 0.98));
+      padding: 1rem 1.1rem;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+      overflow: hidden;
+    }
+    .lumen-card::after {
+      content: "";
+      position: absolute;
+      left: 12%;
+      right: 12%;
+      bottom: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(215,224,234,0.45), transparent);
+    }
+    .lumen-card .kicker {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--lumen);
+      margin-bottom: 0.35rem;
+    }
+    .lumen-card h2 {
+      margin: 0;
+      font-family: Newsreader, Georgia, serif;
+      font-weight: 500;
+      font-size: 1.15rem;
+    }
+    .lumen-card p {
+      margin: 0.4rem 0 0;
+      color: var(--mute);
+      font-size: 0.84rem;
+      line-height: 1.4;
+    }
+
+    /* Chat stage */
+    .stage {
+      min-height: 280px;
+      border: 1px dashed var(--line-soft);
+      border-radius: 14px;
+      margin-bottom: 0.85rem;
+      display: grid;
+      place-items: center;
+      color: var(--mute);
+      font-size: 0.82rem;
+    }
+
+    /* Composer — familiar, thin silver wrap */
+    .composer {
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background:
+        var(--horizon),
+        linear-gradient(180deg, rgba(19, 26, 36, 0.96), rgba(10, 14, 20, 0.98));
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.05),
+        0 12px 40px rgba(0,0,0,0.35);
+      padding: 0.75rem 0.85rem 0.7rem;
+    }
+
+    .staged {
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.55rem;
+    }
+    .file-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      max-width: 180px;
+      padding: 0.35rem 0.55rem;
+      border-radius: 8px;
+      border: 1px solid var(--line-soft);
+      background: rgba(7, 9, 13, 0.5);
+      font-size: 0.72rem;
+      color: var(--lumen);
+    }
+    .file-pill .x {
+      border: 0;
+      background: transparent;
+      color: var(--mute);
+      cursor: pointer;
+      font-size: 0.9rem;
+      line-height: 1;
+    }
+
+    .composer textarea {
+      width: 100%;
+      min-height: 72px;
+      border: 0;
+      resize: none;
+      background: transparent;
+      color: var(--fore);
+      font: inherit;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      outline: none;
+      caret-color: var(--silver);
+    }
+    .composer textarea::placeholder { color: var(--mute); }
+
+    .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-top: 0.35rem;
+    }
+    .left {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    /* Circular action — pattern from your example, our metal */
+    .icon-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      background: rgba(7, 9, 13, 0.55);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      position: relative;
+      color: var(--silver-den);
+      transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease, transform 0.2s ease;
+      box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.18);
+    }
+    .icon-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .icon-btn .tip {
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 8px);
+      transform: translateX(-50%) translateY(4px);
+      opacity: 0;
+      pointer-events: none;
+      white-space: nowrap;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--fore);
+      background: rgb(12, 14, 18);
+      border: 1px solid var(--line-soft);
+      border-radius: 6px;
+      padding: 0.35rem 0.5rem;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .icon-btn:hover {
+      color: var(--void);
+      background: var(--silver);
+      border-color: rgba(255,255,255,0.35);
+      transform: translateY(-1px);
+    }
+    .icon-btn:hover .tip {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .icon-btn:hover svg {
+      animation: slide-in-top 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+    }
+    @keyframes slide-in-top {
+      0% { transform: translateY(-6px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Send — border metal, not filled gold */
+    .send {
+      border-radius: 999px;
+      border: 1px solid var(--gold);
+      background: transparent;
+      color: var(--gold);
+      font-weight: 600;
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+      padding: 0.55rem 1rem;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+    }
+    .send:hover {
+      background: rgba(197, 165, 114, 0.12);
+      transform: translateY(-1px);
+    }
+    .send.silver {
+      border-color: var(--silver);
+      color: var(--silver);
+    }
+    .send.silver:hover {
+      background: rgba(184, 192, 204, 0.12);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.85rem;
+    }
+    .ghost {
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--silver);
+      font-size: 0.72rem;
+      padding: 0.45rem 0.8rem;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .ghost:hover {
+      background: rgba(184, 192, 204, 0.08);
+      border-color: rgba(184, 192, 204, 0.4);
+    }
+    .ghost.gold-edge {
+      border-color: rgba(197, 165, 114, 0.55);
+      color: var(--gold);
+    }
+    .ghost.gold-edge:hover {
+      background: rgba(197, 165, 114, 0.1);
+    }
+
+    .note {
+      margin-top: 1.2rem;
+      padding: 0.85rem 1rem;
+      border: 1px dashed var(--line-soft);
+      border-radius: 10px;
+      color: var(--mute);
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+    .note strong { color: var(--fore); font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Composer — familiar, thin silver</h1>
+    <p class="lede">
+      No cute upload deck. No marble. Chat bar at the bottom, silver rim, paperclip people already know.
+      Metal as border. Subtle hover. Lumen card stays for personality.
+    </p>
+
+    <div class="label">The lamp card (keep)</div>
+    <div class="lumen-card">
+      <div class="kicker">Private Confidant</div>
+      <h2>Bottom-lit panel</h2>
+      <p>This is the Lumen horizon card — quiet light from below, hairline edge. Personality without costume.</p>
+    </div>
+
+    <div class="label">Chat stage</div>
+    <div class="stage">messages live here</div>
+
+    <div class="label">Input — silver wrap · paperclip · border send</div>
+    <div class="composer">
+      <div class="staged">
+        <div class="file-pill">f8822b.pdf <button class="x" type="button">×</button></div>
+        <div class="file-pill">lease_scan.png <button class="x" type="button">×</button></div>
+      </div>
+      <textarea placeholder="State your case, counselor…"></textarea>
+      <div class="bar">
+        <div class="left">
+          <button class="icon-btn" type="button" aria-label="Attach">
+            <span class="tip">Attach</span>
+            <!-- paperclip -->
+            <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-8.49 8.49a6 6 0 01-8.49-8.49l8.49-8.49a4 4 0 015.66 5.66l-8.49 8.49a2 2 0 01-2.83-2.83l7.78-7.78"/></svg>
+          </button>
+          <button class="icon-btn" type="button" aria-label="Folder">
+            <span class="tip">Folder</span>
+            <svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+          </button>
+        </div>
+        <button class="send" type="button">Send</button>
+      </div>
+    </div>
+
+    <div class="label">Button language — border metal, not filled gold</div>
+    <div class="btn-row">
+      <button class="ghost gold-edge" type="button">Gold edge</button>
+      <button class="ghost" type="button">Silver edge</button>
+      <button class="send silver" type="button">Send · silver</button>
+      <button class="send" type="button">Send · gold edge</button>
+    </div>
+
+    <p class="note">
+      <strong>Locked from your notes:</strong> recognizable chat UX · thin silver wrap · den silver paperclip ·
+      no overthought upload UI · Lumen lamp card for personality · gold/silver as stroke not fill ·
+      subtle hovers · auth identity card when you drop the example.
+    </p>
+  </div>
+</body>
+</html>

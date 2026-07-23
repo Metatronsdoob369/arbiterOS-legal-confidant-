@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Arbiter — Lumen + Plex Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Merriweather:wght@700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --void: #07090d;
+      --graph: #0d121a;
+      --panel: #131a24;
+      --slate: #1c2533;
+      --mute: #8b93a0;
+      --fore: #f2f4f7;
+      --lumen: #d7e0ea;
+      --silver: #b8c0cc;
+      --gold: #c5a572;
+      --line: rgba(215, 224, 234, 0.12);
+      --horizon: radial-gradient(120% 80% at 50% 120%, rgba(215, 224, 234, 0.10), transparent 55%);
+      --marble: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23d7e0ea' stop-opacity='0.05'/%3E%3Cstop offset='50%25' stop-color='%23f2f4f7' stop-opacity='0.02'/%3E%3Cstop offset='100%25' stop-color='%238b93a0' stop-opacity='0.05'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='600' height='400' fill='url(%23g)'/%3E%3Cpath d='M0 90 Q160 50 320 100 T600 80' stroke='%23d7e0ea' stroke-opacity='0.05' fill='none' stroke-width='16'/%3E%3Cpath d='M0 230 Q200 190 400 250 T600 210' stroke='%23c5a572' stroke-opacity='0.04' fill='none' stroke-width='20'/%3E%3C/svg%3E");
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", system-ui, sans-serif;
+      background: var(--void);
+      color: var(--fore);
+      min-height: 100vh;
+    }
+
+    .topbar {
+      padding: 1.25rem 1.5rem 0.9rem;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: end;
+    }
+    .topbar h1 {
+      margin: 0;
+      font-family: Newsreader, Georgia, serif;
+      font-size: 1.45rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .topbar p {
+      margin: 0.3rem 0 0;
+      color: var(--mute);
+      font-size: 0.86rem;
+      max-width: 54ch;
+      line-height: 1.4;
+    }
+    .badge {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.66rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gold);
+      border: 1px solid rgba(197, 165, 114, 0.35);
+      padding: 0.4rem 0.65rem;
+      border-radius: 999px;
+      height: fit-content;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      padding: 1rem;
+    }
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .col-label {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.68rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin: 0 0 0.65rem;
+      color: var(--mute);
+    }
+    .col-label.bad { color: #d4af37; }
+    .col-label.good { color: var(--lumen); }
+
+    .frame {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      min-height: 540px;
+    }
+
+    /* BEFORE */
+    .before {
+      background: linear-gradient(180deg, #1a0f0a 0%, #0d0806 100%);
+      color: #e8dcc8;
+      display: grid;
+      grid-template-columns: 76px 1fr;
+      min-height: 540px;
+    }
+    .before .rail {
+      background: #150d08;
+      border-right: 1px solid #3d2b1f;
+      padding: 0.9rem 0.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .before .brand {
+      font-family: Merriweather, Georgia, serif;
+      color: #d4af37;
+      font-size: 0.62rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.4rem;
+    }
+    .before .nav {
+      width: 100%;
+      text-align: center;
+      font-size: 0.58rem;
+      color: #8b7355;
+      padding: 0.45rem 0.15rem;
+      border-radius: 8px;
+    }
+    .before .nav.on {
+      background: linear-gradient(135deg, #d4af37, #ffd700);
+      color: #1a0f0a;
+      font-weight: 700;
+    }
+    .before .main { padding: 1.25rem; }
+    .before h2 {
+      font-family: Merriweather, Georgia, serif;
+      color: #d4af37;
+      margin: 0 0 0.35rem;
+      font-size: 1.35rem;
+    }
+    .before .sub { color: #8b7355; font-size: 0.75rem; margin-bottom: 1rem; }
+    .before .card {
+      border: 1px solid #3d2b1f;
+      background: #1e1410;
+      border-radius: 10px;
+      padding: 0.9rem;
+      margin-bottom: 0.7rem;
+    }
+    .before .card h3 {
+      margin: 0 0 0.35rem;
+      font-family: Merriweather, Georgia, serif;
+      color: #e8dcc8;
+      font-size: 0.95rem;
+    }
+    .before .chip {
+      display: inline-block;
+      background: #d4af37;
+      color: #1a0f0a;
+      font-size: 0.6rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.45rem;
+      border-radius: 999px;
+      margin-right: 0.3rem;
+    }
+    .before .btn {
+      margin-top: 0.75rem;
+      background: linear-gradient(135deg, #d4af37, #b8941e);
+      color: #1a0f0a;
+      border: none;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.66rem;
+      padding: 0.55rem 0.9rem;
+      border-radius: 8px;
+    }
+
+    /* AFTER — Lumen surfaces + Newsreader/Plex */
+    .after {
+      background:
+        radial-gradient(900px 420px at 15% -15%, rgba(215, 224, 234, 0.08), transparent 50%),
+        linear-gradient(180deg, var(--graph) 0%, var(--void) 100%);
+      color: var(--fore);
+      display: grid;
+      grid-template-columns: 78px 1fr;
+      min-height: 540px;
+    }
+    .after .rail {
+      background: rgba(7, 9, 13, 0.85);
+      border-right: 1px solid var(--line);
+      padding: 0.95rem 0.45rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      align-items: center;
+    }
+    .after .mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 1px solid rgba(197, 165, 114, 0.45);
+      background: linear-gradient(145deg, rgba(197, 165, 114, 0.28), rgba(215, 224, 234, 0.06));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+      margin-bottom: 0.5rem;
+      position: relative;
+    }
+    .after .mark::after {
+      content: "";
+      position: absolute;
+      inset: 7px;
+      border-radius: 3px;
+      border: 1px solid rgba(215, 224, 234, 0.45);
+    }
+    .after .nav {
+      width: 100%;
+      text-align: center;
+      font-size: 0.58rem;
+      color: var(--mute);
+      padding: 0.5rem 0.1rem;
+      border-radius: 8px;
+      border: 1px solid transparent;
+    }
+    .after .nav.on {
+      color: var(--fore);
+      border-color: var(--line);
+      background: rgba(215, 224, 234, 0.06);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    .after .nav svg {
+      display: block;
+      margin: 0 auto 0.22rem;
+      stroke: var(--silver);
+      fill: none;
+      stroke-width: 1.5;
+    }
+    .after .nav.on svg { stroke: var(--gold); }
+    .after .main { padding: 1.25rem 1.35rem; }
+    .after .eyebrow {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.64rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--lumen);
+      margin: 0 0 0.35rem;
+    }
+    .after h2 {
+      font-family: Newsreader, Georgia, serif;
+      font-weight: 600;
+      color: var(--fore);
+      margin: 0 0 0.35rem;
+      font-size: 1.6rem;
+      letter-spacing: -0.02em;
+    }
+    .after .sub {
+      color: var(--mute);
+      font-size: 0.84rem;
+      margin-bottom: 1.1rem;
+      max-width: 38ch;
+      line-height: 1.45;
+    }
+
+    .panel {
+      position: relative;
+      border: 1px solid var(--line);
+      background:
+        var(--horizon),
+        linear-gradient(180deg, rgba(28, 37, 51, 0.92), rgba(19, 26, 36, 0.98));
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+    .panel::after {
+      content: "";
+      position: absolute;
+      left: 12%;
+      right: 12%;
+      bottom: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(215,224,234,0.35), transparent);
+    }
+    .panel.marble {
+      background-image:
+        var(--marble),
+        var(--horizon),
+        linear-gradient(180deg, rgba(28, 37, 51, 0.9), rgba(19, 26, 36, 0.96));
+      background-size: cover;
+      border-color: rgba(197, 165, 114, 0.22);
+    }
+    .panel h3 {
+      margin: 0 0 0.4rem;
+      font-family: Newsreader, Georgia, serif;
+      font-weight: 500;
+      font-size: 1.08rem;
+      color: var(--fore);
+    }
+    .meta {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.64rem;
+      color: var(--mute);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .chip {
+      display: inline-block;
+      color: var(--silver);
+      border: 1px solid var(--line);
+      font-size: 0.62rem;
+      font-family: "IBM Plex Mono", monospace;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.18rem 0.45rem;
+      border-radius: 6px;
+      margin-right: 0.3rem;
+      background: rgba(215, 224, 234, 0.04);
+    }
+    .chip.gold {
+      color: var(--gold);
+      border-color: rgba(197, 165, 114, 0.4);
+      background: rgba(197, 165, 114, 0.08);
+    }
+    .row {
+      display: flex;
+      gap: 0.55rem;
+      margin-top: 0.9rem;
+      flex-wrap: wrap;
+    }
+    .btn {
+      font-family: "IBM Plex Sans", system-ui, sans-serif;
+      background: linear-gradient(180deg, #e8eef5, #b7c2cf);
+      color: #0a1018;
+      border: 1px solid rgba(255,255,255,0.28);
+      font-weight: 600;
+      font-size: 0.76rem;
+      padding: 0.55rem 0.95rem;
+      border-radius: 8px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+    }
+    .btn.ghost {
+      background: transparent;
+      color: var(--fore);
+      border: 1px solid var(--line);
+      box-shadow: none;
+      font-weight: 500;
+    }
+    .btn.gold {
+      background: linear-gradient(180deg, #d4b687, #a8894f);
+      color: #14110c;
+      border-color: rgba(255,255,255,0.2);
+    }
+
+    .bottom {
+      padding: 0 1rem 1.4rem;
+      display: grid;
+      grid-template-columns: 1.1fr 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 980px) {
+      .bottom { grid-template-columns: 1fr; }
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 1rem;
+      background: var(--panel);
+    }
+    .card h4 {
+      margin: 0 0 0.75rem;
+      font-family: Newsreader, Georgia, serif;
+      font-weight: 500;
+      font-size: 1rem;
+    }
+    .type-row {
+      display: grid;
+      gap: 0.7rem;
+    }
+    .type-row .label {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--mute);
+      margin-bottom: 0.15rem;
+    }
+    .type-display {
+      font-family: Newsreader, Georgia, serif;
+      font-size: 1.35rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .type-body {
+      font-family: "IBM Plex Sans", system-ui, sans-serif;
+      font-size: 0.92rem;
+      color: var(--lumen);
+    }
+    .type-mono {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.78rem;
+      color: var(--mute);
+    }
+    .swatches { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .swatch {
+      width: 40px;
+      height: 40px;
+      border-radius: 9px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .login {
+      border-radius: 12px;
+      border: 1px solid rgba(197, 165, 114, 0.25);
+      padding: 1rem;
+      background-image:
+        var(--marble),
+        linear-gradient(165deg, rgba(28, 37, 51, 0.95), rgba(7, 9, 13, 0.98));
+      background-size: cover;
+    }
+    .login .title {
+      font-family: Newsreader, Georgia, serif;
+      font-size: 1.15rem;
+      margin-bottom: 0.15rem;
+    }
+    .login .sub {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mute);
+    }
+    .login label {
+      display: block;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--mute);
+      margin: 0.7rem 0 0.28rem;
+    }
+    .login input {
+      width: 100%;
+      background: rgba(7, 9, 13, 0.7);
+      border: 1px solid var(--line);
+      color: var(--fore);
+      border-radius: 8px;
+      padding: 0.55rem 0.7rem;
+      font: inherit;
+    }
+    .note {
+      margin: 0 1rem 1.5rem;
+      padding: 0.9rem 1rem;
+      border: 1px dashed var(--line);
+      border-radius: 10px;
+      color: var(--mute);
+      font-size: 0.85rem;
+      line-height: 1.45;
+    }
+    .note strong { color: var(--fore); font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div>
+      <h1>Arbiter outfit — round 2</h1>
+      <p>
+        Lumen Edge surfaces (void / panel / lumen) + Newsreader display + IBM Plex body/mono.
+        Gold stays jewelry. No Space Grotesk. No Inter.
+      </p>
+    </div>
+    <span class="badge">Preview only</span>
+  </div>
+
+  <div class="grid">
+    <div>
+      <p class="col-label bad">Current — Cavs brown / jersey gold</p>
+      <div class="frame before">
+        <aside class="rail">
+          <div class="brand">Arbiter</div>
+          <div class="nav">📚</div>
+          <div class="nav on">🗺️ Case</div>
+          <div class="nav">⚖️</div>
+          <div class="nav">🔬</div>
+        </aside>
+        <section class="main">
+          <h2>📚 The Library</h2>
+          <div class="sub">Your legal arsenal. Quotes, statutes, ammunition.</div>
+          <div class="card">
+            <span class="chip">Pinned</span>
+            <span class="chip">Statute</span>
+            <h3>Form 8822-B — Change of Address</h3>
+            <div style="font-size:0.78rem;color:#a89070;line-height:1.4">
+              Official purpose tagged institutional. Contested fills flagged separately.
+            </div>
+            <button class="btn">+ Add Entry</button>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div>
+      <p class="col-label good">Proposed — Lumen + Newsreader / Plex</p>
+      <div class="frame after">
+        <aside class="rail">
+          <div class="mark" title="gold metal mark"></div>
+          <div class="nav on">
+            <svg width="16" height="16" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15V9m4 6V7m4 8v-4"/></svg>
+            Case
+          </div>
+          <div class="nav">
+            <svg width="16" height="16" viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg>
+            Library
+          </div>
+          <div class="nav">
+            <svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 9v3l2 2"/></svg>
+            Counsel
+          </div>
+          <div class="nav">
+            <svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z"/></svg>
+            Private
+          </div>
+        </aside>
+        <section class="main">
+          <p class="eyebrow">Private Confidant</p>
+          <h2>Case Map</h2>
+          <div class="sub">Primer packages — procedural goals with register lines and speed bumps.</div>
+
+          <div class="panel marble">
+            <div class="meta">Marble · login / Private only</div>
+            <h3>IRS Form Intimacy</h3>
+            <div style="font-size:0.84rem;color:var(--mute);line-height:1.45;margin-bottom:0.55rem">
+              Sensitive ranges mapped. Official paths institutional; contested fills inventoried, not coached.
+            </div>
+            <span class="chip">Institutional</span>
+            <span class="chip gold">Form 8822-B</span>
+            <div class="row">
+              <button class="btn">Open package</button>
+              <button class="btn ghost">View forms</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="meta">Horizon panel · silver chrome</div>
+            <h3>Departments</h3>
+            <div style="font-size:0.84rem;color:var(--mute);line-height:1.45">
+              IRS / Treasury populated · FRED, UCC, CFR scaffolded.
+            </div>
+            <div class="row">
+              <button class="btn gold">Sign in</button>
+              <button class="btn ghost">Dismiss</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="card">
+      <h4>Type lock</h4>
+      <div class="type-row">
+        <div>
+          <div class="label">Display · Newsreader 600</div>
+          <div class="type-display">Engineered counsel.</div>
+        </div>
+        <div>
+          <div class="label">Body · IBM Plex Sans</div>
+          <div class="type-body">Quiet, technical, sub-chromatic — not Inter.</div>
+        </div>
+        <div>
+          <div class="label">Mono · IBM Plex Mono</div>
+          <div class="type-mono">LE / 1.00S / form:8822-B</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h4>Lumen palette</h4>
+      <div class="swatches">
+        <div class="swatch" style="background:#07090d" title="void"></div>
+        <div class="swatch" style="background:#0d121a" title="graph"></div>
+        <div class="swatch" style="background:#131a24" title="panel"></div>
+        <div class="swatch" style="background:#1c2533" title="slate"></div>
+        <div class="swatch" style="background:#8b93a0" title="mute"></div>
+        <div class="swatch" style="background:#d7e0ea" title="lumen"></div>
+        <div class="swatch" style="background:linear-gradient(180deg,#d4b687,#a8894f)" title="gold jewelry"></div>
+      </div>
+      <p style="margin:0.85rem 0 0;color:var(--mute);font-size:0.8rem;line-height:1.4">
+        Surfaces from Lumen Edge. Gold is jewelry only — brand mark, focus, rare CTA.
+      </p>
+    </div>
+
+    <div class="card">
+      <h4>Login marble (rare)</h4>
+      <div class="login">
+        <div class="title">ArbiterOS</div>
+        <div class="sub">Private session</div>
+        <label>Username</label>
+        <input value="admin" readonly />
+        <label>Password</label>
+        <input type="password" value="secret" readonly />
+        <div class="row">
+          <button class="btn gold">Enter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="note">
+    <strong>Still a static preview.</strong> If this round feels right, say go and we’ll apply it to the live app.
+    If type or marble needs a nudge, say that first.
+  </p>
+</body>
+</html>

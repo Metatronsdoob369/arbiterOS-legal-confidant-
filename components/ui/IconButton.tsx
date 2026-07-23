@@ -3,16 +3,16 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from './cn';
 
 const iconButtonVariants = cva(
-  'inline-flex items-center justify-center rounded-md transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 focus-visible:ring-offset-2 focus-visible:ring-offset-leather-950 disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex items-center justify-center rounded-md transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-silver focus-visible:ring-offset-2 focus-visible:ring-offset-ink disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
         default:
-          'bg-logo-dark border border-mahogany-800 text-gold-500 hover:bg-gold-gradient hover:text-leather-950 hover:border-gold-500 hover:shadow-gold-soft',
+          'bg-gunmetal-deep border border-silver/30 text-silver hover:bg-gunmetal hover:text-silver-bright hover:border-silver',
         ghost:
-          'bg-transparent text-leather-300 hover:text-gold-500 hover:bg-mahogany-900/40',
+          'bg-transparent text-silver-den hover:text-silver hover:bg-gunmetal/40',
         gold:
-          'bg-gold-lit border border-gold-500 text-leather-950 shadow-gold-glow',
+          'bg-gunmetal border border-champagne text-champagne',
       },
       size: {
         sm: 'w-7 h-7',

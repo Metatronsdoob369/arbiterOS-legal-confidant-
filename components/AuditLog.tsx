@@ -43,19 +43,19 @@ export const AuditLog: React.FC = () => {
   }, []);
 
   return (
-    <div data-testid="view-audit-log" className="h-full overflow-y-auto p-4 md:p-8 max-w-7xl mx-auto flex flex-col font-mono bg-black">
-      <div className="mb-8 border-b border-neutral-800 pb-6">
-        <h2 data-testid="heading-audit-log" className="text-3xl font-bold text-white mb-2 uppercase tracking-tight">Governance Ledger</h2>
-        <p className="text-neutral-500 text-xs uppercase tracking-wider max-w-xl">
+    <div data-testid="view-audit-log" className="h-full overflow-y-auto p-4 md:p-8 max-w-7xl mx-auto flex flex-col font-mono" style={{ background: 'linear-gradient(180deg, #0f1216 0%, #0a0a0c 100%)', color: '#eef1f5' }}>
+      <div className="mb-8 pb-6" style={{ borderBottom: '1px solid rgba(207,213,222,0.14)' }}>
+        <h2 data-testid="heading-audit-log" className="text-3xl font-bold mb-2 uppercase tracking-tight font-sans" style={{ color: '#eef1f5' }}>Governance Ledger</h2>
+        <p className="text-xs uppercase tracking-wider max-w-xl" style={{ color: '#9aa1ab' }}>
           Persisted audit events and processing records for the logged-in user.
         </p>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.5fr_0.9fr] mb-8">
-        <div className="bg-[#050505] border border-neutral-800 rounded-lg overflow-hidden">
-          <div className="flex items-center justify-between border-b border-neutral-800 bg-[#0a0a0a] px-4 py-3">
-            <h3 className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold">Audit Events</h3>
-            <span className="text-[9px] uppercase tracking-widest text-neutral-600">{entries.length} records</span>
+        <div className="rounded-lg overflow-hidden" style={{ background: '#1c2026', border: '1px solid rgba(207,213,222,0.22)' }}>
+          <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(207,213,222,0.14)', background: '#14171c' }}>
+            <h3 className="text-[10px] uppercase tracking-widest font-bold" style={{ color: '#9aa1ab' }}>Audit Events</h3>
+            <span className="text-[9px] uppercase tracking-widest" style={{ color: '#9aa1ab' }}>{entries.length} records</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">

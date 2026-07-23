@@ -17,19 +17,19 @@ export const ProcessedFilesPanel: React.FC = () => {
   }, []);
 
   return (
-    <section data-testid="processed-files-panel" className="border border-neutral-800 bg-[#050505] rounded-lg p-4">
+    <section data-testid="processed-files-panel" className="rounded-lg p-4" style={{ border: '1px solid rgba(207,213,222,0.22)', background: '#1c2026' }}>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold">Processed Files</h3>
-        <span className="text-[9px] uppercase tracking-widest text-neutral-600">{items.length} records</span>
+        <h3 className="text-[10px] uppercase tracking-widest font-bold" style={{ color: '#9aa1ab' }}>Processed Files</h3>
+        <span className="text-[9px] uppercase tracking-widest" style={{ color: '#9aa1ab' }}>{items.length} records</span>
       </div>
       <div className="space-y-2">
         {items.length === 0 ? (
-          <p className="text-xs text-neutral-600">No processed files yet.</p>
+          <p className="text-xs" style={{ color: '#9aa1ab' }}>No processed files yet.</p>
         ) : (
           items.map((item) => (
-            <div key={item.id} className="flex items-center justify-between rounded border border-neutral-800 bg-black px-3 py-2 text-xs">
-              <span className="text-neutral-200 truncate pr-3">{item.sourceFilename}</span>
-              <span className="text-neutral-500 uppercase tracking-widest text-[9px]">{item.processingStatus}</span>
+            <div key={item.id} className="flex items-center justify-between rounded px-3 py-2 text-xs" style={{ border: '1px solid rgba(207,213,222,0.14)', background: '#0a0a0c' }}>
+              <span className="truncate pr-3" style={{ color: '#eef1f5' }}>{item.sourceFilename}</span>
+              <span className="uppercase tracking-widest text-[9px]" style={{ color: '#9aa1ab' }}>{item.processingStatus}</span>
             </div>
           ))
         )}

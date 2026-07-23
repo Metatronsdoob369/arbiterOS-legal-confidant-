@@ -6,11 +6,11 @@ const cardVariants = cva('rounded-panel border', {
   variants: {
     variant: {
       default:
-        'bg-leather-900 border-mahogany-800 shadow-panel',
+        'bg-gunmetal-deep border-silver/20 shadow-panel',
       elevated:
-        'bg-leather-900 border-mahogany-800 shadow-panel ring-1 ring-gold-600/10',
+        'bg-gunmetal-deep border-silver/25 shadow-panel ring-1 ring-silver/10',
       flat:
-        'bg-leather-950 border-mahogany-800/60',
+        'bg-ink border-silver/15',
     },
     padding: {
       none: '',
@@ -46,7 +46,7 @@ export const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('mb-4 border-b border-mahogany-800 pb-3', className)}
+    className={cn('mb-4 border-b border-silver/15 pb-3', className)}
     {...props}
   />
 ));
@@ -58,7 +58,7 @@ export const CardTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h3
     ref={ref}
-    className={cn('font-serif text-sm font-bold text-gold-500 uppercase tracking-wider', className)}
+    className={cn('font-sans text-sm font-bold text-champagne uppercase tracking-wider', className)}
     {...props}
   />
 ));
@@ -68,6 +68,6 @@ export const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn('text-leather-300', className)} {...props} />
+  <div ref={ref} className={cn('text-silver-den', className)} {...props} />
 ));
 CardContent.displayName = 'CardContent';

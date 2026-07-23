@@ -1,13 +1,8 @@
 import React from 'react';
 
 /**
- * NightModeOverlay
- *
- * A fixed, pointer-events-none overlay that simulates a warm reading-lamp
- * glow. This is intentionally NOT a full light/dark theme switch — it is a
- * unique aesthetic effect that overlays the existing dark app shell.
- *
- * Rendered only when nightMode === true. Toggle is driven by NightModeContext.
+ * NightModeOverlay — reading-lamp glow (effect, not a full theme).
+ * Soft champagne / silver wash over the gunmetal shell.
  */
 export const NightModeOverlay: React.FC = () => (
   <div
@@ -15,24 +10,22 @@ export const NightModeOverlay: React.FC = () => (
     className="fixed inset-0 pointer-events-none z-[100]"
     style={{
       background:
-        'radial-gradient(ellipse 600px 400px at 50% 30%, rgba(255,200,100,0.08) 0%, rgba(255,180,80,0.03) 40%, transparent 70%)',
+        'radial-gradient(ellipse 600px 400px at 50% 30%, rgba(207,213,222,0.07) 0%, rgba(196,165,116,0.04) 40%, transparent 70%)',
     }}
   >
-    {/* Gold lamp string */}
     <div
       className="absolute left-1/2 -translate-x-1/2 top-0 w-[2px] h-[60px]"
       style={{
-        background: 'linear-gradient(180deg, #d4af37, #b8941e, transparent)',
-        boxShadow: '0 0 8px rgba(212,175,55,0.4)',
+        background: 'linear-gradient(180deg, #cfd5de, #c4a574, transparent)',
+        boxShadow: '0 0 8px rgba(207,213,222,0.35)',
       }}
     />
-    {/* Lamp pull knob */}
     <div
       className="absolute left-1/2 -translate-x-1/2 top-[58px] w-[8px] h-[8px] rounded-full"
       style={{
-        background: '#d4af37',
+        background: '#cfd5de',
         boxShadow:
-          '0 0 15px rgba(212,175,55,0.6), 0 0 30px rgba(255,200,100,0.3)',
+          '0 0 15px rgba(207,213,222,0.5), 0 0 28px rgba(196,165,116,0.25)',
       }}
     />
   </div>

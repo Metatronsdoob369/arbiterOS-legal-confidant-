@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Arbiter — Signature + Account Dock</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,400&family=Tangerine:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --void: #050608;
+      --graph: #0d121a;
+      --panel: #151c26;
+      --mute: #8b93a0;
+      --fore: #f2f4f7;
+      --lumen: #d7e0ea;
+      --silver: #c5ccd6;
+      --silver-den: #9aa3b0;
+      --gold: #c5a572;
+      --line: rgba(197, 204, 214, 0.28);
+      --line-soft: rgba(197, 204, 214, 0.14);
+      --horizon: radial-gradient(120% 90% at 50% 130%, rgba(215, 224, 234, 0.11), transparent 55%);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "IBM Plex Sans", system-ui, sans-serif;
+      background: var(--void);
+      color: var(--fore);
+    }
+    .page {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 1.25rem 1rem 2.5rem;
+    }
+    h1 {
+      margin: 0;
+      font-family: Newsreader, Georgia, serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+    }
+    .lede {
+      margin: 0.4rem 0 1.25rem;
+      color: var(--mute);
+      font-size: 0.88rem;
+      line-height: 1.45;
+      max-width: 58ch;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 1rem;
+    }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .label {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mute);
+      margin: 0 0 0.65rem;
+    }
+
+    /* Splash neighborhood — seal optional */
+    .splash {
+      min-height: 420px;
+      border-radius: 16px;
+      border: 1px solid var(--line-soft);
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.1rem;
+      padding: 2rem 1rem;
+      text-align: center;
+    }
+    .seal {
+      width: 64px;
+      height: 64px;
+      border-radius: 14px;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,0.35), transparent 40%),
+        linear-gradient(180deg, #d5dae2, #8e96a3 55%, #6d7582);
+      box-shadow:
+        0 10px 30px rgba(0,0,0,0.45),
+        0 0 24px rgba(197, 165, 114, 0.18);
+      display: grid;
+      place-items: center;
+      position: relative;
+    }
+    .seal::after {
+      content: "";
+      position: absolute;
+      left: 18%;
+      right: 18%;
+      bottom: -6px;
+      height: 10px;
+      background: radial-gradient(ellipse at center, rgba(197,165,114,0.55), transparent 70%);
+      filter: blur(4px);
+    }
+    .seal svg { width: 30px; height: 30px; stroke: #0a0c10; fill: none; stroke-width: 1.6; }
+    .sig {
+      font-family: Tangerine, "Segoe Script", cursive;
+      font-size: 4.4rem;
+      font-weight: 700;
+      line-height: 0.9;
+      background: linear-gradient(180deg, #f4f6f8 10%, #aeb6c2 70%, #8a93a0);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      letter-spacing: 0.01em;
+      filter: drop-shadow(0 1px 0 rgba(255,255,255,0.15));
+    }
+    .sig-sub {
+      font-family: "IBM Plex Sans", system-ui, sans-serif;
+      font-size: 0.68rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--mute);
+      margin-top: -0.35rem;
+    }
+    .quote {
+      margin-top: 0.6rem;
+      max-width: 28rem;
+      border: 1px solid rgba(197, 165, 114, 0.45);
+      border-radius: 12px;
+      padding: 0.9rem 1rem;
+      box-shadow: 0 0 18px rgba(197, 165, 114, 0.12);
+    }
+    .quote p {
+      margin: 0;
+      font-family: Newsreader, Georgia, serif;
+      font-style: italic;
+      font-size: 0.95rem;
+      color: #c8ced6;
+      line-height: 1.45;
+    }
+    .quote cite {
+      display: block;
+      margin-top: 0.55rem;
+      text-align: right;
+      font-family: Newsreader, Georgia, serif;
+      font-style: italic;
+      font-size: 0.8rem;
+      color: var(--mute);
+    }
+    .note-inline {
+      margin-top: 0.85rem;
+      font-size: 0.78rem;
+      color: var(--mute);
+      max-width: 34ch;
+    }
+
+    /* Account dock card — left bottom idea */
+    .shell {
+      position: relative;
+      min-height: 420px;
+      border-radius: 16px;
+      border: 1px solid var(--line-soft);
+      background:
+        radial-gradient(700px 320px at 70% 0%, rgba(215,224,234,0.05), transparent 50%),
+        var(--graph);
+      overflow: hidden;
+    }
+    .shell-main {
+      height: 100%;
+      min-height: 420px;
+      display: grid;
+      place-items: center;
+      color: var(--mute);
+      font-size: 0.82rem;
+    }
+
+    .dock {
+      position: absolute;
+      left: 0.85rem;
+      bottom: 0.85rem;
+      width: 250px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background:
+        var(--horizon),
+        linear-gradient(180deg, rgba(28, 37, 51, 0.96), rgba(12, 16, 22, 0.98));
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.05),
+        0 16px 40px rgba(0,0,0,0.4);
+      overflow: hidden;
+      transition: transform 0.35s ease, border-color 0.35s ease;
+    }
+    .dock:hover {
+      transform: translateY(-2px);
+      border-color: rgba(197, 165, 114, 0.35);
+    }
+    .dock-border {
+      position: absolute;
+      inset: 8px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      pointer-events: none;
+      transition: border-color 0.35s ease;
+    }
+    .dock:hover .dock-border {
+      border-color: rgba(197, 165, 114, 0.35);
+    }
+    .dock-top {
+      padding: 0.95rem 0.95rem 0.7rem;
+    }
+    .dock-sig {
+      font-family: Tangerine, cursive;
+      font-size: 2.4rem;
+      line-height: 0.85;
+      background: linear-gradient(180deg, #f4f6f8, #9aa3b0);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .dock-meta {
+      margin-top: 0.25rem;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--mute);
+    }
+    .dock-user {
+      margin-top: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+    }
+    .avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: linear-gradient(145deg, #d4b687, #6f5a3a);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
+    }
+    .avatar-text .name {
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .avatar-text .role {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.56rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--mute);
+    }
+
+    /* Nav bars in the card — not dots */
+    .dock-nav {
+      border-top: 1px solid var(--line-soft);
+      display: flex;
+      flex-direction: column;
+      padding: 0.35rem;
+    }
+    .nav-row {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.55rem 0.6rem;
+      border-radius: 9px;
+      color: var(--silver-den);
+      font-size: 0.78rem;
+      text-decoration: none;
+      border: 1px solid transparent;
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+      width: 100%;
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+    .nav-row svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+    .nav-row:hover {
+      color: var(--fore);
+      background: rgba(215, 224, 234, 0.06);
+      border-color: var(--line-soft);
+    }
+    .nav-row.active {
+      color: var(--fore);
+      border-color: rgba(197, 165, 114, 0.35);
+      background: rgba(197, 165, 114, 0.08);
+    }
+
+    .verdict {
+      margin-top: 1.15rem;
+      padding: 0.9rem 1rem;
+      border: 1px dashed var(--line-soft);
+      border-radius: 10px;
+      color: var(--mute);
+      font-size: 0.84rem;
+      line-height: 1.5;
+    }
+    .verdict strong { color: var(--fore); font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Signature mark + account dock</h1>
+    <p class="lede">
+      Neighborhood from your splash: silver metal, thin gold light, black field.
+      Proposal: everyday brand is a thin silver signature — seal stays splash / app icon only.
+      Left-bottom card holds identity + real nav rows (not dots).
+    </p>
+
+    <div class="grid">
+      <div>
+        <div class="label">Wordmark direction</div>
+        <div class="splash">
+          <div class="seal" title="Optional — splash / favicon only">
+            <svg viewBox="0 0 24 24"><path d="M12 3v3M6 21h12M8 21V11l4-3 4 3v10M5 11h14"/></svg>
+          </div>
+          <div>
+            <div class="sig">Arbiter</div>
+            <div class="sig-sub">Legal Confidant</div>
+          </div>
+          <div class="quote">
+            <p>“Justice is the constant and perpetual will to render to each one his due.”</p>
+            <cite>— Justinian I</cite>
+          </div>
+          <p class="note-inline">Seal = ceremony. Signature = daily brand. Don’t make users live inside a badge.</p>
+        </div>
+      </div>
+
+      <div>
+        <div class="label">Left-bottom account card (settings home)</div>
+        <div class="shell">
+          <div class="shell-main">main workspace</div>
+          <aside class="dock" aria-label="Account dock">
+            <div class="dock-border"></div>
+            <div class="dock-top">
+              <div class="dock-sig">Arbiter</div>
+              <div class="dock-meta">Session · local</div>
+              <div class="dock-user">
+                <div class="avatar"></div>
+                <div class="avatar-text">
+                  <div class="name">admin</div>
+                  <div class="role">Counsel</div>
+                </div>
+              </div>
+            </div>
+            <nav class="dock-nav">
+              <button class="nav-row active" type="button">
+                <svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15V9m4 6V7m4 8v-4"/></svg>
+                Case Map
+              </button>
+              <button class="nav-row" type="button">
+                <svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg>
+                Library
+              </button>
+              <button class="nav-row" type="button">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M5 19a7 7 0 0114 0"/></svg>
+                Account
+              </button>
+              <button class="nav-row" type="button">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
+                Settings
+              </button>
+            </nav>
+          </aside>
+        </div>
+      </div>
+    </div>
+
+    <p class="verdict">
+      <strong>My take:</strong> Yes — classic silver cursive signature as the brand.
+      Keep the scales seal for splash / install icon / rare ceremony, not every chrome surface.
+      Your hover-card pattern is useful for the dock (expand / gold edge on hover), recolored to silver + thin gold — not the uiverse logo fill.
+      Nav lives as rows in the card bottom, same jobs as the old sidebar, without bitty dots.
+      Composer stays familiar silver-rim chat + paperclip (previous lock).
+    </p>
+  </div>
+</body>
+</html>

@@ -12,6 +12,7 @@ import { NightModeProvider, useNightMode } from './contexts/NightModeContext';
 import { NightModeOverlay } from './components/NightModeOverlay';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { NavItem } from './components/NavItem';
+import { Seal } from './components/brand/Seal';
 import { TooltipProvider } from './components/ui';
 
 enum View {
@@ -24,16 +25,8 @@ enum View {
   AUDIT = 'audit',
 }
 
-// ── Scale of Justice SVG (logo / night-mode off) ─────────────────────────────
-const ScaleIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="#d4af37" strokeWidth={1.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-  </svg>
-);
-
-// ── Lamp SVG (logo / night-mode on) ──────────────────────────────────────────
 const LampIcon: React.FC<{ className?: string }> = ({ className }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="#1a0f0a" strokeWidth={2}>
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="#0a0a0c" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M9 21h6m-3-3v3m-4-6h8l1-8H8l1 8zm3-12V2m5 3l1-1M6 5L5 4m14 7h2M3 11H1" />
   </svg>
 );
@@ -45,51 +38,56 @@ const AppWorkspace: React.FC = () => {
   return (
     <div
       data-testid="app-root"
-      className="flex h-screen w-screen overflow-hidden"
-      style={{ fontFamily: "'Inter', sans-serif", background: '#0d0806', color: '#e8dcc8' }}
+      className="flex h-screen w-screen overflow-hidden font-sans"
+      style={{ background: '#0a0a0c', color: '#eef1f5' }}
     >
-      {/* Night Mode Reading Lamp Overlay — unique effect, not a theme switch */}
       {nightMode && <NightModeOverlay />}
 
-      {/* ── Sidebar — Mahogany Panel ── */}
       <aside
         data-testid="sidebar"
         className="w-20 md:w-64 flex flex-col z-10 transition-all duration-300"
         style={{
-          background: 'linear-gradient(180deg, #1e1410 0%, #150d08 100%)',
-          borderRight: '2px solid #3d2b1f',
-          boxShadow: '4px 0 20px rgba(0,0,0,0.5)',
+          background: 'linear-gradient(180deg, #1c2026 0%, #0a0a0c 100%)',
+          borderRight: '1px solid rgba(207,213,222,0.14)',
+          boxShadow: '4px 0 24px rgba(0,0,0,0.45)',
         }}
       >
-        {/* Logo — click to toggle Night Mode */}
         <div
           data-testid="night-mode-toggle"
           className="p-5 flex items-center justify-center md:justify-start gap-3 cursor-pointer group"
-          style={{ borderBottom: '1px solid #3d2b1f' }}
+          style={{ borderBottom: '1px solid rgba(207,213,222,0.14)' }}
           onClick={toggleNightMode}
           title="Toggle Reading Lamp"
         >
-          <div
-            className="w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-500"
-            style={{
-              background: nightMode
-                ? 'linear-gradient(135deg, #d4af37, #ffd700)'
-                : 'linear-gradient(135deg, #3d2b1f, #2a1c12)',
-              border: `1px solid ${nightMode ? '#d4af37' : '#5a4030'}`,
-              boxShadow: nightMode
-                ? '0 0 20px rgba(212,175,55,0.5), 0 0 40px rgba(255,200,100,0.2)'
-                : '0 2px 8px rgba(0,0,0,0.3)',
-            }}
-          >
-            {nightMode ? <LampIcon className="w-5 h-5" /> : <ScaleIcon className="w-5 h-5" />}
-          </div>
+          {nightMode ? (
+            <div
+              className="w-10 h-10 flex items-center justify-center rounded-[10px] transition-all duration-500"
+              style={{
+                background: 'linear-gradient(135deg, #cfd5de, #eef1f5)',
+                boxShadow: '0 0 20px rgba(207,213,222,0.35)',
+              }}
+            >
+              <LampIcon className="w-5 h-5" />
+            </div>
+          ) : (
+            <Seal tone="primary" size={40} />
+          )}
           <div className="hidden md:flex flex-col">
-            <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#d4af37' }}>Arbiter</span>
-            <span className="text-[9px] uppercase tracking-wider" style={{ color: '#5a4030' }}>Legal Confidant</span>
+            <span
+              className="text-xs font-bold uppercase"
+              style={{ letterSpacing: '0.16em', color: '#cfd5de' }}
+            >
+              Arbiter
+            </span>
+            <span
+              className="text-[9px] uppercase"
+              style={{ letterSpacing: '0.18em', color: '#c4a574' }}
+            >
+              Legal Confidant
+            </span>
           </div>
         </div>
 
-        {/* Navigation */}
         <nav data-testid="sidebar-nav" className="flex-1 py-4 space-y-1.5 px-3 overflow-y-auto scrollbar-hide">
           <NavItem
             data-testid="nav-btn-advisor"
@@ -142,63 +140,60 @@ const AppWorkspace: React.FC = () => {
           />
         </nav>
 
-        {/* Night Mode Indicator */}
-        <div className="p-3 border-t" style={{ borderColor: '#3d2b1f' }}>
+        <div className="p-3 border-t" style={{ borderColor: 'rgba(207,213,222,0.14)' }}>
           <div className="flex items-center justify-center md:justify-start gap-2 px-2">
             <div
               className="w-2 h-2 rounded-full transition-all duration-300"
               style={{
-                background: nightMode ? '#d4af37' : '#3d2b1f',
-                boxShadow: nightMode ? '0 0 8px rgba(212,175,55,0.5)' : 'none',
+                background: nightMode ? '#cfd5de' : 'rgba(207,213,222,0.2)',
+                boxShadow: nightMode ? '0 0 8px rgba(207,213,222,0.45)' : 'none',
               }}
             />
-            <span className="hidden md:block text-[9px] uppercase tracking-widest" style={{ color: '#5a4030' }}>
+            <span className="hidden md:block text-[9px] uppercase tracking-widest" style={{ color: '#9aa1ab' }}>
               {nightMode ? 'Lamp On' : 'Lamp Off'}
             </span>
           </div>
         </div>
       </aside>
 
-      {/* ── Main Content ── */}
       <main
         className="flex-1 flex flex-col h-full overflow-hidden relative"
-        style={{ background: 'linear-gradient(180deg, #0d0806 0%, #0a0604 100%)' }}
+        style={{ background: 'linear-gradient(180deg, #0f1216 0%, #0a0a0c 100%)' }}
       >
-        {/* Subtle mahogany grain texture */}
         <div
-          className="absolute inset-0 pointer-events-none opacity-[0.03]"
+          className="absolute inset-0 pointer-events-none opacity-[0.04]"
           style={{
             backgroundImage: `repeating-linear-gradient(
               90deg,
               transparent,
               transparent 2px,
-              rgba(139,115,85,0.3) 2px,
-              rgba(139,115,85,0.3) 3px
+              rgba(207,213,222,0.25) 2px,
+              rgba(207,213,222,0.25) 3px
             )`,
           }}
         />
 
-        {/* Mobile Header */}
         <header
           className="h-14 flex items-center px-4 justify-between md:hidden z-20"
-          style={{ background: '#1e1410', borderBottom: '1px solid #3d2b1f' }}
+          style={{ background: '#1c2026', borderBottom: '1px solid rgba(207,213,222,0.14)' }}
         >
           <div className="flex items-center gap-2 cursor-pointer" onClick={toggleNightMode}>
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background: nightMode ? '#d4af37' : '#3d2b1f' }}
-            >
-              <svg
-                className="w-4 h-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke={nightMode ? '#1a0f0a' : '#d4af37'}
-                strokeWidth={1.5}
+            {nightMode ? (
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center"
+                style={{ background: '#cfd5de' }}
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-              </svg>
-            </div>
-            <span className="text-xs font-bold uppercase tracking-widest" style={{ color: '#d4af37' }}>Arbiter</span>
+                <LampIcon className="w-4 h-4" />
+              </div>
+            ) : (
+              <Seal tone="primary" size={32} />
+            )}
+            <span
+              className="text-xs font-bold uppercase"
+              style={{ letterSpacing: '0.14em', color: '#cfd5de' }}
+            >
+              Arbiter
+            </span>
           </div>
         </header>
 

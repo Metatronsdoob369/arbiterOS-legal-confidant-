@@ -33,11 +33,13 @@ const TYPE_COLORS: Record<LibraryItem['type'], string> = {
 
 type LibraryTab = 'working_set' | 'departments';
 
-const gold = '#d4af37';
-const ink = '#e8dcc8';
-const mute = '#8b7355';
-const panel = '#2a1c12';
-const border = '#3d2b1f';
+const gold = '#c4a574'; // champagne accent (labels)
+const ink = '#eef1f5';
+const mute = '#9aa1ab';
+const panel = '#2a2e35';
+const border = 'rgba(207,213,222,0.22)';
+const deep = '#1c2026';
+const nearBlack = '#0a0a0c';
 
 export const Library: React.FC = () => {
   const [tab, setTab] = React.useState<LibraryTab>('working_set');
@@ -194,7 +196,7 @@ export const Library: React.FC = () => {
     <div
       data-testid="library-container"
       className="h-full flex flex-col overflow-hidden"
-      style={{ background: 'linear-gradient(180deg, #1a0f0a 0%, #0d0806 100%)' }}
+      style={{ background: 'linear-gradient(180deg, #0f1216 0%, #0a0a0c 100%)' }}
     >
       <div className="px-6 md:px-8 pt-6 pb-4 border-b" style={{ borderColor: border }}>
         <div className="flex items-center justify-between mb-4">
@@ -202,7 +204,7 @@ export const Library: React.FC = () => {
             <h2
               data-testid="heading-library"
               className="text-2xl font-bold uppercase tracking-tight"
-              style={{ fontFamily: 'Merriweather, serif', color: gold }}
+              style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif", color: ink }}
             >
               Library
             </h2>
@@ -215,9 +217,9 @@ export const Library: React.FC = () => {
               onClick={() => setShowAddForm((current) => !current)}
               className="px-4 py-2 text-xs font-bold uppercase tracking-widest rounded transition-all"
               style={{
-                background: showAddForm ? '#3d2b1f' : 'linear-gradient(135deg, #d4af37, #b8941e)',
-                color: showAddForm ? gold : '#1a0f0a',
-                border: `1px solid ${gold}`,
+                background: showAddForm ? '#343a44' : '#2a2e35',
+                color: ink,
+                border: `1.5px solid ${showAddForm ? border : '#cfd5de'}`,
               }}
             >
               {showAddForm ? 'Cancel' : '+ Add Entry'}
@@ -236,8 +238,8 @@ export const Library: React.FC = () => {
               onClick={() => setTab(id)}
               className="px-3 py-1.5 text-[10px] uppercase tracking-widest rounded"
               style={{
-                background: tab === id ? gold : panel,
-                color: tab === id ? '#1a0f0a' : mute,
+                background: tab === id ? '#cfd5de' : panel,
+                color: tab === id ? nearBlack : mute,
                 border: `1px solid ${border}`,
                 fontWeight: tab === id ? 700 : 500,
               }}
@@ -248,7 +250,7 @@ export const Library: React.FC = () => {
         </div>
 
         {tab === 'working_set' && showAddForm && (
-          <div className="p-4 rounded-lg mb-4" style={{ background: '#1e1410', border: `1px solid ${border}` }}>
+          <div className="p-4 rounded-lg mb-4" style={{ background: deep, border: `1px solid ${border}` }}>
             <div className="grid grid-cols-2 gap-3 mb-3">
               <select
                 value={newItem.type}
@@ -300,7 +302,7 @@ export const Library: React.FC = () => {
               <button
                 onClick={() => void addItem()}
                 className="px-4 py-2 text-xs font-bold uppercase rounded"
-                style={{ background: gold, color: '#1a0f0a' }}
+                style={{ background: panel, color: ink, border: '1.5px solid #cfd5de' }}
               >
                 Save
               </button>
@@ -325,8 +327,8 @@ export const Library: React.FC = () => {
                 onClick={() => setFilterType('all')}
                 className={`px-3 py-1 text-[10px] uppercase tracking-widest rounded transition-all ${filterType === 'all' ? 'font-bold' : ''}`}
                 style={{
-                  background: filterType === 'all' ? gold : panel,
-                  color: filterType === 'all' ? '#1a0f0a' : mute,
+                  background: filterType === 'all' ? '#cfd5de' : panel,
+                  color: filterType === 'all' ? nearBlack : mute,
                   border: `1px solid ${border}`,
                 }}
               >
@@ -338,8 +340,8 @@ export const Library: React.FC = () => {
                   onClick={() => setFilterType(type)}
                   className={`px-3 py-1 text-[10px] uppercase tracking-widest rounded transition-all ${filterType === type ? 'font-bold' : ''}`}
                   style={{
-                    background: filterType === type ? gold : panel,
-                    color: filterType === type ? '#1a0f0a' : mute,
+                    background: filterType === type ? '#cfd5de' : panel,
+                    color: filterType === type ? nearBlack : mute,
                     border: `1px solid ${border}`,
                   }}
                 >
@@ -392,7 +394,7 @@ export const Library: React.FC = () => {
                       <button onClick={() => void deleteItem(item.id)} className="text-xs text-red-400" title="Delete">×</button>
                     </div>
                   </div>
-                  <h3 className="text-sm font-bold mb-2" style={{ fontFamily: 'Merriweather, serif', color: ink }}>
+                  <h3 className="text-sm font-bold mb-2" style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif", color: ink }}>
                     {item.title}
                   </h3>
                   <p className="text-xs leading-relaxed mb-3" style={{ color: '#a89070' }}>
@@ -420,11 +422,11 @@ export const Library: React.FC = () => {
               ))
             )}
           </div>
-          <div className="px-6 py-3 border-t flex items-center justify-between" style={{ borderColor: border, background: '#150d08' }}>
-            <span className="text-[10px] uppercase tracking-widest" style={{ color: '#5a4030' }}>
+          <div className="px-6 py-3 border-t flex items-center justify-between" style={{ borderColor: border, background: nearBlack }}>
+            <span className="text-[10px] uppercase tracking-widest" style={{ color: mute }}>
               {items.length} entries • {items.filter((item) => item.pinned).length} pinned
             </span>
-            <span className="text-[10px] uppercase tracking-widest" style={{ color: '#5a4030' }}>
+            <span className="text-[10px] uppercase tracking-widest" style={{ color: mute }}>
               ArbiterOS Library
             </span>
           </div>
@@ -449,12 +451,12 @@ export const Library: React.FC = () => {
                   }}
                   className="w-full text-left px-3 py-2 rounded"
                   style={{
-                    background: selectedDepartmentId === dept.department_id ? '#3d2b1f' : 'transparent',
+                    background: selectedDepartmentId === dept.department_id ? panel : 'transparent',
                     border: `1px solid ${selectedDepartmentId === dept.department_id ? gold : border}`,
                     color: ink,
                   }}
                 >
-                  <div className="text-xs font-bold" style={{ fontFamily: 'Merriweather, serif' }}>
+                  <div className="text-xs font-bold" style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
                     {dept.title}
                   </div>
                   <div className="text-[10px] uppercase tracking-wider mt-1" style={{ color: mute }}>
@@ -468,7 +470,7 @@ export const Library: React.FC = () => {
           <div className="flex-1 min-w-0 flex flex-col">
             {selectedDepartment && (
               <div className="px-6 pt-4 pb-3 border-b" style={{ borderColor: border }}>
-                <h3 className="text-lg font-bold" style={{ fontFamily: 'Merriweather, serif', color: gold }}>
+                <h3 className="text-lg font-bold" style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif", color: ink }}>
                   {selectedDepartment.title}
                 </h3>
                 <p className="text-xs mt-1 leading-relaxed" style={{ color: mute }}>
@@ -506,7 +508,7 @@ export const Library: React.FC = () => {
                 {!selectedDepartment ? null : selectedDepartment.status === 'stub' || !primaryCatalog || primaryCatalog.status === 'stub' ? (
                   <div
                     className="p-4 rounded"
-                    style={{ background: '#1e1410', border: `1px solid ${border}` }}
+                    style={{ background: deep, border: `1px solid ${border}` }}
                     data-testid="docs-dept-stub"
                   >
                     <div className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: gold }}>
@@ -537,7 +539,7 @@ export const Library: React.FC = () => {
                         onClick={() => void openEntry(entry.entry_id)}
                         className="w-full text-left p-3 rounded transition-colors"
                         style={{
-                          background: selectedEntry?.entry_id === entry.entry_id ? '#3d2b1f' : '#1e1410',
+                          background: selectedEntry?.entry_id === entry.entry_id ? panel : deep,
                           border: `1px solid ${border}`,
                         }}
                       >
@@ -562,13 +564,13 @@ export const Library: React.FC = () => {
               {selectedEntry && (
                 <aside
                   className="w-[42%] border-l overflow-y-auto p-5"
-                  style={{ borderColor: border, background: '#150d08' }}
+                  style={{ borderColor: border, background: nearBlack }}
                   data-testid="docs-entry-detail"
                 >
                   <div className="text-[10px] uppercase tracking-widest mb-2" style={{ color: mute }}>
                     {selectedEntry.kind} · {selectedEntry.file_name}
                   </div>
-                  <h4 className="text-sm font-bold mb-2" style={{ fontFamily: 'Merriweather, serif', color: gold }}>
+                  <h4 className="text-sm font-bold mb-2" style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif", color: ink }}>
                     {selectedEntry.title}
                   </h4>
                   <a
