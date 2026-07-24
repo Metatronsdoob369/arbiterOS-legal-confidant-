@@ -1,0 +1,119 @@
+{
+  "schema_version": "0.1.0",
+  "manifest_id": "pcon-spine",
+  "version": "1.0.0",
+  "description": "Warm spine pointers for Private Confidant — owned artifacts, lexicon, compiled skills. No DNA-alone nodes.",
+  "entries": [
+    {
+      "id": "lexicon-private-confidant-v1",
+      "source_kind": "lexicon",
+      "path": "backend/core/legal/seeds/private-confidant.v1.json",
+      "domain": "capacity",
+      "trust": "owned",
+      "epistemic_ceiling": "contested",
+      "notes": "Live register pack; human merge only for proposals."
+    },
+    {
+      "id": "tfx-skill-reclamations",
+      "source_kind": "skill",
+      "path": "~/.claude/skills/tfx-treasury-reclamations",
+      "domain": "fed_treasury",
+      "trust": "compiled",
+      "epistemic_ceiling": "institutional",
+      "notes": "Compiled from TFX Gold Book §§2–4 markdown; procedure clocks."
+    },
+    {
+      "id": "tfx-artifacts-sections-2-4",
+      "source_kind": "artifact",
+      "path": "/Users/joewales/NODE_OUT_Master/book-pipeline/library/new/artifacts/treasury-section-2-tfx.auto.artifact.json",
+      "domain": "fed_treasury",
+      "trust": "owned",
+      "epistemic_ceiling": "institutional",
+      "related": [
+        "treasury-section-3-tfx.auto.artifact.json",
+        "treasury-section-4-tfx.auto.artifact.json"
+      ]
+    },
+    {
+      "id": "tfx-lexicon-proposals",
+      "source_kind": "lexicon",
+      "path": "/Users/joewales/NODE_OUT_Master/book-pipeline/library/new/lexicon/proposals/tfx-reclamations-from-skill.v1.json",
+      "domain": "fed_treasury",
+      "trust": "compiled",
+      "epistemic_ceiling": "institutional",
+      "notes": "PENDING human merge — do not treat as live pack."
+    },
+    {
+      "id": "buildaboe-survey",
+      "source_kind": "external_ref",
+      "path": "backend/core/legal/pcon/knowledge/spine/sources/buildaboe-survey-2026-07-23.md",
+      "domain": "procedure",
+      "trust": "external_ref",
+      "epistemic_ceiling": "contested",
+      "notes": "Cite map from buildaboe.com + Eleventh Edition library. Prefer LII/TFX/owned PDFs for settled; site prose is contested doctrine funnel."
+    },
+    {
+      "id": "lii-ucc-article-3",
+      "source_kind": "external_ref",
+      "path": "backend/core/legal/pcon/knowledge/spine/sources/lii-ucc-article-3-pointers-2026-07-23.md",
+      "domain": "commercial_instruments",
+      "trust": "external_ref",
+      "epistemic_ceiling": "settled",
+      "notes": "Cornell LII UCC Art. 3 hub + high-traffic sections. Prefer for what the Code says."
+    },
+    {
+      "id": "public-index-dorks",
+      "source_kind": "external_ref",
+      "path": "backend/core/legal/pcon/knowledge/spine/sources/public-index-dorks-2026-07-23.md",
+      "domain": "procedure",
+      "trust": "owned",
+      "epistemic_ceiling": "plain",
+      "notes": "Clean passive OSINT queries for published CLE/conference/gov PDFs only — no credential hunting."
+    },
+    {
+      "id": "pacioli-double-entry-pdf",
+      "source_kind": "artifact",
+      "path": "/Users/joewales/Downloads/corpus/p3-parked/pacioli-double-entry.pdf",
+      "domain": "trust_structure",
+      "trust": "owned",
+      "epistemic_ceiling": "institutional",
+      "notes": "Owned Geijsbeek/IICPA English of Particularis. Source for surgical skill."
+    },
+    {
+      "id": "pacioli-skill-double-entry",
+      "source_kind": "skill",
+      "path": "~/.claude/skills/pacioli-double-entry",
+      "domain": "trust_structure",
+      "trust": "compiled",
+      "epistemic_ceiling": "institutional",
+      "notes": "Surgical convert 2026-07-23: Per/A, cash/capital, double post, bank/bills, debtor statement. Not UCC; not advocacy US-debtor freestyle."
+    },
+    {
+      "id": "pacioli-lexicon-proposals",
+      "source_kind": "lexicon",
+      "path": "/Users/joewales/NODE_OUT_Master/book-pipeline/library/new/lexicon/proposals/pacioli-double-entry-from-skill.v1.json",
+      "domain": "trust_structure",
+      "trust": "compiled",
+      "epistemic_ceiling": "institutional",
+      "notes": "PENDING human merge — Venetian terms only."
+    },
+    {
+      "id": "corpus-quarantine",
+      "source_kind": "external_ref",
+      "path": "/Users/joewales/NODE_OUT_Master/book-pipeline/library/new/CORPUS_QUARANTINE.md",
+      "domain": "procedure",
+      "trust": "owned",
+      "epistemic_ceiling": "plain",
+      "notes": "Doctrine essays parked; Pacioli surgical skill shipped; guide still parked."
+    },
+    {
+      "id": "hypothesis-ledger-seed",
+      "source_kind": "artifact",
+      "path": "backend/core/legal/pcon/knowledge/ledger/seed.v1.json",
+      "domain": "trust_structure",
+      "trust": "owned",
+      "epistemic_ceiling": "contested",
+      "notes": "Belt-enforced hypothesis ledger seed. working_premise lanes contested; study scaffolding institutional. Pre-truth / strategy store — not settled doctrine."
+    }
+  ]
+}

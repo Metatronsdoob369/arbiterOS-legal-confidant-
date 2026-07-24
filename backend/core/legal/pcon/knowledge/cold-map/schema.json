@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schema://arbiteros/pcon-cold-map-entry",
+  "title": "Pcon Cold Map Entry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "failure_id",
+    "surface",
+    "kind",
+    "why_static",
+    "status"
+  ],
+  "properties": {
+    "schema_version": { "const": "0.1.0" },
+    "failure_id": { "type": "string", "minLength": 1 },
+    "surface": {
+      "type": "string",
+      "description": "Operator or agent language that marks this burn."
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "bad_cite",
+        "wrong_sense",
+        "public_filler",
+        "procedure_miss",
+        "myth_as_settled",
+        "tool_skip"
+      ]
+    },
+    "why_static": { "type": "string", "minLength": 1 },
+    "corrective_pointer": { "type": "string" },
+    "status": { "type": "string", "enum": ["active", "retired"] },
+    "source_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": []
+    },
+    "epistemic_note": { "type": "string" }
+  }
+}

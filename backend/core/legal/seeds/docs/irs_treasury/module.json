@@ -1,0 +1,16 @@
+{
+  "department_id": "irs_treasury",
+  "title": "IRS / Treasury",
+  "summary": "Official IRS forms, instructions, and publications for institutional lookup. Case Map primers reference this catalog; they do not replace it.",
+  "status": "populated",
+  "catalogs": [
+    {
+      "catalog_id": "irs_forms",
+      "title": "IRS Forms & Publications",
+      "status": "populated",
+      "entry_count": 2885,
+      "source": "TrevorJS/irs-forms (Hugging Face) → irs.gov PDFs",
+      "description": "Offline index of IRS forms, instructions, and publications with official URLs and text previews."
+    }
+  ]
+}

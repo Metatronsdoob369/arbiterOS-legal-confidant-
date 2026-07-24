@@ -16,8 +16,8 @@
  *   R2 — statute evidence refs must resolve in the law library (via legalEngine.consultStatute).
  *   R3 — interpretation/speculation claims must carry explicit uncertainty markers.
  *   R4 — block decision produces an in-character "verification mode" response requesting missing inputs.
- *   R5 — legal_rule / interpretation claims MUST carry a valid InterpretationLink with
- *        non-overruled synthesis and graph_weight above threshold (common-law spectral layer).
+ *   R5 — high-severity legal_rule / interpretation claims need a statute or strong holding link
+ *        (common-law spectral layer; InterpretationLink.strength === 'strong').
  *
  * "If it ain't in the schema, it ain't real." — Contracts > Prompts
  */
@@ -68,9 +68,6 @@ const UNCERTAINTY_MARKERS = [
   'one interpretation',
   'could be read',
 ];
-
-/** Minimum graph_weight for an InterpretationLink to be considered sufficient under R5. */
-const R5_MIN_GRAPH_WEIGHT = 0.35;
 
 // ═══════════════════════════════════════════
 // GATE HELPERS
@@ -301,17 +298,18 @@ async function processClaim(
   for (const ev of claim.evidence) {
     if (ev.kind === 'statute') {
       const lookup = await consultStatute(ev.ref);
-      if (!lookup.found) {
-        // Statute cited but not in the law library — cannot verify the claim
+      const silenced = lookup.silence?.silenced === true || !lookup.found;
+      if (silenced) {
+        // Statute cited but corpus silent / not found — cannot verify the claim
         failedClaims.push({
           claim_id: claim.id,
-          reason: `R2: Statute "${ev.ref}" cited in claim [${claim.id}] but not found in the law library.`,
+          reason: `R2: Statute "${ev.ref}" cited in claim [${claim.id}] but law corpus is silent (silence-first).`,
         });
         steps.push({
-          rule_id: 'R2_STATUTE_NOT_FOUND',
+          rule_id: 'R2_STATUTE_SILENCED',
           passed: false,
-          details: `Statute ref "${ev.ref}" for claim [${claim.id}] could not be resolved via legalEngine.consultStatute.`,
-          evidence_source: 'gate:R2:legalEngine',
+          details: `Statute ref "${ev.ref}" for claim [${claim.id}] silenced: ${lookup.silence?.reason ?? 'not found'}.`,
+          evidence_source: 'gate:R2:silence-first',
           timestamp: now(),
         });
       } else {
@@ -394,64 +392,40 @@ async function processClaim(
     }
   }
 
-  // ── R5: legal_rule / interpretation MUST have InterpretationLink with sufficient weight ──
+  // ── R5: high-severity legal_rule / interpretation need strong holding support ─
 
-  if (claim.kind === 'legal_rule' || claim.kind === 'interpretation') {
-    const link = claim.interpretation_link;
+  if (
+    claim.severity === 'high'
+    && (claim.kind === 'legal_rule' || claim.kind === 'interpretation')
+  ) {
+    const hasStatuteEvidence = claim.evidence.some((ev) => ev.kind === 'statute');
+    const hasStrongHoldingEvidence = claim.evidence.some(
+      (ev) => ev.kind === 'holding' && ev.strength === 'strong'
+    );
+    const hasStrongInterpretationLink = (claim.interpretation_links ?? []).some(
+      (link) => link.strength === 'strong'
+    );
 
-    if (!link) {
+    if (!hasStatuteEvidence && !hasStrongHoldingEvidence && !hasStrongInterpretationLink) {
       failedClaims.push({
         claim_id: claim.id,
-        reason: `R5: ${claim.kind} claim [${claim.id}] lacks an InterpretationLink. Common-law holdings required.`,
+        reason: `R5: High-severity ${claim.kind} claim "${claim.text.slice(0, 80)}..." has no statute citation or strong holding support.`,
       });
       steps.push({
-        rule_id: 'R5_NO_INTERPRETATION_LINK',
+        rule_id: 'R5_HOLDING_REQUIRED',
         passed: false,
-        details: `Claim [${claim.id}] (${claim.kind}, severity=${claim.severity}) has no interpretation_link. R5 requires spectral holding support.`,
+        details: `Claim [${claim.id}] is high-severity ${claim.kind} but has no statute evidence and no strong interpretation link.`,
         evidence_source: 'gate:R5',
         timestamp: now(),
       });
-      return; // further R5 checks N/A
-    }
-
-    // Synthesis checks
-    if (link.synthesis === 'overruled' || link.synthesis === 'insufficient_authority') {
-      failedClaims.push({
-        claim_id: claim.id,
-        reason: `R5: InterpretationLink for claim [${claim.id}] has synthesis="${link.synthesis}" (graph_weight=${link.graph_weight.toFixed(3)}). Not controlling authority.`,
-      });
+    } else {
       steps.push({
-        rule_id: 'R5_INSUFFICIENT_OR_OVERRULED',
-        passed: false,
-        details: `Claim [${claim.id}]: synthesis=${link.synthesis}, graph_weight=${link.graph_weight}, holdings=${link.holding_refs.length}.`,
-        evidence_source: 'gate:R5:commonLawEngine',
-        timestamp: now(),
-      });
-      return;
-    }
-
-    if (link.graph_weight < R5_MIN_GRAPH_WEIGHT) {
-      failedClaims.push({
-        claim_id: claim.id,
-        reason: `R5: graph_weight ${link.graph_weight.toFixed(3)} below threshold ${R5_MIN_GRAPH_WEIGHT} for claim [${claim.id}].`,
-      });
-      steps.push({
-        rule_id: 'R5_WEIGHT_BELOW_THRESHOLD',
-        passed: false,
-        details: `Claim [${claim.id}]: graph_weight=${link.graph_weight} < ${R5_MIN_GRAPH_WEIGHT}. Need stronger or more recent holdings.`,
+        rule_id: 'R5_HOLDING_PRESENT',
+        passed: true,
+        details: `Claim [${claim.id}] satisfies R5 with ${hasStatuteEvidence ? 'statute evidence' : 'strong holding support'}.`,
         evidence_source: 'gate:R5',
         timestamp: now(),
       });
-      return;
     }
-
-    // Passed R5
-    steps.push({
-      rule_id: 'R5_COMMON_LAW_PASS',
-      passed: true,
-      details: `Claim [${claim.id}]: InterpretationLink present. synthesis=${link.synthesis}, graph_weight=${link.graph_weight.toFixed(3)}, holdings=${link.holding_refs.length}. R5 satisfied.`,
-      evidence_source: 'gate:R5:commonLawEngine',
-      timestamp: now(),
-    });
   }
 }

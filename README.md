@@ -53,7 +53,21 @@ The main event. Ask it anything. Upload documents. Get clause-by-clause risk ana
 | `verify_negotiability` | UCC 3-104 negotiable instrument validation |
 | `analyze_clause_risks` | USC/UCC/Common Law risk scanning |
 | `consult_statute` | Retrieves raw statutory text from the Law Library |
-| `draft_verified_form` | Generates validated legal forms (Promissory Notes, Security Agreements, etc.) |
+| `draft_verified_form` | Generates validated legal forms (Promissory Notes, Security Agreements, etc.) via `/api/drafts` |
+| `translate_register` | Private Register Mirror — echoes your wording, then maps plain English ↔ institutional/statutory senses (capacity, money/credit, lien vs UCC-1, payment vs discharge, Fed/Treasury ops) |
+| `quick_register_research` | Clarify a term (case-aware, e.g. Minor vs minor) before proposing — pack hits, case_gap, propose_ready |
+| `propose_register_entry` | Queues a lexicon amendment after research (human merge via `/api/register/proposals/:id/merge` — never silent-writes the live pack) |
+
+### 📄 Local Word Export (SaaS-Free)
+Drafting stays on the ArbiterOS backend — no OpenCase, Google Docs, or Word add-ins.
+
+- Zod-contracted form templates (`FormGenerationSchema` discriminated union)
+- Core commercial set: `nda`, `service_agreement`, `consulting_agreement`, `ip_assignment` (plus UCC instruments)
+- R5 local validation stubs on commercial templates (CourtListener holdings deferred to spectral track)
+- `POST /api/drafts/forms` — validate + render markdown draft
+- `POST /api/drafts/export` — Word `.docx` only after validation passes
+- `GET /api/drafts/:id/download` — authenticated artifact download
+- Provenance slots reserved for upcoming spectral / CourtListener holdings
 
 ### 🔗 Evidence Board
 A visual whiteboard for connecting the dots. Drag nodes around. Draw connections between evidence, witnesses, statutes, and arguments. Build your conspiracy — *ahem*, case — visually.
@@ -61,8 +75,8 @@ A visual whiteboard for connecting the dots. Drag nodes around. Draw connections
 ### 📚 The Library
 Store quotes, law snippets, articles, books, papers. Pin the important stuff. Tag everything. Search it later when you need that one FTC citation you know you saved somewhere.
 
-### 📋 Case Map (Kanban)
-Organize your legal strategy with drag-and-drop columns: Discovery → Analysis → Drafting → Execution.
+### 📋 Growth (Primer Packages)
+Progressive stage machine: **Status Upgrades** → area cards → vehicle tiles → **Stairway** → counted climb. Reuses packet-first primer packages (inventory steps, register lines, forms, speed bumps, and clearly marked caveats). See [Growth stage machine design](docs/superpowers/specs/2026-07-23-growth-stage-machine-design.md).
 
 ### 🗺️ Forensic Maps
 Generate legal concept visualizations — Negotiability Flow, Corporate Veil, Security Interest, Chain of Title.
@@ -94,13 +108,13 @@ Key files:
 
 ---
 
-## 🔧 De-Googled Setup
+## 🔧 Airgapped MVP Startup
 
 **Zero Google dependencies.** The AI provider is configurable.
 
 ### Prerequisites
 - Node.js 18+
-- An API key for your preferred provider
+- An API key for your preferred provider if you want live AI responses
 
 ### Quick Start
 
@@ -108,17 +122,22 @@ Key files:
 # 1. Install
 npm install
 
-# 2. Configure your AI provider
-cp .env.example .env.local
+# 2. Configure the local backend and provider env
+cp .env.example .env
 
-# 3. Edit .env.local with your provider details:
-#    OPENAI_API_KEY=sk-...           # OpenAI
-#    AI_BASE_URL=http://localhost:11434/v1  # Ollama
-#    AI_MODEL=gpt-4o                 # or llama3, mistral, etc.
+# 3. Load the env file into your shell
+set -a
+source .env
+set +a
 
-# 4. Run
+# 4. Seed the bootstrap admin
+npm run seed:admin
+
+# 5. Run the app
 npm run dev
 ```
+
+The backend listens on `http://localhost:4881` and the frontend runs on `http://localhost:4321`.
 
 ### Running E2E Tests
 
@@ -139,6 +158,8 @@ npm run test:e2e:ui
 npm run test:e2e:update-snapshots
 ```
 
+The e2e config seeds the local admin account automatically before launch.
+
 Test files live in the `e2e/` directory:
 | File | What it covers |
 |---|---|
@@ -149,11 +170,25 @@ Test files live in the `e2e/` directory:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `ARBITER_BACKEND_PORT` | `4881` | Local Fastify backend port |
+| `ARBITER_DB_PATH` | `data/arbiter.db` | SQLite database file |
+| `ARBITER_SESSION_COOKIE` | `arbiter_session` | Session cookie name |
+| `ARBITER_SESSION_SECRET` | `replace-with-local-secret` | Backend cookie signing secret |
+| `ARBITER_BOOTSTRAP_USERNAME` | `admin` | Local admin bootstrap username |
+| `ARBITER_BOOTSTRAP_PASSWORD` | `secret-passphrase` | Local admin bootstrap password |
 | `OPENAI_API_KEY` | — | Your API key (works with any OpenAI-compatible provider) |
 | `AI_BASE_URL` | `https://api.openai.com/v1` | API endpoint. Change for Ollama, OpenRouter, etc. |
 | `AI_MODEL` | `gpt-4o` | Primary model for legal counsel |
 | `AI_SHADOW_MODEL` | Same as `AI_MODEL` | Heavy model for Shadow Counsel mode |
 | `AI_CRITIC_MODEL` | Same as `AI_MODEL` | Model for the compliance auditor |
+| `LAW_CORPUS_URL` / `VITE_LAW_CORPUS_URL` | `http://localhost:4880` | Optional law-corpus retrieval upstream (`WHITEGLOVE_URL` / `LAWLIBRA_URL` still accepted as aliases) |
+| `VITE_QDRANT_URL` | `http://127.0.0.1:6333` | Local Qdrant endpoint for the CommonLawSpectralEngine |
+| `VITE_COMMON_LAW_COLLECTION` | `case-law-holdings` | Local holdings collection name |
+| `VITE_EMBED_ENDPOINT` | `http://127.0.0.1:4881/embed` | Local embed endpoint mounted on the ArbiterOS backend |
+| `COMMON_LAW_QDRANT_URL` | `http://127.0.0.1:6333` | Backend Qdrant URL for holdings retrieval |
+| `COMMON_LAW_COLLECTION` | `case-law-holdings` | Backend holdings collection name |
+| `COMMON_LAW_VECTOR_SIZE` | `1024` | Embedding dimension used by the local common-law layer |
+| `COMMON_LAW_AUTO_BOOTSTRAP` | `true` | Auto-seed the fallback holdings corpus when the collection is missing or empty |
 
 ### Provider Examples
 
@@ -196,6 +231,57 @@ The AI gets structured data in, and structured data out. It doesn't get to "inte
 
 ---
 
+## ⚖️ CommonLawSpectralEngine Local Setup
+
+ArbiterOS now exposes the local CommonLawSpectralEngine directly from the backend:
+
+- `POST http://127.0.0.1:4881/embed` — 1024-D local embed endpoint
+- `GET /api/common-law/health` — collection health
+- `POST /api/common-law/query` — holdings retrieval with interpretation links
+- `POST /api/common-law/bootstrap` — create/seed the local fallback holdings collection
+
+The local `/embed` path uses a fixed batch size of `8`. This is intentionally conservative and avoids dynamic batching so long-form opinions stay predictable on local hardware.
+
+### Local bring-up
+
+```bash
+# 1. Verify Qdrant is reachable
+curl -sS http://127.0.0.1:6333/collections
+
+# 2. Bootstrap the holdings collection
+npm run bootstrap:common-law
+
+# 3. Start ArbiterOS
+npm run dev
+```
+
+### Google Drive bootstrap
+
+If you have a mounted Drive corpus, you can stream it directly into local Qdrant:
+
+```bash
+rclone mount gdrive: /mnt/gdrive --daemon
+npm run bootstrap:caslaw-drive -- --drive-mount /mnt/gdrive/Caselaw --limit 5000
+```
+
+The Drive bootstrap supports `.parquet`, `.jsonl`, `.ndjson`, and `.json` inputs and normalizes non-numeric record IDs into deterministic Qdrant-safe UUIDs.
+
+Topology mapping is not enabled yet. `backend/core/legal/commonLawEngine.ts` now exposes a `reduceToTopologyDim(embedding, targetDim = 8)` placeholder for the next phase, but current retrieval still operates on the full 1024-dimensional vectors.
+
+### Browser / console checks
+
+```js
+await window.commonLawEngine.checkCollectionHealth()
+await window.commonLawEngine.retrieveHoldings({
+  query: 'negotiable instrument unconditional promise',
+  statute: 'UCC 3-104',
+})
+```
+
+If local Qdrant is down or the collection is empty, the engine falls back to a seeded in-memory holdings subset so retrieval still returns interpretation links and the validation gate can emit explicit failure steps instead of silently degrading.
+
+---
+
 ## 📁 Project Structure
 
 ```
@@ -230,7 +316,7 @@ arbiterOS-legal-confidant/
 │   ├── LegalAdvisor.tsx       # Main chat (mahogany + large bar)
 │   ├── EvidenceBoard.tsx      # Visual whiteboard for case building
 │   ├── Library.tsx            # Legal reference storage
-│   ├── CaseBoard.tsx          # Kanban case management
+│   ├── CaseBoard.tsx          # Packet-first primer package browser
 │   ├── ImageGen.tsx           # Legal concept visualizer
 │   ├── AuditLog.tsx           # Governance ledger + telemetry
 │   └── ArbiterBadge.tsx       # Animated badge

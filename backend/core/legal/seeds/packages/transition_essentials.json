@@ -1,0 +1,61 @@
+{
+  "package_id": "transition_essentials",
+  "title": "Transition Essentials",
+  "outcome": "Organize identity, records, and signature practices before taking the next administrative step.",
+  "course_kind": "primer",
+  "vector_ready": false,
+  "steps": [
+    {
+      "id": "te-agent-signature",
+      "title": "Record the signing capacity",
+      "order": 1,
+      "forms": [],
+      "lines": [
+        {
+          "line_id": "ucc-3-402-agent",
+          "text": "Signature must show unambiguously that it is made on behalf of the represented person.",
+          "register_ref": "signature_agency"
+        }
+      ],
+      "speed_bumps": [
+        "Do not assume a signature format changes who is obligated without reviewing the instrument and applicable law."
+      ],
+      "flags": [],
+      "epistemic": "settled"
+    },
+    {
+      "id": "te-ledger-requests",
+      "title": "Maintain a request and ledger habit",
+      "order": 2,
+      "forms": [],
+      "lines": [
+        {
+          "line_id": "te-request-log",
+          "text": "Keep dated copies of requests, responses, account statements, and delivery confirmation."
+        }
+      ],
+      "speed_bumps": [
+        "A public-records request is governed by the rules of the receiving agency and may have exemptions or fees."
+      ],
+      "flags": [],
+      "epistemic": "institutional"
+    },
+    {
+      "id": "te-records-inventory",
+      "title": "Create a records inventory",
+      "order": 3,
+      "forms": [],
+      "lines": [
+        {
+          "line_id": "te-identity-records",
+          "text": "List identity numbers, tax identifiers, mailing addresses, and the documents that use them; store the inventory securely."
+        }
+      ],
+      "speed_bumps": [
+        "Limit access to identifying information and avoid sending it by unprotected email."
+      ],
+      "flags": [],
+      "epistemic": "institutional"
+    }
+  ]
+}

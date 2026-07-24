@@ -13,6 +13,13 @@
 
 import { test, expect } from '@playwright/test';
 
+async function loginAsBootstrapAdmin(page: import('@playwright/test').Page) {
+  await page.getByTestId('login-username').fill('admin');
+  await page.getByTestId('login-password').fill('secret-passphrase');
+  await page.getByTestId('login-submit').click();
+  await expect(page.getByTestId('app-root')).toBeVisible();
+}
+
 async function mockAiRoutes(page: import('@playwright/test').Page) {
   await page.route('**/v1/**', (route) => {
     route.fulfill({
@@ -40,7 +47,7 @@ test.describe('Visual snapshots', () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await mockAiRoutes(page);
     await page.goto('/');
-    await expect(page.getByTestId('app-root')).toBeVisible();
+    await loginAsBootstrapAdmin(page);
     await expect(page).toHaveScreenshot('desktop-default.png', { fullPage: false });
   });
 
@@ -48,7 +55,7 @@ test.describe('Visual snapshots', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await mockAiRoutes(page);
     await page.goto('/');
-    await expect(page.getByTestId('app-root')).toBeVisible();
+    await loginAsBootstrapAdmin(page);
     await expect(page).toHaveScreenshot('mobile-default.png', { fullPage: false });
   });
 
@@ -56,6 +63,7 @@ test.describe('Visual snapshots', () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await mockAiRoutes(page);
     await page.goto('/');
+    await loginAsBootstrapAdmin(page);
     // Enable night mode
     await page.getByTestId('night-mode-toggle').click();
     // Wait for the overlay to be injected into the DOM (deterministic)

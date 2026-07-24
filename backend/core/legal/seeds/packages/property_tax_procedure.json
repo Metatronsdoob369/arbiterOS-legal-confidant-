@@ -1,0 +1,132 @@
+{
+  "package_id": "property_tax_procedure",
+  "title": "Property Tax Procedure",
+  "outcome": "Walk ordinary assessment protest, payment-under-protest or refund, and redemption paths with the correct local filings.",
+  "course_kind": "primer",
+  "vector_ready": false,
+  "source_notebooks": [
+    "Tax and property TaxSystem Implementation",
+    "The Unconfused Man and his Person"
+  ],
+  "steps": [
+    {
+      "id": "ptp-read-notice",
+      "title": "Read the assessment or tax notice carefully",
+      "order": 1,
+      "forms": [],
+      "lines": [
+        {
+          "line_id": "ptp-notice-fields",
+          "text": "Identify the parcel or account number, assessed value, tax year, protest deadline, and the board or office named on the notice."
+        }
+      ],
+      "speed_bumps": [
+        "Deadlines are often short and may require filing with a specific county board rather than the collector."
+      ],
+      "flags": [],
+      "epistemic": "settled"
+    },
+    {
+      "id": "ptp-valuation-protest",
+      "title": "File a written valuation protest when available",
+      "order": 2,
+      "forms": [
+        {
+          "form_id": "county-valuation-protest",
+          "title": "Written Protest of Valuation (local board form)",
+          "sensitivity": "sparse"
+        }
+      ],
+      "lines": [
+        {
+          "line_id": "ptp-protest-basis",
+          "text": "State the parcel, the assessed value you dispute, and the factual basis for a lower value or unequal treatment, then keep a filed-stamped copy."
+        }
+      ],
+      "speed_bumps": [
+        "Some jurisdictions require payment of the undisputed amount, or payment under protest, before a refund path opens."
+      ],
+      "flags": [],
+      "epistemic": "institutional",
+      "delivery": {
+        "method": "File with the board or office named on the notice",
+        "destination": "County board of equalization / tax assessor as stated locally"
+      }
+    },
+    {
+      "id": "ptp-pay-under-protest",
+      "title": "Use pay-under-protest or refund procedures when required",
+      "order": 3,
+      "forms": [
+        {
+          "form_id": "county-tax-refund-petition",
+          "title": "Petition for Tax Refund / Payment Under Protest",
+          "sensitivity": "sparse"
+        }
+      ],
+      "lines": [
+        {
+          "line_id": "ptp-refund-path",
+          "text": "Where the statute requires payment first, pay under protest as instructed, then petition for refund with proof of payment and the protest basis."
+        }
+      ],
+      "speed_bumps": [
+        "Federal courts often defer to state tax remedies if a plain, speedy, and efficient state path exists."
+      ],
+      "flags": [],
+      "epistemic": "institutional"
+    },
+    {
+      "id": "ptp-redemption",
+      "title": "Map tax-sale redemption or purchase rights",
+      "order": 4,
+      "forms": [
+        {
+          "form_id": "al-redemption-application",
+          "title": "Application to Redeem Land Sold for Taxes (state/county form)",
+          "sensitivity": "sparse"
+        }
+      ],
+      "lines": [
+        {
+          "line_id": "ptp-redemption-window",
+          "text": "Confirm whether the land was sold or bid in, the redemption period, who must be paid, and which office issues a certificate of redemption."
+        }
+      ],
+      "evidence_hooks": [
+        {
+          "kind": "statute",
+          "ref": "Alabama Code Title 40 Chapter 10 (example jurisdictional map — confirm your state)"
+        }
+      ],
+      "speed_bumps": [
+        "Redemption amounts, notice rules, and who holds the certificate vary by state and sale type."
+      ],
+      "flags": [],
+      "epistemic": "institutional",
+      "delivery": {
+        "method": "Application to the probate judge, land commissioner, or tax collecting official as statute requires",
+        "destination": "County office named in the applicable tax-sale chapter"
+      }
+    },
+    {
+      "id": "ptp-bogus-discharge",
+      "title": "Inventory non-recognized tax-bill discharge theories separately",
+      "order": 5,
+      "forms": [],
+      "lines": [
+        {
+          "line_id": "ptp-instrument-inventory",
+          "text": "Theories that treat a local tax bill stub as a negotiable instrument that forces Treasury settlement are contested and are not ordinary property-tax procedure."
+        }
+      ],
+      "speed_bumps": [
+        "Do not substitute an unverified endorsement protocol for protest, payment, or redemption filings the collecting office accepts."
+      ],
+      "flags": [
+        "IRM and related materials screen frivolous and fictitious-instrument submissions; inventory only — not a recommended playbook."
+      ],
+      "epistemic": "perilous"
+    }
+  ]
+}

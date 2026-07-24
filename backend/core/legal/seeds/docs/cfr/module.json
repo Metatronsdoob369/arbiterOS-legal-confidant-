@@ -1,0 +1,16 @@
+{
+  "department_id": "cfr",
+  "title": "CFR",
+  "summary": "Scaffold for Code of Federal Regulations titles relevant to tax, banking, and commercial procedure. Not populated in v1.",
+  "status": "stub",
+  "catalogs": [
+    {
+      "catalog_id": "cfr_titles",
+      "title": "CFR Titles",
+      "status": "stub",
+      "entry_count": 0,
+      "source": "pending",
+      "description": "Placeholder for selected CFR title ingest (e.g. Title 26, Title 12)."
+    }
+  ]
+}

@@ -86,30 +86,184 @@ export const ClauseAnalysisSchema = z.object({
 });
 
 // ═══════════════════════════════════════════
-// FORM GENERATION
+// FORM GENERATION (discriminated by form_type)
 // ═══════════════════════════════════════════
 
-export const FormGenerationSchema = z.object({
-  form_type: z.enum([
-    'promissory_note_ucc',
-    'security_agreement_ucc',
-    'bill_of_sale_ucc',
-    'contractor_agreement',
-  ]).describe('Type of legal form to generate'),
-  amount: z.number().optional(),
-  lender: z.string().optional(),
-  borrower: z.string().optional(),
-  seller: z.string().optional(),
-  buyer: z.string().optional(),
-  client: z.string().optional(),
-  contractor: z.string().optional(),
-  collateral: z.string().optional(),
-  goods_description: z.string().optional(),
-  services: z.string().optional(),
+const FormBaseFields = {
   date: z.string().optional(),
   state: z.string().optional(),
+};
+
+export const PromissoryNoteFormSchema = z.object({
+  form_type: z.literal('promissory_note_ucc'),
+  amount: z.number().positive(),
+  lender: z.string().trim().min(1),
+  borrower: z.string().trim().min(1),
+  ...FormBaseFields,
 });
+
+export const SecurityAgreementFormSchema = z.object({
+  form_type: z.literal('security_agreement_ucc'),
+  collateral: z.string().trim().min(4),
+  debtor: z.string().trim().min(1).optional(),
+  secured_party: z.string().trim().min(1).optional(),
+  obligation: z.string().optional(),
+  ...FormBaseFields,
+});
+
+export const BillOfSaleFormSchema = z.object({
+  form_type: z.literal('bill_of_sale_ucc'),
+  seller: z.string().trim().min(1),
+  buyer: z.string().trim().min(1),
+  amount: z.number().positive().optional(),
+  goods_description: z.string().trim().min(1),
+  ...FormBaseFields,
+});
+
+export const ContractorAgreementFormSchema = z.object({
+  form_type: z.literal('contractor_agreement'),
+  client: z.string().trim().min(1),
+  contractor: z.string().trim().min(1),
+  services: z.string().trim().min(1),
+  ...FormBaseFields,
+});
+
+export const NdaFormSchema = z.object({
+  form_type: z.literal('nda'),
+  disclosing_party: z.string().trim().min(1),
+  receiving_party: z.string().trim().min(1),
+  purpose: z.string().trim().min(3),
+  term_years: z.number().positive().max(50),
+  mutual: z.boolean().optional().default(true),
+  ...FormBaseFields,
+});
+
+export const ServiceAgreementFormSchema = z.object({
+  form_type: z.literal('service_agreement'),
+  client: z.string().trim().min(1),
+  provider: z.string().trim().min(1),
+  services: z.string().trim().min(3),
+  fee: z.number().nonnegative().optional(),
+  payment_terms: z.string().trim().min(1).optional(),
+  start_date: z.string().optional(),
+  end_date: z.string().optional(),
+  ...FormBaseFields,
+});
+
+export const ConsultingAgreementFormSchema = z.object({
+  form_type: z.literal('consulting_agreement'),
+  client: z.string().trim().min(1),
+  consultant: z.string().trim().min(1),
+  scope: z.string().trim().min(3),
+  fee: z.number().nonnegative().optional(),
+  retainer: z.number().nonnegative().optional(),
+  deliverables: z.string().trim().min(1).optional(),
+  ...FormBaseFields,
+});
+
+export const IpAssignmentFormSchema = z.object({
+  form_type: z.literal('ip_assignment'),
+  assignor: z.string().trim().min(1),
+  assignee: z.string().trim().min(1),
+  work_description: z.string().trim().min(3),
+  consideration: z.string().trim().min(1).optional(),
+  effective_date: z.string().optional(),
+  ...FormBaseFields,
+});
+
+export const FormGenerationSchema = z.discriminatedUnion('form_type', [
+  PromissoryNoteFormSchema,
+  SecurityAgreementFormSchema,
+  BillOfSaleFormSchema,
+  ContractorAgreementFormSchema,
+  NdaFormSchema,
+  ServiceAgreementFormSchema,
+  ConsultingAgreementFormSchema,
+  IpAssignmentFormSchema,
+]);
 export type FormGenerationInput = z.infer<typeof FormGenerationSchema>;
+export type PromissoryNoteFormInput = z.infer<typeof PromissoryNoteFormSchema>;
+export type SecurityAgreementFormInput = z.infer<typeof SecurityAgreementFormSchema>;
+export type BillOfSaleFormInput = z.infer<typeof BillOfSaleFormSchema>;
+export type ContractorAgreementFormInput = z.infer<typeof ContractorAgreementFormSchema>;
+export type NdaFormInput = z.infer<typeof NdaFormSchema>;
+export type ServiceAgreementFormInput = z.infer<typeof ServiceAgreementFormSchema>;
+export type ConsultingAgreementFormInput = z.infer<typeof ConsultingAgreementFormSchema>;
+export type IpAssignmentFormInput = z.infer<typeof IpAssignmentFormSchema>;
+
+// ═══════════════════════════════════════════
+// DOCUMENT DRAFT / WORD EXPORT CONTRACTS
+// Provenance slots reserved for spectral / CourtListener later.
+// ═══════════════════════════════════════════
+
+export const DocumentCitationSchema = z.object({
+  label: z.string(),
+  citation: z.string(),
+  url: z.string().optional(),
+  quote: z.string().optional(),
+});
+export type DocumentCitation = z.infer<typeof DocumentCitationSchema>;
+
+export const DocumentHoldingRefSchema = z.object({
+  holding_id: z.string(),
+  court: z.string().optional(),
+  decision_date: z.string().optional(),
+  citation: z.string(),
+  text: z.string(),
+});
+export type DocumentHoldingRef = z.infer<typeof DocumentHoldingRefSchema>;
+
+export const DocumentSourceRefSchema = z.object({
+  kind: z.enum(['statute', 'opinion', 'docket', 'filing', 'library_item', 'url']),
+  ref: z.string(),
+  label: z.string().optional(),
+});
+export type DocumentSourceRef = z.infer<typeof DocumentSourceRefSchema>;
+
+export const DocumentProvenanceSchema = z.object({
+  citations: z.array(DocumentCitationSchema).default([]),
+  holdings: z.array(DocumentHoldingRefSchema).default([]),
+  source_refs: z.array(DocumentSourceRefSchema).default([]),
+});
+export type DocumentProvenance = z.infer<typeof DocumentProvenanceSchema>;
+
+export const DocumentDraftSchema = z.object({
+  id: z.string(),
+  form: FormGenerationSchema,
+  markdown: z.string(),
+  validation_steps: z.array(ValidationStepSchema),
+  passed: z.boolean(),
+  provenance: DocumentProvenanceSchema.default({
+    citations: [],
+    holdings: [],
+    source_refs: [],
+  }),
+  created_at: z.string(),
+});
+export type DocumentDraft = z.infer<typeof DocumentDraftSchema>;
+
+export const DocumentExportRequestSchema = z.union([
+  z.object({
+    draft_id: z.string().min(1),
+    format: z.literal('docx'),
+  }).strict(),
+  z.object({
+    draft: DocumentDraftSchema,
+    format: z.literal('docx'),
+  }).strict(),
+]);
+export type DocumentExportRequest = z.infer<typeof DocumentExportRequestSchema>;
+
+export const DocumentExportResultSchema = z.object({
+  draft_id: z.string(),
+  processed_file_id: z.string(),
+  filename: z.string(),
+  mime_type: z.literal('application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+  size_bytes: z.number().int().nonnegative(),
+  checksum: z.string(),
+  artifact_path: z.string(),
+});
+export type DocumentExportResult = z.infer<typeof DocumentExportResultSchema>;
 
 // ═══════════════════════════════════════════
 // COMMON LAW — HOLDING & TREATMENT GRAPH
@@ -175,9 +329,12 @@ export type HoldingRef = z.infer<typeof HoldingRefSchema>;
 
 /**
  * Links a claim to one or more holdings that interpret a statute.
- * Gate requires this for legal_rule / interpretation claims.
+ * Forward-looking spectral graph model (see docs/common_law_spectral_layer.md
+ * "Future Direction"); not yet wired into the live retrieval path, which uses
+ * the simpler `InterpretationLinkSchema` (holding_id/citation/relation/strength)
+ * defined below near `ClaimSchema`. Kept distinctly named to avoid collision.
  */
-export const InterpretationLinkSchema = z.object({
+export const HoldingInterpretationLinkSchema = z.object({
   claim_id: z.string(),
   statute_citation: z.string(),
   holding_refs: z.array(HoldingRefSchema).min(1),
@@ -192,7 +349,7 @@ export const InterpretationLinkSchema = z.object({
   spectral_distance: z.number().min(0).max(1).optional(),
   graph_weight: z.number().min(0).max(1).describe('Aggregate stare_decisis_weight'),
 }).strict();
-export type InterpretationLink = z.infer<typeof InterpretationLinkSchema>;
+export type HoldingInterpretationLink = z.infer<typeof HoldingInterpretationLinkSchema>;
 
 // ═══════════════════════════════════════════
 // AI RESPONSE CONTRACTS (What the AI gives back)
@@ -218,12 +375,351 @@ export const ChatResponseSchema = z.object({
  * Now includes 'holding' for common-law spectral objects.
  */
 export const EvidenceRefSchema = z.object({
-  kind: z.enum(['statute', 'library_item', 'evidence_node', 'tool_result', 'url', 'holding'])
+  kind: z.enum(['statute', 'holding', 'library_item', 'evidence_node', 'tool_result', 'url', 'register_sense'])
     .describe('Category of evidence source'),
   ref: z.string().describe('Identifier or URL for the evidence source (e.g. "UCC 3-104", opinion_id, URL)'),
   quote: z.string().optional().describe('Verbatim excerpt from the source that supports the claim'),
+  strength: z.enum(['weak', 'moderate', 'strong']).optional()
+    .describe('Relative evidentiary force when the source is a holding or tool result'),
 });
 export type EvidenceRef = z.infer<typeof EvidenceRefSchema>;
+
+// ═══════════════════════════════════════════
+// REGISTER MIRROR (Private Confidant Lexicon)
+// Plain English ↔ institutional / statutory senses.
+// ═══════════════════════════════════════════
+
+export const RegisterEpistemicSchema = z.enum(['settled', 'institutional', 'plain', 'contested']);
+export const RegisterBandSchema = z.enum([
+  'plain',
+  'institutional',
+  'statute',
+  'fiscal',
+  'capacity',
+  'contested',
+]);
+export const RegisterMatrixSchema = z.enum([
+  'money_credit',
+  'private_public_lien',
+  'identity_split',
+  'procedural',
+  'discharge',
+  'capacity',
+  'fiscal',
+]);
+
+export const RegisterSenseSchema = z.object({
+  register: RegisterBandSchema,
+  epistemic: RegisterEpistemicSchema,
+  definition: z.string().min(1),
+  authority_cite: z.string().min(1),
+  source_refs: z.array(z.string()).default([]),
+}).strict();
+export type RegisterSense = z.infer<typeof RegisterSenseSchema>;
+
+export const RegisterEntrySchema = z.object({
+  term_id: z.string().min(1),
+  surface_forms: z.array(z.string().min(1)).min(1),
+  matrix: RegisterMatrixSchema.optional(),
+  senses: z.array(RegisterSenseSchema).min(1),
+  confusion_with: z.array(z.string()).default([]),
+  mirror_hint: z.string().min(1),
+  procedural_triggers: z.array(z.string()).default([]),
+}).strict();
+export type RegisterEntry = z.infer<typeof RegisterEntrySchema>;
+
+export const RegisterLexiconSchema = z.object({
+  schema_version: z.literal('0.1.0'),
+  lexicon_id: z.string().min(1),
+  version: z.string().min(1),
+  description: z.string().optional(),
+  entries: z.array(RegisterEntrySchema).min(1),
+}).strict();
+export type RegisterLexicon = z.infer<typeof RegisterLexiconSchema>;
+
+// ═══════════════════════════════════════════
+// PCON COLD MAP (negative cartography)
+// ═══════════════════════════════════════════
+
+export const ColdMapKindSchema = z.enum([
+  'bad_cite',
+  'wrong_sense',
+  'public_filler',
+  'procedure_miss',
+  'myth_as_settled',
+  'tool_skip',
+]);
+
+export const ColdMapEntrySchema = z.object({
+  schema_version: z.literal('0.1.0'),
+  failure_id: z.string().min(1),
+  surface: z.string().min(1),
+  kind: ColdMapKindSchema,
+  why_static: z.string().min(1),
+  corrective_pointer: z.string().optional(),
+  status: z.enum(['active', 'retired']),
+  source_refs: z.array(z.string()).default([]),
+  epistemic_note: z.string().optional(),
+}).strict();
+export type ColdMapEntry = z.infer<typeof ColdMapEntrySchema>;
+
+export const ColdMapConsultRequestSchema = z.object({
+  query: z.string().trim().min(1).max(4000),
+  limit: z.number().int().min(1).max(20).default(5),
+}).strict();
+export type ColdMapConsultRequest = z.infer<typeof ColdMapConsultRequestSchema>;
+
+export const ColdMapConsultResultSchema = z.object({
+  query: z.string(),
+  hits: z.array(ColdMapEntrySchema),
+  posture: z.literal('negative_cartography'),
+  provenance: z.object({
+    source_dir: z.string(),
+    entry_count: z.number().int().nonnegative(),
+    matched: z.boolean(),
+  }),
+}).strict();
+export type ColdMapConsultResult = z.infer<typeof ColdMapConsultResultSchema>;
+
+export const RegisterTranslateRequestSchema = z.object({
+  text: z.string().trim().min(1).max(8000),
+}).strict();
+export type RegisterTranslateRequest = z.infer<typeof RegisterTranslateRequestSchema>;
+
+export const RegisterMatchedTermSchema = z.object({
+  term_id: z.string(),
+  surface: z.string(),
+  user_usage_echo: z.string(),
+  matrix: RegisterMatrixSchema.optional(),
+  plain_sense: RegisterSenseSchema.optional(),
+  senses_by_band: z.object({
+    settled: z.array(RegisterSenseSchema),
+    institutional: z.array(RegisterSenseSchema),
+    contested: z.array(RegisterSenseSchema),
+  }),
+  confusion_notes: z.array(z.string()),
+  procedural_reminders: z.array(z.string()),
+  mirror_hint: z.string(),
+  posture: z.literal('mirror_then_distinguish'),
+}).strict();
+export type RegisterMatchedTerm = z.infer<typeof RegisterMatchedTermSchema>;
+
+export const RegisterMirrorResultSchema = z.object({
+  matched_terms: z.array(RegisterMatchedTermSchema),
+  unanswered_spans: z.array(z.string()),
+  provenance: z.object({
+    lexicon_id: z.string(),
+    lexicon_version: z.string(),
+    source_path: z.string(),
+    source_refs: z.array(z.string()),
+  }).strict(),
+}).strict();
+export type RegisterMirrorResult = z.infer<typeof RegisterMirrorResultSchema>;
+
+/** Capture → propose → human merge. Never silent-write the live pack. */
+export const RegisterProposalModeSchema = z.enum(['create', 'amend']);
+export const RegisterProposalStatusSchema = z.enum(['pending', 'merged', 'rejected']);
+
+export const RegisterProposeRequestSchema = z.object({
+  trigger_text: z.string().trim().min(1).max(8000),
+  notes: z.string().trim().max(4000).optional(),
+  mode: RegisterProposalModeSchema.default('create'),
+  entry: RegisterEntrySchema,
+}).strict();
+export type RegisterProposeRequest = z.infer<typeof RegisterProposeRequestSchema>;
+
+/** Quick research — clarity before propose. Case/orthography aware. */
+export const RegisterResearchRequestSchema = z.object({
+  term: z.string().trim().min(1).max(512),
+  context: z.string().trim().max(4000).optional(),
+  corpus_hint: z.string().trim().max(128).optional(),
+}).strict();
+export type RegisterResearchRequest = z.infer<typeof RegisterResearchRequestSchema>;
+
+export const RegisterResearchHitSchema = z.object({
+  term_id: z.string(),
+  surface_forms: z.array(z.string()),
+  exact_case_match: z.boolean(),
+  matrix: RegisterMatrixSchema.optional(),
+  mirror_hint: z.string(),
+  senses_by_band: z.object({
+    settled: z.array(RegisterSenseSchema),
+    institutional: z.array(RegisterSenseSchema),
+    contested: z.array(RegisterSenseSchema),
+  }),
+  confusion_notes: z.array(z.string()),
+}).strict();
+export type RegisterResearchHit = z.infer<typeof RegisterResearchHitSchema>;
+
+export const RegisterResearchResultSchema = z.object({
+  query_term: z.string(),
+  context: z.string().optional(),
+  corpus_hint: z.string().optional(),
+  orthography: z.object({
+    as_given: z.string(),
+    lower: z.string(),
+    title: z.string(),
+    upper: z.string(),
+    case_variants_differ: z.boolean(),
+  }).strict(),
+  in_lexicon: z.boolean(),
+  hits: z.array(RegisterResearchHitSchema),
+  case_gap: z.object({
+    noted: z.boolean(),
+    detail: z.string(),
+  }).strict(),
+  clarity_summary: z.string(),
+  propose_ready: z.object({
+    recommended: z.boolean(),
+    mode: RegisterProposalModeSchema,
+    suggested_term_id: z.string(),
+    suggested_surface_forms: z.array(z.string()),
+    stub_notes: z.string(),
+  }).strict(),
+  posture: z.literal('clarify_before_propose'),
+  provenance: z.object({
+    lexicon_id: z.string(),
+    lexicon_version: z.string(),
+    source_path: z.string(),
+  }).strict(),
+}).strict();
+export type RegisterResearchResult = z.infer<typeof RegisterResearchResultSchema>;
+
+export const RegisterProposalSchema = z.object({
+  id: z.string().min(1),
+  status: RegisterProposalStatusSchema,
+  mode: RegisterProposalModeSchema,
+  created_at: z.string().min(1),
+  updated_at: z.string().min(1),
+  trigger_text: z.string().min(1),
+  notes: z.string().optional(),
+  entry: RegisterEntrySchema,
+  reject_reason: z.string().optional(),
+  merged_into_version: z.string().optional(),
+}).strict();
+export type RegisterProposal = z.infer<typeof RegisterProposalSchema>;
+
+export const EpistemicBandSchema = z.enum(['settled', 'institutional', 'contested', 'perilous']);
+export type EpistemicBand = z.infer<typeof EpistemicBandSchema>;
+
+export const PackageFormRefSchema = z.object({
+  form_id: z.string().min(1),
+  title: z.string().min(1),
+  official_url: z.string().url().optional(),
+  sensitivity: z.enum(['common', 'sparse', 'sensitive']).optional(),
+}).strict();
+
+export const PackageLineSchema = z.object({
+  line_id: z.string().min(1),
+  text: z.string().min(1),
+  register_ref: z.string().optional(),
+}).strict();
+
+export const PackageStepSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  order: z.number().int().nonnegative(),
+  forms: z.array(PackageFormRefSchema).default([]),
+  lines: z.array(PackageLineSchema).default([]),
+  evidence_hooks: z.array(z.object({
+    kind: z.string().min(1),
+    ref: z.string().min(1),
+  }).strict()).optional(),
+  speed_bumps: z.array(z.string()).default([]),
+  flags: z.array(z.string()).default([]),
+  epistemic: EpistemicBandSchema,
+  delivery: z.object({
+    method: z.string().optional(),
+    destination: z.string().optional(),
+  }).strict().optional(),
+}).strict();
+
+export const PrimerPackageSchema = z.object({
+  package_id: z.string().min(1),
+  title: z.string().min(1),
+  outcome: z.string().min(1),
+  course_kind: z.enum(['primer', 'advanced']),
+  steps: z.array(PackageStepSchema).min(1),
+  source_notebooks: z.array(z.string()).optional(),
+  vector_ready: z.boolean().default(false),
+}).strict();
+export type PrimerPackage = z.infer<typeof PrimerPackageSchema>;
+export type PackageStep = z.infer<typeof PackageStepSchema>;
+
+// ═══════════════════════════════════════════
+// DOCS CATALOG (Documentation curate spine)
+// ═══════════════════════════════════════════
+
+export const DocsDepartmentIdSchema = z.enum([
+  'irs_treasury',
+  'fred_fed',
+  'ucc',
+  'cfr',
+]);
+export type DocsDepartmentId = z.infer<typeof DocsDepartmentIdSchema>;
+
+export const DocsModuleStatusSchema = z.enum(['populated', 'stub']);
+export type DocsModuleStatus = z.infer<typeof DocsModuleStatusSchema>;
+
+export const DocsEntryKindSchema = z.enum([
+  'form',
+  'instruction',
+  'publication',
+  'other',
+]);
+export type DocsEntryKind = z.infer<typeof DocsEntryKindSchema>;
+
+export const DocsCatalogRefSchema = z.object({
+  catalog_id: z.string().min(1),
+  title: z.string().min(1),
+  status: DocsModuleStatusSchema,
+  entry_count: z.number().int().nonnegative().default(0),
+  source: z.string().optional(),
+  description: z.string().optional(),
+}).strict();
+export type DocsCatalogRef = z.infer<typeof DocsCatalogRefSchema>;
+
+export const DocsDepartmentModuleSchema = z.object({
+  department_id: DocsDepartmentIdSchema,
+  title: z.string().min(1),
+  summary: z.string().min(1),
+  status: DocsModuleStatusSchema,
+  catalogs: z.array(DocsCatalogRefSchema).default([]),
+}).strict();
+export type DocsDepartmentModule = z.infer<typeof DocsDepartmentModuleSchema>;
+
+export const DocsCatalogEntrySchema = z.object({
+  entry_id: z.string().min(1),
+  department_id: DocsDepartmentIdSchema,
+  catalog_id: z.string().min(1),
+  file_name: z.string().min(1),
+  title: z.string().min(1),
+  official_url: z.string().url(),
+  kind: DocsEntryKindSchema,
+  text_preview: z.string().default(''),
+  source: z.string().min(1),
+}).strict();
+export type DocsCatalogEntry = z.infer<typeof DocsCatalogEntrySchema>;
+
+export const DocsCatalogIndexSchema = z.object({
+  catalog_id: z.string().min(1),
+  department_id: DocsDepartmentIdSchema,
+  title: z.string().min(1),
+  source: z.string().min(1),
+  ingested_at: z.string().min(1),
+  entry_count: z.number().int().nonnegative(),
+  entries: z.array(DocsCatalogEntrySchema),
+}).strict();
+export type DocsCatalogIndex = z.infer<typeof DocsCatalogIndexSchema>;
+
+export const InterpretationLinkSchema = z.object({
+  holding_id: z.string().describe('Resolved holding identifier returned by retrieve_holdings'),
+  citation: z.string().describe('Holding citation or stable corpus label'),
+  relation: z.enum(['supports', 'distinguishes', 'limits']).describe('How the holding bears on the claim'),
+  strength: z.enum(['weak', 'moderate', 'strong']).default('moderate').describe('Weight assigned to the holding'),
+  quote: z.string().optional().describe('Key holding language supporting the claim'),
+});
+export type InterpretationLink = z.infer<typeof InterpretationLinkSchema>;
 
 /**
  * An atomic claim extracted from the AI draft response.
@@ -238,8 +734,8 @@ export const ClaimSchema = z.object({
     .describe('Risk severity if this claim is wrong: high = hard block or repair required'),
   evidence: z.array(EvidenceRefSchema).default([])
     .describe('Supporting evidence references; fact/legal_rule claims must have at least one'),
-  interpretation_link: InterpretationLinkSchema.optional()
-    .describe('Required for legal_rule and interpretation claims under R5 (common law)'),
+  interpretation_links: z.array(InterpretationLinkSchema).default([])
+    .describe('Common-law holding links supporting the claim; high-severity legal claims should carry at least one strong link'),
 });
 export type Claim = z.infer<typeof ClaimSchema>;
 

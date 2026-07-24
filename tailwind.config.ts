@@ -10,69 +10,79 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Mahogany / leather / gold palette
+        ink: {
+          DEFAULT: '#0a0a0c',
+          soft: '#14171c',
+        },
+        gunmetal: {
+          DEFAULT: '#2a2e35',
+          deep: '#1c2026',
+          lit: '#343a44',
+        },
+        silver: {
+          DEFAULT: '#cfd5de',
+          bright: '#eef1f5',
+          den: '#9aa1ab',
+        },
+        champagne: {
+          DEFAULT: '#c4a574',
+          soft: 'rgba(196,165,116,0.12)',
+        },
+        // Legacy aliases → brand kit (keeps older classnames from breaking hard)
         mahogany: {
-          50:  '#f9f3ee',
-          100: '#f0e4d6',
-          200: '#d9c2a6',
-          300: '#c2a076',
-          400: '#a87d4d',
-          500: '#8b5e30',
-          600: '#6e4220',
-          700: '#5a3415',
-          800: '#3d2b1f',  // sidebar border
-          900: '#2a1c12',  // deep sidebar
-          950: '#150d08',  // darkest mahogany
+          50: '#f4f5f7',
+          100: '#e8eaee',
+          200: '#cfd5de',
+          300: '#9aa1ab',
+          400: '#6b7280',
+          500: '#4b5563',
+          600: '#343a44',
+          700: '#2a2e35',
+          800: '#1c2026',
+          900: '#14171c',
+          950: '#0a0a0c',
         },
         leather: {
-          50:  '#fdf6ee',
-          100: '#f7e8d0',
-          200: '#eece9b',
-          300: '#e8dcc8',  // body text
-          400: '#c2a882',
-          500: '#9a7d56',
-          600: '#7a6040',
-          700: '#5a4030',  // muted text
-          800: '#3d2b1f',
-          900: '#1e1410',  // sidebar bg
-          950: '#0d0806',  // page bg
+          50: '#f4f5f7',
+          100: '#e8eaee',
+          200: '#cfd5de',
+          300: '#eef1f5',
+          400: '#cfd5de',
+          500: '#9aa1ab',
+          600: '#6b7280',
+          700: '#9aa1ab',
+          800: '#1c2026',
+          900: '#14171c',
+          950: '#0a0a0c',
         },
         gold: {
-          50:  '#fffde7',
-          100: '#fff9c4',
-          200: '#fff176',
-          300: '#ffd700',  // gold accent
-          400: '#ffc107',
-          500: '#d4af37',  // primary gold
-          600: '#b8941e',  // dark gold
-          700: '#9a7b10',
-          800: '#7d6308',
-          900: '#5c4a06',
+          50: '#faf6ef',
+          100: '#f0e6d4',
+          200: '#e0c9a0',
+          300: '#d4b687',
+          400: '#c4a574',
+          500: '#c4a574',
+          600: '#a8894f',
+          700: '#8a7040',
+          800: '#6b5632',
+          900: '#4a3b22',
         },
       },
       fontFamily: {
-        sans:  ['"Inter"', 'system-ui', 'sans-serif'],
-        serif: ['"Merriweather"', 'Georgia', 'serif'],
+        sans: ['"IBM Plex Sans"', 'system-ui', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
+        serif: ['"IBM Plex Sans"', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        sidebar:     '4px 0 20px rgba(0,0,0,0.5)',
-        'gold-glow': '0 0 20px rgba(212,175,55,0.5), 0 0 40px rgba(255,200,100,0.2)',
-        'gold-soft': '0 0 15px rgba(212,175,55,0.25)',
-        'panel':     '0 4px 24px rgba(0,0,0,0.4)',
-      },
-      borderRadius: {
-        panel: '0.5rem',
+        sidebar: '4px 0 24px rgba(0,0,0,0.45)',
+        panel: '0 12px 40px rgba(0,0,0,0.4)',
+        'silver-soft': '0 0 18px rgba(207,213,222,0.12)',
       },
       backgroundImage: {
-        'sidebar-gradient': 'linear-gradient(180deg, #1e1410 0%, #150d08 100%)',
-        'main-gradient':    'linear-gradient(180deg, #0d0806 0%, #0a0604 100%)',
-        'gold-gradient':    'linear-gradient(135deg, #d4af37, #b8941e)',
-        'gold-lit':         'linear-gradient(135deg, #d4af37, #ffd700)',
-        'nav-active':       'linear-gradient(135deg, #d4af37, #b8941e)',
-        'logo-dark':        'linear-gradient(135deg, #3d2b1f, #2a1c12)',
+        'sidebar-gradient': 'linear-gradient(180deg, #1c2026 0%, #0a0a0c 100%)',
+        'main-gradient': 'linear-gradient(180deg, #0f1216 0%, #0a0a0c 100%)',
       },
     },
   },
   plugins: [],
 } satisfies Config
-

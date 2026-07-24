@@ -55,10 +55,10 @@ export const ImageGen: React.FC = () => {
   };
 
   return (
-    <div data-testid="view-image-gen" className="h-full overflow-y-auto p-4 md:p-8 max-w-7xl mx-auto font-mono bg-black text-neutral-300">
-      <div className="mb-8 border-b border-neutral-800 pb-6">
-        <h2 data-testid="heading-image-gen" className="text-3xl font-bold text-white mb-2 uppercase tracking-tight">Legal Concept Visualizer</h2>
-        <p className="text-neutral-500 text-xs tracking-wider">
+    <div data-testid="view-image-gen" className="h-full overflow-y-auto p-4 md:p-8 max-w-7xl mx-auto font-mono" style={{ background: 'linear-gradient(180deg, #0f1216 0%, #0a0a0c 100%)', color: '#cfd5de' }}>
+      <div className="mb-8 pb-6" style={{ borderBottom: '1px solid rgba(207,213,222,0.14)' }}>
+        <h2 data-testid="heading-image-gen" className="text-3xl font-bold mb-2 uppercase tracking-tight font-sans" style={{ color: '#eef1f5' }}>Legal Concept Visualizer</h2>
+        <p className="text-xs tracking-wider" style={{ color: '#9aa1ab' }}>
           Generate high-fidelity abstractions to conceptualize complex statutory frameworks.
         </p>
       </div>
@@ -69,10 +69,10 @@ export const ImageGen: React.FC = () => {
         <div className="lg:col-span-4 space-y-6">
             
             {/* Context Card */}
-            <div className="border border-neutral-800 bg-neutral-900/50 p-6 rounded-lg">
+            <div className="border p-6 rounded-lg" style={{ borderColor: 'rgba(207,213,222,0.22)', background: 'rgba(42,46,53,0.5)' }}>
                 <div className="flex items-center justify-between mb-4">
-                    <span className="text-[10px] uppercase font-bold text-neutral-500 tracking-widest">Active Context</span>
-                    <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse"></div>
+                    <span className="text-[10px] uppercase font-bold tracking-widest" style={{ color: '#9aa1ab' }}>Active Context</span>
+                    <div className="h-2 w-2 rounded-full animate-pulse" style={{ background: '#cfd5de' }}></div>
                 </div>
                 <div className="space-y-3 font-mono">
                     <div className="flex justify-between text-xs border-b border-neutral-800 pb-2">
@@ -95,13 +95,13 @@ export const ImageGen: React.FC = () => {
                             onClick={() => setConceptType(type)}
                             className={`p-4 text-left border rounded-md text-xs font-bold uppercase tracking-wider transition-all ${
                                 conceptType === type 
-                                ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]' 
-                                : 'bg-black text-neutral-500 border-neutral-800 hover:border-neutral-600'
+                                ? 'bg-silver text-ink border-silver' 
+                                : 'bg-ink text-silver-den border-silver/20 hover:border-silver/40'
                             }`}
                         >
                             <div className="flex items-center justify-between">
                                 {type}
-                                {conceptType === type && <div className="w-2 h-2 bg-black rounded-full"></div>}
+                                {conceptType === type && <div className="w-2 h-2 bg-ink rounded-full"></div>}
                             </div>
                         </button>
                     ))}
@@ -111,7 +111,12 @@ export const ImageGen: React.FC = () => {
              <button
                 onClick={handleGenerate}
                 disabled={loading}
-                className="w-full py-4 mt-4 bg-gradient-to-r from-indigo-900 to-neutral-900 hover:from-indigo-800 hover:to-neutral-800 text-white font-bold uppercase tracking-widest border border-indigo-500/30 rounded-md transition-all disabled:opacity-50 flex items-center justify-center gap-3 shadow-lg"
+                className="w-full py-4 mt-4 font-bold uppercase tracking-widest rounded-md transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                style={{
+                  background: '#2a2e35',
+                  border: '1.5px solid #cfd5de',
+                  color: '#eef1f5',
+                }}
                 >
                 {loading ? (
                     <>
@@ -155,9 +160,9 @@ export const ImageGen: React.FC = () => {
                     <div className="text-center p-12 relative z-10">
                         {loading ? (
                             <div className="space-y-6">
-                                <div className="font-mono text-xs text-indigo-500 uppercase tracking-widest animate-pulse">Computing Abstraction Layer...</div>
-                                <div className="w-48 h-1 bg-neutral-800 mx-auto rounded-full overflow-hidden">
-                                    <div className="h-full bg-indigo-500 animate-[shimmer_1s_infinite]"></div>
+                                <div className="font-mono text-xs uppercase tracking-widest animate-pulse" style={{ color: '#c4a574' }}>Computing Abstraction Layer...</div>
+                                <div className="w-48 h-1 mx-auto rounded-full overflow-hidden" style={{ background: 'rgba(207,213,222,0.15)' }}>
+                                    <div className="h-full animate-[shimmer_1s_infinite]" style={{ background: '#cfd5de' }}></div>
                                 </div>
                             </div>
                         ) : (

@@ -2,7 +2,7 @@
 // Ported from LegalPackages/auditor.ts.tsx
 // Implements the "Faith-Less" Verifiable Law Database Logic and UCC/USC "Contracts in Code"
 
-import { queryWhiteGlove } from './whitegloveClient';
+import { queryLawCorpus, type StatuteResult } from './lawCorpusClient';
 
 export interface ValidationStep {
   rule_id: string;
@@ -14,13 +14,13 @@ export interface ValidationStep {
 }
 
 // --- 0. THE SOURCE OF TRUTH ---
-// Queries the WhiteGlove local retrieval server (joecwales/whiteglove-legal-2026).
-// Falls back to a hardcoded seed library when the server is not running.
-// Set WHITEGLOVE_URL env var to point at a remote instance.
+// Queries the optional law-corpus retrieval boundary (LAW_CORPUS_URL).
+// Falls back to a hardcoded seed library when the upstream is not running.
+// Silence-first: see result.silence (schemas/silenceFirst.ts).
 
 // The "RAG" Tool - strictly retrieves text, does not interpret.
-export const consultStatute = async (query: string): Promise<{ found: boolean; title?: string; text?: string; citation?: string }> => {
-  return queryWhiteGlove(query);
+export const consultStatute = async (query: string): Promise<StatuteResult> => {
+  return queryLawCorpus(query);
 };
 
 
@@ -185,181 +185,30 @@ export const analyzeContractRisks = async (clauseText: string, docType: string):
   };
 };
 
-// --- NEW: LEGAL FORM GENERATION ---
-// This acts as a Local MCP. In the future, these strings should be fetched from an indexed source.
+// --- LEGAL FORM GENERATION ---
+// Compatibility shim: drafting is owned by the Fastify /api/drafts boundary.
+// Prefer createDraftForm() from services/draftsClient.ts in new call sites.
 
-export const generateVerifiedForm = async (type: string, data: any): Promise<{ markdown: string, validation: ValidationStep }> => {
-  let markdown = '';
-  let validation: ValidationStep = {
-    rule_id: 'FORM_GEN', passed: false, details: 'Unknown form type', evidence_source: 'System', timestamp: new Date().toISOString()
+export const generateVerifiedForm = async (
+  type: string,
+  data: Record<string, unknown>,
+): Promise<{ markdown: string; validation: ValidationStep; draft_id?: string }> => {
+  const { createDraftForm } = await import('./draftsClient');
+  const response = await createDraftForm({ ...data, form_type: type });
+  const validation = response.validation_steps[0] ?? {
+    rule_id: 'FORM_GEN',
+    passed: response.passed,
+    details: response.passed ? 'Form generated.' : 'Form generation failed.',
+    evidence_source: 'System',
+    timestamp: new Date().toISOString(),
   };
 
-  // 1. UCC PROMISSORY NOTE
-  if (type === 'promissory_note_ucc') {
-    // Validate first (Self-Enforcing Contract)
-    const check = await verifyNegotiability({
-      promise_type: 'unconditional', 
-      amount_type: 'fixed',
-      currency: 'USD',
-      payable_to: 'order',
-      timing: data.date ? 'definite' : 'demand',
-      other_undertakings: false
-    });
-
-    if (check.passed) {
-      markdown = `
-# PROMISSORY NOTE (UCC § 3-104 Compliant)
-
-**Principal Amount:** $${data.amount || '___'}
-**Date:** ${data.date || 'On Demand'}
-
-FOR VALUE RECEIVED, the undersigned ("Borrower") promises to pay to the order of **${data.lender || '___'}** ("Lender") the principal sum of **$${data.amount || '___'}** USD.
-
-**1. PAYMENT.**
-${data.date ? `Payment shall be made in full on ${data.date}.` : 'Payment shall be made immediately upon demand by Lender.'}
-
-**2. UNCONDITIONAL PROMISE.**
-This Note represents an unconditional promise to pay and is not subject to any other agreement.
-
-**3. GOVERNING LAW.**
-This Note shall be governed by the Uniform Commercial Code as adopted in the State of ${data.state || 'Delaware'}.
-
-**4. WAIVERS.**
-Borrower waives presentment, demand, protest, and notice of dishonor.
-
-**5. EXECUTION.**
-The parties hereby execute this Note as of the date first written above.
-
-[SIGNATURE_FIELD:Borrower Signature]
-**${data.borrower || 'Borrower'}**
-
-[SIGNATURE_FIELD:Lender Signature]
-**${data.lender || 'Lender'}**
-`;
-      validation = check;
-    } else {
-      validation = check;
-      markdown = `> **GENERATION BLOCKED**: Protocol Violation.\n> Reason: ${check.details}`;
-    }
-  }
-
-  // 2. UCC SECURITY AGREEMENT (Article 9)
-  else if (type === 'security_agreement_ucc') {
-    // Logic: Must have a granting clause and description of collateral (UCC 9-203)
-    const hasCollateral = data.collateral && data.collateral.length > 3;
-    
-    if (hasCollateral) {
-        // Retrieve the Binding Text
-        const law = await consultStatute('UCC 9-203');
-        
-        validation = {
-            rule_id: 'UCC_9_203',
-            passed: true,
-            details: 'PASSED: Contains granting clause and collateral description (UCC 9-203).',
-            evidence_source: law.citation || 'UCC Article 9',
-            timestamp: new Date().toISOString()
-        };
-        markdown = `
-# SECURITY AGREEMENT (UCC Article 9)
-
-This Security Agreement is entered into on **${data.date || new Date().toISOString().split('T')[0]}** between **${data.debtor || 'Debtor'}** ("Debtor") and **${data.secured_party || 'Secured Party'}** ("Secured Party").
-
-**1. GRANT OF SECURITY INTEREST.**
-Debtor hereby grants to Secured Party a security interest in the property described below ("Collateral") to secure the payment and performance of the obligation described as: ${data.obligation || 'Promissory Note dated ' + (data.date || 'even date herewith')}.
-
-**2. COLLATERAL DESCRIPTION.**
-The Collateral consists of the following:
-> ${data.collateral}
-
-**3. PERFECTION.**
-Debtor authorizes Secured Party to file a financing statement (UCC-1) to perfect this Security Interest.
-
-**4. DEFAULT.**
-Upon default, Secured Party shall have all rights and remedies of a secured party under the Uniform Commercial Code of ${data.state || 'Delaware'}.
-
-[SIGNATURE_FIELD:Debtor Authentication]
-**${data.debtor || 'Debtor'}**
-`;
-    } else {
-        validation = {
-            rule_id: 'UCC_9_203',
-            passed: false,
-            details: 'FAILED: Missing sufficient description of Collateral (UCC 9-108).',
-            evidence_source: 'UCC Article 9',
-            timestamp: new Date().toISOString()
-        };
-        markdown = `> **GENERATION BLOCKED**: UCC 9-203 violation. Security Agreement must reasonably identify the collateral.`;
-    }
-  }
-
-  // 3. BILL OF SALE (UCC Article 2)
-  else if (type === 'bill_of_sale_ucc') {
-    // Logic: Quantity and Price check (UCC 2-201 Statute of Frauds)
-    markdown = `
-# BILL OF SALE (UCC Article 2)
-
-**Seller:** ${data.seller || '___'}
-**Buyer:** ${data.buyer || '___'}
-**Date:** ${data.date || new Date().toISOString().split('T')[0]}
-**Consideration:** $${data.amount || '___'}
-
-FOR VALUE RECEIVED, Seller hereby sells, transfers, and conveys to Buyer the following goods (the "Goods"):
-
-**DESCRIPTION OF GOODS:**
-${data.goods_description || '[Insert Description and Serial Numbers]'}
-
-**WARRANTIES:**
-Seller warrants that they have good and marketable title to the Goods, free of all liens and encumbrances. The Goods are sold "AS-IS" unless otherwise expressly stated.
-
-[SIGNATURE_FIELD:Seller]
-**${data.seller || 'Seller'}**
-
-[SIGNATURE_FIELD:Buyer]
-**${data.buyer || 'Buyer'}**
-`;
-    validation = {
-        rule_id: 'UCC_2_201',
-        passed: true,
-        details: 'PASSED: Written memorandum of sale (UCC 2-201).',
-        evidence_source: 'UCC Article 2',
-        timestamp: new Date().toISOString()
-    };
-  }
-
-  // 4. INDEPENDENT CONTRACTOR AGREEMENT
-  else if (type === 'contractor_agreement') {
-     markdown = `
-# INDEPENDENT CONTRACTOR AGREEMENT
-
-This Agreement is made between **${data.client || 'Client'}** and **${data.contractor || 'Contractor'}**.
-
-**1. SERVICES.**
-Contractor agrees to perform the following services:
-${data.services || '[Describe Services]'}
-
-**2. INDEPENDENT CONTRACTOR STATUS.**
-Contractor is an independent contractor, not an employee. Contractor is responsible for all taxes (including Self-Employment Tax). Client shall not withhold taxes or provide benefits.
-
-**3. WORK FOR HIRE.**
-All deliverables created under this Agreement shall be considered "Work Made for Hire" and shall be the sole property of the Client.
-
-**4. CONFIDENTIALITY.**
-Contractor acknowledges access to confidential information and agrees not to disclose such information to third parties.
-
-[SIGNATURE_FIELD:Contractor]
-**${data.contractor || 'Contractor'}**
-
-[SIGNATURE_FIELD:Client]
-**${data.client || 'Client'}**
-`;
-     validation = {
-        rule_id: 'COMMON_LAW_AGENCY',
-        passed: true,
-        details: 'PASSED: Explicitly defines Independent Contractor relationship.',
-        evidence_source: 'IRS Common Law Rules',
-        timestamp: new Date().toISOString()
-    };
-  }
-
-  return { markdown, validation };
+  return {
+    markdown: response.markdown,
+    validation: {
+      ...validation,
+      generated_content: response.generated_content,
+    },
+    draft_id: response.draft_id,
+  };
 };

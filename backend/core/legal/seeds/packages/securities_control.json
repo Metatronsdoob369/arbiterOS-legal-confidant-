@@ -1,0 +1,62 @@
+{
+  "package_id": "securities_control",
+  "title": "Securities and Instrument Review",
+  "outcome": "Classify an instrument and understand the documented terms before relying on it.",
+  "course_kind": "primer",
+  "vector_ready": false,
+  "steps": [
+    {
+      "id": "sc-classify-instrument",
+      "title": "Identify the instrument type",
+      "order": 1,
+      "forms": [],
+      "lines": [
+        {
+          "line_id": "sc-instrument-elements",
+          "text": "Read the instrument for its maker, payee, amount, payment terms, signatures, and any stated conditions."
+        }
+      ],
+      "speed_bumps": [
+        "A label alone does not determine whether a document is a negotiable instrument or a security."
+      ],
+      "flags": [],
+      "epistemic": "settled"
+    },
+    {
+      "id": "sc-indorsement-vocabulary",
+      "title": "Use indorsement vocabulary carefully",
+      "order": 2,
+      "forms": [],
+      "lines": [
+        {
+          "line_id": "sc-without-recourse",
+          "text": "An indorsement may include language such as “without recourse,” which can affect an indorser's liability under applicable UCC rules."
+        }
+      ],
+      "speed_bumps": [
+        "Indorsement language does not replace the instrument's other terms or the parties' governing agreement."
+      ],
+      "flags": [],
+      "epistemic": "settled"
+    },
+    {
+      "id": "sc-public-debt-claim",
+      "title": "Separate disputed discharge claims from payment methods",
+      "order": 3,
+      "forms": [],
+      "lines": [
+        {
+          "line_id": "sc-discharge-claim",
+          "text": "Claims that a privately created instrument automatically discharges a public debt are disputed and should be treated as an inventory item, not a payment method."
+        }
+      ],
+      "speed_bumps": [
+        "Confirm accepted payment methods directly with the creditor or agency before relying on any submission."
+      ],
+      "flags": [
+        "IRS IRM 25.25.10 addresses frivolous submissions; presenting a fictitious instrument as payment can create serious compliance risk."
+      ],
+      "epistemic": "perilous"
+    }
+  ]
+}

@@ -1,0 +1,911 @@
+{
+  "schema_version": "0.1.0",
+  "lexicon_id": "private-confidant",
+  "version": "1.0.0",
+  "description": "Private confidant register pack: capacity, money/credit, private vs public lien, identity roles, procedural hygiene, payment vs discharge, Fed/Treasury ops. Epistemic bands only — no advocacy myth as code.",
+  "entries": [
+    {
+      "term_id": "citizen",
+      "surface_forms": ["citizen", "citizenship"],
+      "matrix": "capacity",
+      "confusion_with": ["united_states_citizen", "citizen_of_a_state", "person", "national"],
+      "mirror_hint": "Echo how the speaker used 'citizen' before distinguishing statutory senses.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "Everyday membership in a political community; often used loosely for 'I am from here' or 'I have a passport.'",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "In U.S. federal law, citizenship is a defined status with rights and duties; distinct from mere residency or nationality in some contexts.",
+          "authority_cite": "U.S. Const. amend. XIV §1; 8 U.S.C. §1401 et seq.",
+          "source_refs": ["usc:8"]
+        }
+      ]
+    },
+    {
+      "term_id": "united_states_citizen",
+      "surface_forms": ["united states citizen", "u.s. citizen", "us citizen", "american citizen"],
+      "matrix": "capacity",
+      "confusion_with": ["citizen", "citizen_of_a_state", "person"],
+      "mirror_hint": "Reflect the phrase as used, then note it is a federal statutory/constitutional status term — not interchangeable with every state-capacity phrase.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "Colloquial label for someone who holds U.S. citizenship.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "capacity",
+          "epistemic": "settled",
+          "definition": "A person who is a citizen of the United States under the Constitution and federal nationality statutes.",
+          "authority_cite": "U.S. Const. amend. XIV §1; 8 U.S.C. §1401",
+          "source_refs": ["usc:8"]
+        }
+      ]
+    },
+    {
+      "term_id": "citizen_of_a_state",
+      "surface_forms": ["citizen of a state", "citizen of the state", "state citizen"],
+      "matrix": "capacity",
+      "confusion_with": ["united_states_citizen", "citizen", "person"],
+      "mirror_hint": "Mirror the exact phrase; distinguish state citizenship / diversity contexts from federal 'United States citizen' status.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "Everyday reference to living in or belonging to a particular state.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "capacity",
+          "epistemic": "settled",
+          "definition": "In constitutional litigation (e.g. diversity of citizenship), citizenship of a state is a distinct analytical category from federal nationality questions.",
+          "authority_cite": "U.S. Const. art. III §2; 28 U.S.C. §1332",
+          "source_refs": ["usc:28"]
+        },
+        {
+          "register": "contested",
+          "epistemic": "contested",
+          "definition": "Some materials treat 'citizen of a state' as mutually exclusive with 'United States citizen.' That exclusivity is a live definitional dispute, not settled black-letter identity law.",
+          "authority_cite": "definitional dispute zone — verify against controlling authority before relying",
+          "source_refs": []
+        }
+      ]
+    },
+    {
+      "term_id": "person",
+      "surface_forms": ["person", "persons"],
+      "matrix": "identity_split",
+      "confusion_with": ["natural_person", "individual", "debtor", "secured_party"],
+      "mirror_hint": "Echo the speaker's use of 'person,' then note Code definitions may include organizations, not only humans.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "A human being.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "Under the UCC, 'person' includes an individual and an organization.",
+          "authority_cite": "UCC §1-201(b)(27)",
+          "source_refs": ["ucc:1-201"]
+        }
+      ]
+    },
+    {
+      "term_id": "natural_person",
+      "surface_forms": ["natural person", "natural persons", "individual human"],
+      "matrix": "identity_split",
+      "confusion_with": ["person", "individual", "debtor"],
+      "mirror_hint": "Reflect 'natural person' as used; contrast with UCC 'person' which can include organizations.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "A living human being, as opposed to a corporation or other entity.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "An individual human; distinct from 'organization' within the UCC definition of person.",
+          "authority_cite": "UCC §1-201(b)(27) (person = individual or organization)",
+          "source_refs": ["ucc:1-201"]
+        }
+      ]
+    },
+    {
+      "term_id": "individual",
+      "surface_forms": ["individual", "individuals"],
+      "matrix": "identity_split",
+      "confusion_with": ["person", "natural_person"],
+      "mirror_hint": "Mirror everyday use; map to Code 'individual' where relevant.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "A single human, often contrasted with a company.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "UCC uses 'individual' as the human half of 'person' (individual or organization).",
+          "authority_cite": "UCC §1-201(b)(27)",
+          "source_refs": ["ucc:1-201"]
+        }
+      ]
+    },
+    {
+      "term_id": "debtor",
+      "surface_forms": ["debtor", "the debtor"],
+      "matrix": "identity_split",
+      "confusion_with": ["secured_party", "obligor", "person"],
+      "mirror_hint": "Echo who the speaker called 'debtor,' then give the Article 9 role definition.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "Someone who owes money or has an obligation.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "A person having an interest, other than a security interest or other lien, in the collateral — whether or not the person is an obligor.",
+          "authority_cite": "UCC §9-102(a)(28)",
+          "source_refs": ["ucc:9-102"]
+        }
+      ]
+    },
+    {
+      "term_id": "secured_party",
+      "surface_forms": ["secured party", "secured parties", "the secured party"],
+      "matrix": "identity_split",
+      "confusion_with": ["debtor", "creditor", "security_agreement"],
+      "mirror_hint": "Reflect the speaker's party label; map to Article 9 secured-party role.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "The lender or party who has collateral backing an obligation.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "A person in whose favor a security interest is created or provided for under a security agreement; includes certain other lienholders and consignees as defined.",
+          "authority_cite": "UCC §9-102(a)(73)",
+          "source_refs": ["ucc:9-102"]
+        }
+      ]
+    },
+    {
+      "term_id": "creditor",
+      "surface_forms": ["creditor", "creditors"],
+      "matrix": "identity_split",
+      "confusion_with": ["secured_party", "debtor"],
+      "mirror_hint": "Echo 'creditor' as used; note it is broader than 'secured party.'",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "Someone to whom a debt is owed.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "Includes a general creditor, a secured creditor, a lien creditor, and any representative of creditors.",
+          "authority_cite": "UCC §1-201(b)(13)",
+          "source_refs": ["ucc:1-201"]
+        }
+      ]
+    },
+    {
+      "term_id": "money",
+      "surface_forms": ["money", "paying money", "pay money", "the money"],
+      "matrix": "money_credit",
+      "confusion_with": ["lawful_money", "credit", "payment", "loan"],
+      "mirror_hint": "Mirror the everyday 'money' usage, then distinguish medium-of-exchange talk from credit/loan mechanics.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "Cash or funds used to buy things or settle bills.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "A medium of exchange currently authorized or adopted by a domestic or foreign government; includes a monetary unit of account established by an intergovernmental organization or by agreement between two or more countries.",
+          "authority_cite": "UCC §1-201(b)(24)",
+          "source_refs": ["ucc:1-201"]
+        }
+      ]
+    },
+    {
+      "term_id": "lawful_money",
+      "surface_forms": ["lawful money", "lawful money of the united states"],
+      "matrix": "money_credit",
+      "confusion_with": ["money", "credit", "payment"],
+      "mirror_hint": "Echo the phrase exactly; surface UCC 'money' and note that 'lawful money' is often a contested requirement claim — ask what definition the counterparty is using.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "Phrase often used to mean 'real' or 'official' money as opposed to credit or bank balances.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "The UCC defines 'money' (medium of exchange authorized/adopted by government). It does not use 'lawful money' as a separate defined term in §1-201.",
+          "authority_cite": "UCC §1-201(b)(24)",
+          "source_refs": ["ucc:1-201"]
+        },
+        {
+          "register": "contested",
+          "epistemic": "contested",
+          "definition": "Whether a particular obligation requires 'lawful money' as a fixed statutory medium — versus satisfaction by ordinary bank credit/payment systems — is a definitional and transactional dispute zone. Treat as a question to pin down with the counterparty's controlling instrument and applicable law, not as a settled universal.",
+          "authority_cite": "instrument + applicable law (verify per transaction)",
+          "source_refs": []
+        }
+      ]
+    },
+    {
+      "term_id": "credit",
+      "surface_forms": ["credit", "on credit", "line of credit", "bank credit"],
+      "matrix": "money_credit",
+      "confusion_with": ["money", "lawful_money", "loan", "payment"],
+      "mirror_hint": "Reflect whether the speaker meant borrowing capacity, accounting credit, or bank-system credit; then map to institutional senses.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "Ability to borrow, or 'credit' as opposite of debit on a statement.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "institutional",
+          "epistemic": "institutional",
+          "definition": "In modern payment systems, value commonly moves as bank credit / deposit liabilities and related payment messages — not as a physical handover of coin for each retail or commercial settlement.",
+          "authority_cite": "Federal Reserve / banking practice (payment systems overview)",
+          "source_refs": ["dna:green-book", "dna:gold-book"]
+        }
+      ]
+    },
+    {
+      "term_id": "loan",
+      "surface_forms": ["loan", "getting a loan", "get a loan", "borrow"],
+      "matrix": "money_credit",
+      "confusion_with": ["credit", "money", "debtor", "payment"],
+      "mirror_hint": "Echo the borrower's plain language; clarify the institutional structure is typically a credit/obligation relationship, not a bag of cash.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "Borrowing money that you will repay later.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "institutional",
+          "epistemic": "institutional",
+          "definition": "A credit extension creating a repayment obligation; funds often appear as deposit credit rather than physical currency delivery.",
+          "authority_cite": "banking practice / promissory note + deposit mechanics",
+          "source_refs": ["ucc:3", "dna:green-book"]
+        }
+      ]
+    },
+    {
+      "term_id": "security_agreement",
+      "surface_forms": ["security agreement", "the security agreement", "sa"],
+      "matrix": "private_public_lien",
+      "confusion_with": ["ucc1", "financing_statement", "security_interest", "lien"],
+      "mirror_hint": "If the speaker said 'file my lien,' check whether they mean the private security agreement (creates the interest) versus the public UCC-1 (perfection/notice).",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "The contract that says the lender can take collateral if you don't pay.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "An agreement that creates or provides for a security interest. Attachment of a security interest generally requires value, rights in collateral, and an authenticated security agreement (or possession/control exceptions).",
+          "authority_cite": "UCC §9-102(a)(74); §9-203",
+          "source_refs": ["ucc:9-102", "ucc:9-203"]
+        }
+      ]
+    },
+    {
+      "term_id": "security_interest",
+      "surface_forms": ["security interest", "security interests"],
+      "matrix": "private_public_lien",
+      "confusion_with": ["lien", "security_agreement", "ucc1"],
+      "mirror_hint": "Distinguish the property interest itself from the private agreement and the public filing.",
+      "senses": [
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "An interest in personal property or fixtures which secures payment or performance of an obligation.",
+          "authority_cite": "UCC §1-201(b)(35)",
+          "source_refs": ["ucc:1-201"]
+        }
+      ]
+    },
+    {
+      "term_id": "ucc1",
+      "surface_forms": [
+        "ucc-1",
+        "ucc 1",
+        "ucc1",
+        "financing statement",
+        "ucc financing statement",
+        "file a ucc"
+      ],
+      "matrix": "private_public_lien",
+      "confusion_with": ["security_agreement", "lien", "security_interest", "perfection"],
+      "mirror_hint": "Public notice/perfection device — not the private contract that creates the security interest.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "The public form people 'file' to show a lien on business assets.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "A financing statement is a record designed to be filed in the public UCC records to perfect (or give notice of) a security interest; filing a financing statement is generally not what creates the security interest.",
+          "authority_cite": "UCC §9-102(a)(39); §9-310; §9-502",
+          "source_refs": ["ucc:9-102", "ucc:9-310", "ucc:9-502"]
+        }
+      ]
+    },
+    {
+      "term_id": "financing_statement",
+      "surface_forms": ["financing statement", "financing statements"],
+      "matrix": "private_public_lien",
+      "confusion_with": ["ucc1", "security_agreement", "lien"],
+      "mirror_hint": "Same public-record family as UCC-1; keep separate from the private security agreement.",
+      "senses": [
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "Record authorized for filing to perfect a security interest; content requirements in Article 9 (debtor name, secured party, collateral indication).",
+          "authority_cite": "UCC §9-102(a)(39); §9-502",
+          "source_refs": ["ucc:9-502"]
+        }
+      ]
+    },
+    {
+      "term_id": "lien",
+      "surface_forms": ["lien", "liens", "file my lien", "file a lien", "my lien"],
+      "matrix": "private_public_lien",
+      "confusion_with": ["security_agreement", "ucc1", "security_interest", "perfection"],
+      "mirror_hint": "When the user says 'file my lien,' mirror that phrase, then split: (1) private security agreement creates the interest; (2) UCC-1 financing statement is the usual public perfection/notice step. Do not treat them as one document.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "A claim against property that secures a debt.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "A charge against or interest in property to secure payment of a debt or performance of an obligation. An Article 9 security interest is a species of lien created by agreement; perfection is a separate step from creation.",
+          "authority_cite": "UCC §9-102; §9-203; §9-310",
+          "source_refs": ["ucc:9-203", "ucc:9-310"]
+        }
+      ]
+    },
+    {
+      "term_id": "perfection",
+      "surface_forms": ["perfection", "perfect", "perfected", "perfect the interest"],
+      "matrix": "private_public_lien",
+      "confusion_with": ["ucc1", "security_agreement", "lien"],
+      "mirror_hint": "Perfection is about priority/notice against third parties — after (or alongside) attachment under the security agreement.",
+      "senses": [
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "Steps that make a security interest effective against most third parties; filing a financing statement is the most common method for many collateral types.",
+          "authority_cite": "UCC §9-308; §9-310",
+          "source_refs": ["ucc:9-308", "ucc:9-310"]
+        }
+      ]
+    },
+    {
+      "term_id": "signature",
+      "surface_forms": ["signature", "sign", "signing", "signed", "i will sign", "sign this"],
+      "matrix": "procedural",
+      "confusion_with": ["ucc_1_308"],
+      "mirror_hint": "Mirror the act of signing the speaker described; calmly note UCC 1-308 reservation-of-rights language if they are performing under a disputed contract.",
+      "procedural_triggers": [
+        "If signing under protest or with reserved rights, consider authenticating a reservation under UCC §1-308 (formerly §1-207)."
+      ],
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "Putting your name on a document to agree to it.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "UCC 'sign' includes any present intent to adopt or accept a record; includes electronic signatures meeting the definition.",
+          "authority_cite": "UCC §1-201(b)(37)",
+          "source_refs": ["ucc:1-201"]
+        }
+      ]
+    },
+    {
+      "term_id": "ucc_1_308",
+      "surface_forms": ["ucc 1-308", "ucc 1-207", "1-308", "1-207", "reservation of rights", "without prejudice"],
+      "matrix": "procedural",
+      "confusion_with": ["signature"],
+      "mirror_hint": "Present as current Code reservation mechanism (1-308); mention 1-207 only as the former numbering.",
+      "procedural_triggers": [
+        "Performance or payment under explicit reservation of rights — UCC §1-308."
+      ],
+      "senses": [
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "A party that with explicit reservation of rights performs or promises performance or assents to performance in a manner demanded or offered by the other party does not thereby prejudice the rights reserved. Former §1-207.",
+          "authority_cite": "UCC §1-308 (formerly §1-207)",
+          "source_refs": ["ucc:1-308"]
+        }
+      ]
+    },
+    {
+      "term_id": "agency_demand",
+      "surface_forms": [
+        "agency demand",
+        "agency notice",
+        "irs letter",
+        "irs notice",
+        "notice from the agency",
+        "government notice"
+      ],
+      "matrix": "procedural",
+      "confusion_with": ["jurisdiction", "delegation_of_authority"],
+      "mirror_hint": "Echo the notice the speaker received; remind them to pin down issuing authority, scope, and what obligation is claimed — using settled administrative tools.",
+      "procedural_triggers": [
+        "Identify the issuing office and statutory/regulatory authority cited on the face of the notice.",
+        "Request the precise definition of key terms the agency is using (including any 'money' or 'person' definitions they rely on).",
+        "Use FOIA / Privacy Act / APA pathways where applicable for records and decision rationale."
+      ],
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "A letter or notice from a government office asking for money, information, or action.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "institutional",
+          "epistemic": "institutional",
+          "definition": "An administrative communication that should be read for cited authority, deadlines, and the specific capacity in which it addresses the recipient.",
+          "authority_cite": "APA / agency practice; FOIA 5 U.S.C. §552 where records are sought",
+          "source_refs": ["usc:5"]
+        }
+      ]
+    },
+    {
+      "term_id": "jurisdiction",
+      "surface_forms": ["jurisdiction", "proof of jurisdiction", "their jurisdiction"],
+      "matrix": "procedural",
+      "confusion_with": ["agency_demand"],
+      "mirror_hint": "Mirror the speaker's concern; distinguish subject-matter, personal, and administrative competence — ask what forum and what statute they mean.",
+      "procedural_triggers": [
+        "Clarify which forum (court, agency, arbitration) and which statute or regulation is claimed to confer power."
+      ],
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "Whether 'they' have the power to make you do something.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "Legal power of a court or body to hear a matter and bind parties; different tests apply for courts versus administrative agencies.",
+          "authority_cite": "forum-specific (e.g. 28 U.S.C. jurisdictional grants; agency organic statute)",
+          "source_refs": ["usc:28"]
+        }
+      ]
+    },
+    {
+      "term_id": "delegation_of_authority",
+      "surface_forms": ["delegation of authority", "delegated authority", "who has authority", "authority order"],
+      "matrix": "procedural",
+      "confusion_with": ["agency_demand", "jurisdiction"],
+      "mirror_hint": "Echo the request for 'who authorized this'; surface institutional need for a clear chain of authority without inventing a magic form name.",
+      "procedural_triggers": [
+        "Ask for the name, title, and written delegation or regulation authorizing the specific demand."
+      ],
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "Proof that the person contacting you was actually allowed to make that demand.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "institutional",
+          "epistemic": "institutional",
+          "definition": "Agencies act through officers and employees under organic statutes and internal delegations; a demand should be traceable to that chain.",
+          "authority_cite": "agency organic statute + internal delegation instruments",
+          "source_refs": []
+        }
+      ]
+    },
+    {
+      "term_id": "payment",
+      "surface_forms": ["payment", "paid", "i paid", "i paid it", "pay off", "financial payment"],
+      "matrix": "discharge",
+      "confusion_with": ["discharge", "money", "credit", "cancellation"],
+      "mirror_hint": "Echo 'I paid it' as the speaker meant satisfaction; distinguish ordinary payment/settlement from Article 3 discharge of an instrument.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "Giving money or transferring value so a bill is settled.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "institutional",
+          "epistemic": "institutional",
+          "definition": "In banking practice, payment typically moves deposit credit / payment-system messages that satisfy an obligation under the parties' contract and applicable funds-transfer rules.",
+          "authority_cite": "UCC Articles 3–4A (as applicable); bank payment practice",
+          "source_refs": ["ucc:3", "ucc:4A"]
+        }
+      ]
+    },
+    {
+      "term_id": "discharge",
+      "surface_forms": ["discharge", "discharged", "real payment", "true discharge"],
+      "matrix": "discharge",
+      "confusion_with": ["payment", "cancellation", "surrender"],
+      "mirror_hint": "If the speaker contrasts 'real discharge' with ordinary payment, mirror that concern, then give Article 3 discharge mechanics with cites.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "The debt is fully wiped out / over.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "Under Article 3, an instrument may be discharged by, among other methods, intentional voluntary acts such as cancellation or renunciation by the person entitled to enforce, or payment/tender rules as provided in Part 6.",
+          "authority_cite": "UCC §3-601; §3-602; §3-604",
+          "source_refs": ["ucc:3-601", "ucc:3-604"]
+        }
+      ]
+    },
+    {
+      "term_id": "cancellation",
+      "surface_forms": ["cancellation", "cancel the instrument", "cancelled the note"],
+      "matrix": "discharge",
+      "confusion_with": ["discharge", "surrender", "payment"],
+      "mirror_hint": "Mirror the cancellation claim; point to intentional cancellation/renunciation by the person entitled to enforce.",
+      "senses": [
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "A person entitled to enforce an instrument may discharge it by an intentional voluntary act, such as surrender of the instrument to the obligor, destruction, or cancellation / striking out of the signature, or by agreeing not to sue / renouncing rights in a signed writing.",
+          "authority_cite": "UCC §3-604",
+          "source_refs": ["ucc:3-604"]
+        }
+      ]
+    },
+    {
+      "term_id": "surrender",
+      "surface_forms": ["surrender", "delivery up", "deliver up", "hand over the original", "original paper"],
+      "matrix": "discharge",
+      "confusion_with": ["discharge", "cancellation", "payment"],
+      "mirror_hint": "Echo the request for the original; map to Article 3 surrender/cancellation vocabulary.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "Giving back the original note or paper so the debt is done.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "Surrender of the instrument to the obligor is one intentional voluntary act by which a person entitled to enforce may discharge the instrument.",
+          "authority_cite": "UCC §3-604(a)",
+          "source_refs": ["ucc:3-604"]
+        }
+      ]
+    },
+    {
+      "term_id": "reclamation",
+      "surface_forms": ["reclamation", "they took the money back", "took the money back", "clawback", "reclaim"],
+      "matrix": "fiscal",
+      "confusion_with": ["offset", "payment"],
+      "mirror_hint": "Mirror the plain 'took the money back' story; map to Fiscal Service reclamation vocabulary.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "The government or bank pulled funds back after a payment.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "fiscal",
+          "epistemic": "institutional",
+          "definition": "Treasury Fiscal Service procedures for reclaiming funds on certain government check / payment items when entitlement fails (Gold Book reclamation process).",
+          "authority_cite": "Bureau of the Fiscal Service Gold Book (reclamation)",
+          "source_refs": ["dna:gold-book"]
+        }
+      ]
+    },
+    {
+      "term_id": "offset",
+      "surface_forms": ["offset", "treasury offset", "top", "they offset"],
+      "matrix": "fiscal",
+      "confusion_with": ["reclamation", "payment"],
+      "mirror_hint": "Echo the speaker's 'offset' usage; map to Treasury Offset Program / Fiscal Service offset practice.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "They took money from a payment or refund to cover another debt.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "fiscal",
+          "epistemic": "institutional",
+          "definition": "Administrative offset of federal payments against certain delinquent debts (Treasury Offset Program and related Fiscal Service processes).",
+          "authority_cite": "31 U.S.C. §3716; Fiscal Service TOP materials",
+          "source_refs": ["dna:gold-book", "usc:31"]
+        }
+      ]
+    },
+    {
+      "term_id": "presenting_bank",
+      "surface_forms": ["presenting bank", "presentment", "bank that presented"],
+      "matrix": "fiscal",
+      "confusion_with": ["reclamation"],
+      "mirror_hint": "Mirror the banking actor the speaker named; map to check-collection / Gold Book presenting-bank role.",
+      "senses": [
+        {
+          "register": "fiscal",
+          "epistemic": "institutional",
+          "definition": "The bank that presents a check or item for payment in the collection chain; appears throughout Fiscal Service check-reclamation procedures.",
+          "authority_cite": "UCC Article 4; Fiscal Service Gold Book",
+          "source_refs": ["dna:gold-book", "ucc:4"]
+        }
+      ]
+    },
+    {
+      "term_id": "capacity",
+      "surface_forms": ["capacity", "in what capacity", "private capacity", "public capacity"],
+      "matrix": "capacity",
+      "confusion_with": ["person", "citizen", "debtor", "secured_party"],
+      "mirror_hint": "Echo the capacity phrase; ask which role/office/party status they mean before applying Code definitions.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "The role or hat someone is wearing when they act.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "capacity",
+          "epistemic": "settled",
+          "definition": "Legal capacity and party role determine who is bound and in what character (individual, organization, agent, debtor, secured party). Pin the role to the instrument and Code definitions in play.",
+          "authority_cite": "UCC §1-201; §9-102 (party definitions); agency principles as applicable",
+          "source_refs": ["ucc:1-201", "ucc:9-102"]
+        }
+      ]
+    },
+    {
+      "term_id": "transmitting_utility",
+      "surface_forms": ["transmitting utility", "transmitting utilities"],
+      "matrix": "identity_split",
+      "confusion_with": ["debtor", "person"],
+      "mirror_hint": "Echo the phrase; map to the Article 9 debtor category, not everyday 'utility company' talk alone.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "A utility that transmits power, communications, or similar services.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "A person primarily engaged in the railroad, subway, street railway, or trolley bus business, electric or electronics communications, transmission of goods by pipeline, or the transmission or production and transmission of electricity, steam, gas, or water.",
+          "authority_cite": "UCC §9-102(a)(81)",
+          "source_refs": ["ucc:9-102"]
+        }
+      ]
+    },
+    {
+      "term_id": "sole_proprietorship",
+      "surface_forms": ["sole proprietorship", "sole proprietor", "dba", "doing business as"],
+      "matrix": "identity_split",
+      "confusion_with": ["person", "individual", "debtor"],
+      "mirror_hint": "Echo how the speaker named the business; distinguish the human individual from the trade name under which they operate.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "A one-person business, often under a trade name.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "institutional",
+          "epistemic": "institutional",
+          "definition": "An unincorporated business owned by one individual; filing and contracting often use the individual's legal name and/or a registered DBA. Party capacity on instruments should name the individual (and trade name if used) clearly.",
+          "authority_cite": "state assumed-name / DBA practice; UCC debtor-name rules as applicable",
+          "source_refs": ["ucc:9-503"]
+        }
+      ]
+    },
+    {
+      "term_id": "collateral_description",
+      "surface_forms": ["all assets", "all assets of the debtor", "supergeneric collateral", "collateral description"],
+      "matrix": "private_public_lien",
+      "confusion_with": ["security_agreement", "ucc1", "perfection"],
+      "mirror_hint": "Echo the collateral phrase; distinguish indication sufficiency for a financing statement from the security agreement's description requirements.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "A short phrase listing what property secures the debt.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "A financing statement sufficiently indicates collateral if it provides a description per §9-108 or an indication that it covers all assets or all personal property. The security agreement's description rules are separate from the financing-statement indication rules.",
+          "authority_cite": "UCC §9-504; §9-108",
+          "source_refs": ["ucc:9-504", "ucc:9-108"]
+        }
+      ]
+    },
+    {
+      "term_id": "nationality",
+      "surface_forms": ["nationality", "national", "what is your nationality"],
+      "matrix": "procedural",
+      "confusion_with": ["citizen", "united_states_citizen", "jurisdiction"],
+      "mirror_hint": "Echo the nationality ask; distinguish nationality from citizenship where the speaker may be collapsing them.",
+      "procedural_triggers": [
+        "When an agency or counterparty uses 'nationality,' ask which statute or form definition they are applying."
+      ],
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "Which country someone 'belongs to' or is from.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "Nationality and citizenship overlap in ordinary speech but are not always identical legal categories; federal nationality/citizenship statutes define status with precision for immigration and related contexts.",
+          "authority_cite": "8 U.S.C. §1101 et seq.; compare citizenship under U.S. Const. amend. XIV §1",
+          "source_refs": ["usc:8"]
+        }
+      ]
+    },
+    {
+      "term_id": "holder",
+      "surface_forms": ["holder", "holder of the note", "person entitled to enforce"],
+      "matrix": "discharge",
+      "confusion_with": ["discharge", "instrument", "payment"],
+      "mirror_hint": "Echo who the speaker called 'holder'; map to Article 3 holder / person entitled to enforce.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "The person who has the note or check.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "A person in possession of a negotiable instrument that is payable to bearer or to an identified person that is the person in possession. Related: 'person entitled to enforce' under §3-301.",
+          "authority_cite": "UCC §1-201(b)(21); §3-301",
+          "source_refs": ["ucc:1-201", "ucc:3-301"]
+        }
+      ]
+    },
+    {
+      "term_id": "instrument",
+      "surface_forms": ["instrument", "negotiable instrument", "the note", "the paper"],
+      "matrix": "discharge",
+      "confusion_with": ["payment", "discharge", "holder"],
+      "mirror_hint": "Echo whether the speaker meant a physical note/check or a generic document; map to Article 3 instrument where negotiability is in play.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "A written promise or order to pay, like a note or check.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "statute",
+          "epistemic": "settled",
+          "definition": "A negotiable instrument under Article 3 (note, draft, etc. meeting §3-104 requirements).",
+          "authority_cite": "UCC §3-104",
+          "source_refs": ["ucc:3-104"]
+        }
+      ]
+    },
+    {
+      "term_id": "account_symbol",
+      "surface_forms": ["account symbol", "fast book", "treasury account symbol", "tas"],
+      "matrix": "fiscal",
+      "confusion_with": ["offset", "reclamation"],
+      "mirror_hint": "Echo the accounting label the speaker used; map to Fiscal Service account-symbol / FAST Book vocabulary.",
+      "senses": [
+        {
+          "register": "plain",
+          "epistemic": "plain",
+          "definition": "A code that identifies a government money account.",
+          "authority_cite": "plain usage",
+          "source_refs": []
+        },
+        {
+          "register": "fiscal",
+          "epistemic": "institutional",
+          "definition": "Treasury Account Symbols (and related FAST Book classifications) identify federal fund accounts for fiscal reporting and payment operations.",
+          "authority_cite": "Bureau of the Fiscal Service FAST Book",
+          "source_refs": ["dna:fast-book"]
+        }
+      ]
+    }
+  ]
+}

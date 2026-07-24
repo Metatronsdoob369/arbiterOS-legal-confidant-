@@ -2,9 +2,24 @@ import { defineConfig, devices } from '@playwright/test';
 
 /**
  * Playwright configuration for ArbiterOS e2e tests.
- * Tests run against the Vite dev server (port 3000).
+ * Uses a dedicated port (4321) to avoid conflicts with other dev servers.
  * Network requests to AI/API endpoints are mocked inside each test.
  */
+const webServer = process.env.PLAYWRIGHT_SKIP_WEB_SERVER
+  ? undefined
+  : {
+      command: 'npm run seed:admin && npm run dev',
+      url: 'http://localhost:4321',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120 * 1000,
+      env: {
+        // Provide a dummy key so the app doesn't throw on startup
+        OPENAI_API_KEY: 'test-key-placeholder',
+        AI_BASE_URL: 'http://localhost:9999',
+        AI_MODEL: 'test-model',
+      },
+    };
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -13,7 +28,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:4321',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -27,16 +42,5 @@ export default defineConfig({
       use: { ...devices['Pixel 5'] },
     },
   ],
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-    env: {
-      // Provide a dummy key so the app doesn't throw on startup
-      OPENAI_API_KEY: 'test-key-placeholder',
-      AI_BASE_URL: 'http://localhost:9999',
-      AI_MODEL: 'test-model',
-    },
-  },
+  webServer,
 });

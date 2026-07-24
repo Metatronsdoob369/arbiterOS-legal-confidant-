@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Arbiter — One-tone seal + sign in</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --near-black: #0a0a0c;
+      --gunmetal: #2a2e35;
+      --gunmetal-deep: #1c2026;
+      --silver: #cfd5de;
+      --silver-bright: #eef1f5;
+      --champagne: #c4a574;
+      --muted: #9aa1ab;
+      --line: rgba(207, 213, 222, 0.28);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "IBM Plex Sans", system-ui, sans-serif;
+      color: var(--silver-bright);
+      background: var(--near-black);
+      display: grid;
+      place-items: center;
+      padding: 1.5rem 1rem 2rem;
+    }
+    .wrap { width: min(400px, 100%); }
+
+    .chooser {
+      display: flex;
+      justify-content: center;
+      gap: 0.45rem;
+      margin-bottom: 0.85rem;
+      flex-wrap: wrap;
+    }
+    .chooser button {
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--muted);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.4rem 0.7rem;
+      cursor: pointer;
+    }
+    .chooser button.on {
+      color: var(--silver-bright);
+      border-color: rgba(196, 165, 116, 0.45);
+      background: rgba(196, 165, 116, 0.1);
+    }
+
+    .card {
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background:
+        radial-gradient(120% 80% at 50% 120%, rgba(196, 165, 116, 0.1), transparent 55%),
+        linear-gradient(180deg, #323842 0%, var(--gunmetal-deep) 72%, #14171c 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.07),
+        0 28px 70px rgba(0,0,0,0.55);
+      padding: 1.85rem 1.35rem 1.35rem;
+    }
+
+    .brand { text-align: center; margin-bottom: 1.35rem; }
+
+    /* One-tone seals */
+    .seal {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 1rem;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      position: relative;
+    }
+    .seal::after {
+      content: "";
+      position: absolute;
+      left: 14%;
+      right: 14%;
+      bottom: -8px;
+      height: 12px;
+      background: radial-gradient(ellipse at center, rgba(196,165,116,0.4), transparent 70%);
+      filter: blur(4px);
+    }
+    .seal svg {
+      width: 34px;
+      height: 34px;
+      fill: none;
+      stroke-width: 1.7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Primary: silver pill → dark scales */
+    .seal.primary {
+      background: var(--silver);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.4);
+    }
+    .seal.primary svg { stroke: var(--near-black); }
+
+    /* Alternate: dark pill → silver scales */
+    .seal.alt {
+      background: var(--gunmetal);
+      border: 1px solid rgba(207, 213, 222, 0.2);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.45);
+    }
+    .seal.alt svg { stroke: var(--silver); }
+
+    .wordmark {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-indent: 0.18em;
+      text-transform: uppercase;
+      color: var(--silver);
+    }
+    .tag {
+      margin: 0.4rem 0 0;
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.28em;
+      text-indent: 0.28em;
+      text-transform: uppercase;
+      color: var(--champagne);
+    }
+
+    label {
+      display: block;
+      margin: 0.85rem 0 0.35rem;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    input {
+      width: 100%;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(10, 10, 12, 0.55);
+      color: var(--silver-bright);
+      padding: 0.72rem 1rem;
+      font: inherit;
+      font-size: 0.92rem;
+      outline: none;
+    }
+    input:focus {
+      border-color: rgba(207, 213, 222, 0.55);
+      box-shadow: 0 0 0 3px rgba(207, 213, 222, 0.08);
+    }
+
+    .actions { margin-top: 1.2rem; }
+    .enter {
+      width: 100%;
+      border-radius: 999px;
+      border: 1.5px solid var(--silver);
+      background: var(--gunmetal);
+      color: var(--silver-bright);
+      font-weight: 600;
+      font-size: 0.8rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.78rem 1rem;
+      cursor: pointer;
+    }
+    .enter:hover {
+      border-color: var(--silver-bright);
+      background: #343a44;
+    }
+
+    .alts {
+      margin-top: 1rem;
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      align-items: center;
+    }
+    .alts .mini {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+    }
+    .alts .mini svg { width: 18px; height: 18px; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+    .alts .mini.primary { background: var(--silver); }
+    .alts .mini.primary svg { stroke: var(--near-black); }
+    .alts .mini.alt { background: var(--gunmetal); border: 1px solid rgba(207,213,222,0.2); }
+    .alts .mini.alt svg { stroke: var(--silver); }
+    .alts span {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.56rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .note {
+      margin-top: 1rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="chooser" role="group" aria-label="Seal tone">
+      <button type="button" class="on" id="btn-primary">Primary · silver pill</button>
+      <button type="button" id="btn-alt">Alternate · dark pill</button>
+    </div>
+
+    <form class="card" onsubmit="event.preventDefault()">
+      <div class="brand">
+        <div class="seal primary" id="seal">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3v3M6 21h12M8 21V11l4-3 4 3v10M5 11h14"/>
+          </svg>
+        </div>
+        <p class="wordmark">Arbiter</p>
+        <p class="tag">Legal Confidant</p>
+      </div>
+
+      <label for="user">Username</label>
+      <input id="user" autocomplete="username" value="admin" />
+
+      <label for="pass">Password</label>
+      <input id="pass" type="password" autocomplete="current-password" value="secret-passphrase" />
+
+      <div class="actions">
+        <button class="enter" type="submit">Enter</button>
+      </div>
+
+      <div class="alts" aria-label="Both tones">
+        <div class="mini primary" title="Primary">
+          <svg viewBox="0 0 24 24"><path d="M12 3v3M6 21h12M8 21V11l4-3 4 3v10M5 11h14"/></svg>
+        </div>
+        <span>both on brand</span>
+        <div class="mini alt" title="Alternate">
+          <svg viewBox="0 0 24 24"><path d="M12 3v3M6 21h12M8 21V11l4-3 4 3v10M5 11h14"/></svg>
+        </div>
+      </div>
+    </form>
+
+    <p class="note">
+      One tone on the pill · scales are the opposite.<br />
+      Primary: silver box / dark scales · Alternate: dark box / silver scales.
+    </p>
+  </div>
+
+  <script>
+    const seal = document.getElementById('seal');
+    const primary = document.getElementById('btn-primary');
+    const alt = document.getElementById('btn-alt');
+    primary.addEventListener('click', () => {
+      seal.classList.add('primary');
+      seal.classList.remove('alt');
+      primary.classList.add('on');
+      alt.classList.remove('on');
+    });
+    alt.addEventListener('click', () => {
+      seal.classList.add('alt');
+      seal.classList.remove('primary');
+      alt.classList.add('on');
+      primary.classList.remove('on');
+    });
+  </script>
+</body>
+</html>

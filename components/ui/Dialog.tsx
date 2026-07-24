@@ -14,7 +14,7 @@ export const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      'fixed inset-0 z-50 bg-leather-950/80 backdrop-blur-sm',
+      'fixed inset-0 z-50 bg-ink/80 backdrop-blur-sm',
       'data-[state=open]:animate-in data-[state=closed]:animate-out',
       'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
       className,
@@ -34,7 +34,7 @@ export const DialogContent = React.forwardRef<
       ref={ref}
       className={cn(
         'fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2',
-        'rounded-panel border border-mahogany-800 bg-leather-900 p-6 shadow-panel',
+        'rounded-panel border border-silver/25 bg-gunmetal-deep p-6 shadow-panel',
         'data-[state=open]:animate-in data-[state=closed]:animate-out',
         'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
         'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
@@ -55,7 +55,7 @@ export const DialogHeader = ({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={cn('mb-4 border-b border-mahogany-800 pb-3', className)}
+    className={cn('mb-4 border-b border-silver/15 pb-3', className)}
     {...props}
   />
 );
@@ -67,7 +67,7 @@ export const DialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
-    className={cn('font-serif text-sm font-bold text-gold-500 uppercase tracking-wider', className)}
+    className={cn('font-sans text-sm font-bold text-champagne uppercase tracking-wider', className)}
     {...props}
   />
 ));
@@ -79,7 +79,7 @@ export const DialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn('text-xs text-leather-400', className)}
+    className={cn('text-xs text-silver-den', className)}
     {...props}
   />
 ));

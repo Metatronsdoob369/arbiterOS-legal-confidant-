@@ -1,0 +1,10 @@
+{
+  "packages": [
+    { "package_id": "transition_essentials", "file": "transition_essentials.json" },
+    { "package_id": "securities_control", "file": "securities_control.json" },
+    { "package_id": "proper_debt_discharge", "file": "proper_debt_discharge.json" },
+    { "package_id": "contract_navigation", "file": "contract_navigation.json" },
+    { "package_id": "property_tax_procedure", "file": "property_tax_procedure.json" },
+    { "package_id": "irs_form_intimacy", "file": "irs_form_intimacy.json" }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "department_id": "ucc",
+  "title": "UCC",
+  "summary": "Scaffold for Uniform Commercial Code articles, official comments, and filing-form references used by instrument literacy packs.",
+  "status": "stub",
+  "catalogs": [
+    {
+      "catalog_id": "ucc_articles",
+      "title": "UCC Articles & Comments",
+      "status": "stub",
+      "entry_count": 0,
+      "source": "pending",
+      "description": "Placeholder for UCC Article 3/9 text and filing form crosswalks."
+    }
+  ]
+}

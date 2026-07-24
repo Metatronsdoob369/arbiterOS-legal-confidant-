@@ -1,0 +1,16 @@
+{
+  "department_id": "fred_fed",
+  "title": "FRED / Federal Reserve",
+  "summary": "Scaffold for FRED series notes, Fed publications, and monetary-authority reference docs. Not populated in v1.",
+  "status": "stub",
+  "catalogs": [
+    {
+      "catalog_id": "fred_series",
+      "title": "FRED Series Notes",
+      "status": "stub",
+      "entry_count": 0,
+      "source": "pending",
+      "description": "Placeholder for St. Louis Fed FRED series metadata and release notes."
+    }
+  ]
+}

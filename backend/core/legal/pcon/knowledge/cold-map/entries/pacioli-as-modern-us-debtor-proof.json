@@ -1,0 +1,15 @@
+{
+  "schema_version": "0.1.0",
+  "failure_id": "pacioli-as-modern-us-debtor-proof",
+  "surface": "Citing Pacioli as proof that the modern United States is an obligated debtor to issuing creditors, then treating UCC/TFX outcomes as following from 1494.",
+  "kind": "myth_as_settled",
+  "why_static": "Particularis teaches Venetian Per/A journal grammar and double Ledger posting. It does not enact UCC Article 3, Fiscal Service reclamations, or a settled sovereign-debtor claim. Bridging Pacioli → modern US debtor without labeling the bridge as contested/orientation is myth-as-settled.",
+  "corrective_pointer": "skill:pacioli-double-entry (orientation only) + spine:lii-ucc-article-3 + skill:tfx-treasury-reclamations",
+  "status": "active",
+  "source_refs": [
+    "skills/pacioli-double-entry",
+    "spine/sources/lii-ucc-article-3-pointers-2026-07-23.md",
+    "spine/manifest.v1.json#pacioli-skill-double-entry"
+  ],
+  "epistemic_note": "US-debtor metaphor may live in loyal-opposition cockpit talk; never as Pacioli black-letter."
+}
