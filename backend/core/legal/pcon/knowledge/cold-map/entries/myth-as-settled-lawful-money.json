@@ -1,0 +1,14 @@
+{
+  "schema_version": "0.1.0",
+  "failure_id": "myth-as-settled-lawful-money",
+  "surface": "Treating 'lawful money' as a universal settled requirement that voids ordinary commercial payment.",
+  "kind": "myth_as_settled",
+  "why_static": "Collapsing a contested definitional zone into black-letter outcome is always a register failure; the pack labels contested for a reason.",
+  "corrective_pointer": "lexicon:lawful_money (settled UCC money sense + contested requirement zone)",
+  "status": "active",
+  "source_refs": [
+    "seeds/private-confidant.v1.json#lawful_money",
+    "specs/2026-07-21-register-mirror-private-confidant-design.md"
+  ],
+  "epistemic_note": "Loyal opposition must keep contested labeled."
+}

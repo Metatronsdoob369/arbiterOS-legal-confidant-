@@ -1,0 +1,55 @@
+{
+  "schema_version": "0.1.0",
+  "belt_version": "0.1.0",
+  "cases": [
+    {
+      "id": "11111111-1111-4111-8111-111111111111",
+      "title": "Restructure trusts and DTC clearinghouse study",
+      "goal": "Restructure businesses and trusts; understand DTC Trust and clearinghouse mechanics; locate what is knowable about holders and funding — study first.",
+      "focus_hypothesis_ids": ["bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"],
+      "working_premise_ids": ["aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"],
+      "next_intentional_move": "Map DTC Trust public structure before downstream SSN/trust/distribution claims.",
+      "created_at": "2026-07-24T12:00:00.000Z",
+      "updated_at": "2026-07-24T12:00:00.000Z"
+    }
+  ],
+  "hypotheses": [
+    {
+      "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "title": "Upper map: Treasury as trust company (working premise)",
+      "claim": "Treasury-as-trust-company framing is path context only; unsealed — not a sealed executable claim.",
+      "lane": "working_premise",
+      "disposition": "open",
+      "confidence": 0.3,
+      "evidence_refs": [],
+      "tags": ["upper-map", "treasury", "trust"],
+      "case_id": "11111111-1111-4111-8111-111111111111",
+      "provenance": {
+        "source": "seed.v1",
+        "timestamp": "2026-07-24T12:00:00.000Z",
+        "validation_steps": []
+      },
+      "created_at": "2026-07-24T12:00:00.000Z",
+      "updated_at": "2026-07-24T12:00:00.000Z"
+    },
+    {
+      "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      "title": "DTC Trust and clearinghouse structure",
+      "claim": "Study the public structure of DTC Trust and its clearinghouse role in securities custody and settlement.",
+      "lane": "study",
+      "disposition": "open",
+      "confidence": 0.2,
+      "evidence_refs": [],
+      "tags": ["dtc", "clearinghouse", "custody"],
+      "case_id": "11111111-1111-4111-8111-111111111111",
+      "provenance": {
+        "source": "seed.v1",
+        "timestamp": "2026-07-24T12:00:00.000Z",
+        "validation_steps": []
+      },
+      "created_at": "2026-07-24T12:00:00.000Z",
+      "updated_at": "2026-07-24T12:00:00.000Z"
+    }
+  ],
+  "audit_trail": ["2026-07-24T12:00:00.000Z seed.v1 initialized"]
+}

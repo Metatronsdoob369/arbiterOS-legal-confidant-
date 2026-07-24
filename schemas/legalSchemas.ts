@@ -351,6 +351,50 @@ export const RegisterLexiconSchema = z.object({
 }).strict();
 export type RegisterLexicon = z.infer<typeof RegisterLexiconSchema>;
 
+// ═══════════════════════════════════════════
+// PCON COLD MAP (negative cartography)
+// ═══════════════════════════════════════════
+
+export const ColdMapKindSchema = z.enum([
+  'bad_cite',
+  'wrong_sense',
+  'public_filler',
+  'procedure_miss',
+  'myth_as_settled',
+  'tool_skip',
+]);
+
+export const ColdMapEntrySchema = z.object({
+  schema_version: z.literal('0.1.0'),
+  failure_id: z.string().min(1),
+  surface: z.string().min(1),
+  kind: ColdMapKindSchema,
+  why_static: z.string().min(1),
+  corrective_pointer: z.string().optional(),
+  status: z.enum(['active', 'retired']),
+  source_refs: z.array(z.string()).default([]),
+  epistemic_note: z.string().optional(),
+}).strict();
+export type ColdMapEntry = z.infer<typeof ColdMapEntrySchema>;
+
+export const ColdMapConsultRequestSchema = z.object({
+  query: z.string().trim().min(1).max(4000),
+  limit: z.number().int().min(1).max(20).default(5),
+}).strict();
+export type ColdMapConsultRequest = z.infer<typeof ColdMapConsultRequestSchema>;
+
+export const ColdMapConsultResultSchema = z.object({
+  query: z.string(),
+  hits: z.array(ColdMapEntrySchema),
+  posture: z.literal('negative_cartography'),
+  provenance: z.object({
+    source_dir: z.string(),
+    entry_count: z.number().int().nonnegative(),
+    matched: z.boolean(),
+  }),
+}).strict();
+export type ColdMapConsultResult = z.infer<typeof ColdMapConsultResultSchema>;
+
 export const RegisterTranslateRequestSchema = z.object({
   text: z.string().trim().min(1).max(8000),
 }).strict();

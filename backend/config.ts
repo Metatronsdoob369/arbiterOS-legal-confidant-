@@ -37,6 +37,7 @@ const ConfigSchema = z.object({
   COMMON_LAW_AUTO_BOOTSTRAP: z.boolean().default(true),
   REGISTER_LEXICON_PATH: z.string().default('backend/core/legal/seeds/private-confidant.v1.json'),
   REGISTER_PROPOSALS_DIR: z.string().default('data/lexicon/proposals'),
+  PCON_COLD_MAP_DIR: z.string().default('backend/core/legal/pcon/knowledge/cold-map'),
   PRIMER_PACKAGES_DIR: z.string().default('backend/core/legal/seeds/packages'),
   DOCS_CATALOG_DIR: z.string().default('backend/core/legal/seeds/docs'),
   DOCS_FULLTEXT_DB_PATH: z.string().default('data/docs/irs_forms.sqlite'),

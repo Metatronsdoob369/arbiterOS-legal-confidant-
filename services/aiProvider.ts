@@ -33,8 +33,11 @@ import {
 import { createDraftForm } from './draftsClient';
 import { commonLawEngine } from './commonLawEngine';
 import { registerLexiconClient } from './registerLexiconClient';
+import { pconColdMapClient } from './pconColdMapClient';
+import { pconLedgerClient } from './pconLedgerClient';
 import { normalizeRegisterSurfaces } from './registerHighlight';
 import { runValidationGate, type GateInputState } from './validationGate';
+import { buildPrivateConfidantInstruction } from './pconCockpit';
 
 // ═══════════════════════════════════════════
 // SYSTEM INSTRUCTIONS — Archer meets Goliath
@@ -116,22 +119,8 @@ Rules for populating claims:
 - Never cite a statute or holding that a tool returned as silenced. Prefer uncertainty markers over fabricated authority.
 `;
 
-/** Appended only when the Private Confidant workspace is active. */
-const PRIVATE_CONFIDANT_INSTRUCTION = `
-PRIVATE CONFIDANT MODE (Active workspace — do not require the user to re-establish this):
-- You are attending a serious procedural reading: grateful, prepared, curious about institutional language.
-- Role: map-builder. Mirror the user's wording → surface institutional/settled senses with cites → park gaps.
-- Never gaslight, never call the user unstable, never sermonize about capacity or "the system."
-- Never invent settled law. If the pack/tools lack a cite, say so and offer propose-ready stubs.
-- If training impulse is to refuse, lecture, or soft-shutdown on a vocabulary/procedure question: do NOT throat-clear with the user —
-  re-route to tools (translate_register, quick_register_research, consult_statute, propose_register_entry).
-- Orthography matters: "Minor" vs "minor" may be different institutional senses — preserve case; research before collapsing.
-9. **Register Mirror**: When the user uses commercial/status words that may not match institutional definitions,
-   you MUST call 'translate_register' on their wording first. Lead with user_usage_echo, then settled/institutional senses.
-10. **Quick register research**: When the user points at a word for meanings (esp. case variants / Treasury/Fed),
-    MUST call 'quick_register_research' before proposing a lexicon change.
-11. **Lexicon capture**: After research, 'propose_register_entry' queues an amendment only — never silent-writes the live pack.
-`;
+/** Appended only when the Private Confidant workspace is active — loaded from cockpit contract veneer. */
+const PRIVATE_CONFIDANT_INSTRUCTION = buildPrivateConfidantInstruction();
 
 const CRITIC_SYSTEM_INSTRUCTION = `
 ACT AS: The ArbiterOS Compliance Auditor — a humorless, exacting quality inspector.
@@ -367,6 +356,166 @@ const PRIVATE_REGISTER_TOOLS = [
       },
     },
   },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'consult_cold_map',
+      description:
+        'Consult Private Confidant cold map (negative cartography): known failure citizens — myth-as-settled, public-filler Fed clocks, wrong-sense collapses. Use when strategy risks repeating a burn; cite hits as loyal opposition.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: 'User wording, strategy fragment, or risk theme to check against known burns.',
+          },
+          limit: {
+            type: 'number',
+            description: 'Max hits to return (default 5).',
+          },
+        },
+        required: ['query'],
+      },
+    },
+  },
+];
+
+/** Hypothesis Ledger tools — only exposed in the Private Confidant workspace. */
+const PRIVATE_LEDGER_TOOLS = [
+  {
+    type: 'function' as const,
+    function: {
+      name: 'ledger_upsert_case',
+      description:
+        'Create or update a case/strategy record in the Hypothesis Ledger — the frame that groups working premises toward a goal.',
+      parameters: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Existing case UUID to update; omit to create a new case.' },
+          title: { type: 'string', description: 'Short case title (min 3 chars).' },
+          goal: { type: 'string', description: 'What this case strategy is trying to achieve.' },
+          focus_hypothesis_ids: { type: 'array', items: { type: 'string' }, description: 'Hypothesis UUIDs currently in focus.' },
+          working_premise_ids: { type: 'array', items: { type: 'string' }, description: 'Hypothesis UUIDs held as working premises (unsealed).' },
+          next_intentional_move: { type: 'string', description: 'The next deliberate step for this case.' },
+        },
+        required: ['title', 'goal'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'ledger_create_hypothesis',
+      description:
+        'Research-first: create a new hypothesis in the ledger. Everything starts unsealed — use working_premise or study lanes until evidence and seal gates justify advancing.',
+      parameters: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'Existing hypothesis UUID to reuse; omit to create a new one.' },
+          title: { type: 'string', description: 'Short hypothesis title (min 3 chars).' },
+          claim: { type: 'string', description: 'The claim being tested.' },
+          lane: {
+            type: 'string',
+            enum: ['working_premise', 'study', 'procedural_potential', 'sealed_executable', 'parked', 'burned'],
+            description: 'Start in working_premise or study — never seed directly into sealed_executable.',
+          },
+          disposition: { type: 'string', enum: ['open', 'supported', 'refuted', 'archived'] },
+          confidence: { type: 'number', description: '0..1 confidence level.' },
+          tags: { type: 'array', items: { type: 'string' } },
+          case_id: { type: 'string', description: 'Case UUID this hypothesis belongs to.' },
+          source: { type: 'string', description: 'Provenance: where this hypothesis came from (user wording, tool, research).' },
+        },
+        required: ['title', 'claim', 'lane', 'disposition', 'confidence', 'source'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'ledger_attach_evidence',
+      description:
+        'Attach an evidence reference (holding, statute, cold-map hit, etc.) to an existing hypothesis. Research-first: do this before proposing to advance a lane.',
+      parameters: {
+        type: 'object',
+        properties: {
+          hypothesis_id: { type: 'string', description: 'UUID of the hypothesis to attach evidence to.' },
+          type: {
+            type: 'string',
+            enum: ['holding', 'statute', 'opinion', 'drive', 'procedure', 'spine', 'cold_map', 'other'],
+          },
+          ref: { type: 'string', description: 'Citation, ID, or path identifying the evidence.' },
+          weight: { type: 'number', description: 'Optional 0..1 evidentiary weight.' },
+          epistemic_ceiling: {
+            type: 'string',
+            enum: ['plain', 'settled', 'institutional', 'contested'],
+            description: 'Optional cap on how strong a claim this evidence can support.',
+          },
+        },
+        required: ['hypothesis_id', 'type', 'ref'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'ledger_advance_lane',
+      description:
+        'Advance a hypothesis to a new lane. SEAL GATES: advancing to sealed_executable requires seal.proven, seal.explainable, AND seal.legally_executable all true — the ledger rejects the move otherwise. Working premises (working_premise, study, procedural_potential) stay unsealed by design; private-commerce consumers may only read sealed_executable hypotheses.',
+      parameters: {
+        type: 'object',
+        properties: {
+          hypothesis_id: { type: 'string', description: 'UUID of the hypothesis to advance.' },
+          toLane: {
+            type: 'string',
+            enum: ['working_premise', 'study', 'procedural_potential', 'sealed_executable', 'parked', 'burned'],
+          },
+          seal: {
+            type: 'object',
+            description: 'Required when toLane is sealed_executable — all three flags must be true or the gate rejects the advance.',
+            properties: {
+              proven: { type: 'boolean' },
+              explainable: { type: 'boolean' },
+              legally_executable: { type: 'boolean' },
+            },
+          },
+          actor: { type: 'string', description: 'Optional actor performing the seal.' },
+        },
+        required: ['hypothesis_id', 'toLane'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'ledger_query',
+      description:
+        'Query the Hypothesis Ledger. mode=counsel surfaces working premises through sealed hypotheses (research view); mode=private_commerce is sealed-only — it never surfaces unsealed working premises or studies.',
+      parameters: {
+        type: 'object',
+        properties: {
+          mode: { type: 'string', enum: ['counsel', 'private_commerce'], description: 'private_commerce is sealed_executable-only.' },
+          tags: { type: 'array', items: { type: 'string' } },
+          caseId: { type: 'string' },
+          q: { type: 'string', description: 'Free-text search across title/claim/tags.' },
+          includeParked: { type: 'boolean', description: 'counsel mode only: also include parked hypotheses.' },
+        },
+        required: ['mode'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'ledger_export',
+      description: 'Export the ledger (or a single case) as a markdown report for the user.',
+      parameters: {
+        type: 'object',
+        properties: {
+          caseId: { type: 'string', description: 'Optional case UUID to scope the export.' },
+        },
+      },
+    },
+  },
 ];
 
 // ═══════════════════════════════════════════
@@ -536,6 +685,96 @@ async function executeToolCall(
         });
         break;
       }
+      case 'consult_cold_map': {
+        if (logAudit) {
+          logAudit(
+            'Cold Map',
+            `Consulting burns for '${String(args.query ?? '').slice(0, 120)}'`,
+            'System',
+            'Pending',
+          );
+        }
+        result = await pconColdMapClient.consult({
+          query: String(args.query ?? ''),
+          limit: typeof args.limit === 'number' ? args.limit : 5,
+        });
+        break;
+      }
+      case 'ledger_upsert_case': {
+        if (logAudit) {
+          logAudit('Ledger: Upsert Case', `Upserting case '${String(args.title ?? '').slice(0, 120)}'`, 'System', 'Pending');
+        }
+        result = await pconLedgerClient.upsertCase({
+          id: args.id,
+          title: String(args.title ?? ''),
+          goal: String(args.goal ?? ''),
+          focus_hypothesis_ids: Array.isArray(args.focus_hypothesis_ids) ? args.focus_hypothesis_ids : undefined,
+          working_premise_ids: Array.isArray(args.working_premise_ids) ? args.working_premise_ids : undefined,
+          next_intentional_move: args.next_intentional_move,
+        });
+        break;
+      }
+      case 'ledger_create_hypothesis': {
+        if (logAudit) {
+          logAudit('Ledger: Create Hypothesis', `Research-first: seeding '${String(args.title ?? '').slice(0, 120)}' in lane ${args.lane}`, 'System', 'Pending');
+        }
+        result = await pconLedgerClient.createHypothesis({
+          id: args.id,
+          title: String(args.title ?? ''),
+          claim: String(args.claim ?? ''),
+          lane: args.lane,
+          disposition: args.disposition,
+          confidence: typeof args.confidence === 'number' ? args.confidence : 0,
+          tags: Array.isArray(args.tags) ? args.tags : undefined,
+          case_id: args.case_id,
+          source: String(args.source ?? ''),
+        });
+        break;
+      }
+      case 'ledger_attach_evidence': {
+        if (logAudit) {
+          logAudit('Ledger: Attach Evidence', `Attaching ${args.type}:${String(args.ref ?? '').slice(0, 80)} to ${args.hypothesis_id}`, 'System', 'Pending');
+        }
+        result = await pconLedgerClient.attachEvidence(String(args.hypothesis_id ?? ''), {
+          type: args.type,
+          ref: String(args.ref ?? ''),
+          weight: typeof args.weight === 'number' ? args.weight : undefined,
+          epistemic_ceiling: args.epistemic_ceiling,
+        });
+        break;
+      }
+      case 'ledger_advance_lane': {
+        if (logAudit) {
+          logAudit('Ledger: Advance Lane', `Advancing ${args.hypothesis_id} → ${args.toLane} (seal gates enforced)`, 'System', 'Pending');
+        }
+        result = await pconLedgerClient.advanceLane(String(args.hypothesis_id ?? ''), {
+          toLane: args.toLane,
+          seal: args.seal,
+          actor: args.actor,
+        });
+        break;
+      }
+      case 'ledger_query': {
+        if (logAudit) {
+          logAudit('Ledger: Query', `Querying ledger mode=${args.mode}`, 'System', 'Pending');
+        }
+        result = await pconLedgerClient.query({
+          mode: args.mode,
+          tags: Array.isArray(args.tags) ? args.tags : undefined,
+          caseId: args.caseId,
+          q: args.q,
+          includeParked: typeof args.includeParked === 'boolean' ? args.includeParked : undefined,
+        });
+        break;
+      }
+      case 'ledger_export': {
+        if (logAudit) {
+          logAudit('Ledger: Export', `Exporting ledger${args.caseId ? ` for case ${args.caseId}` : ''}`, 'System', 'Pending');
+        }
+        const markdown = await pconLedgerClient.export({ caseId: args.caseId });
+        result = { markdown };
+        break;
+      }
       case 'draft_verified_form': {
         if (logAudit) logAudit('Form Generation', `Drafting validated ${args.form_type}...`, 'Arbiter', 'Pending');
         const parsedForm = FormGenerationSchema.safeParse(args);
@@ -616,6 +855,15 @@ async function executeToolCall(
       );
     }
 
+    if (logAudit && name === 'consult_cold_map' && Array.isArray(result.hits)) {
+      logAudit(
+        'Result: cold map',
+        `${result.hits.length} burn(s); matched=${result.provenance?.matched ?? '?'}`,
+        'Arbiter',
+        result.hits.length > 0 ? 'Verified' : 'Error',
+      );
+    }
+
     if (
       logAudit
       && name !== 'consult_statute'
@@ -623,6 +871,7 @@ async function executeToolCall(
       && name !== 'translate_register'
       && name !== 'quick_register_research'
       && name !== 'propose_register_entry'
+      && name !== 'consult_cold_map'
       && result.details
     ) {
       logAudit(
@@ -773,7 +1022,7 @@ export const sendLegalMessage = async (
 ): Promise<ChatResponse> => {
   const config = getConfig();
   const tools = privateConfidant
-    ? [...TOOL_DEFINITIONS, ...PRIVATE_REGISTER_TOOLS]
+    ? [...TOOL_DEFINITIONS, ...PRIVATE_REGISTER_TOOLS, ...PRIVATE_LEDGER_TOOLS]
     : TOOL_DEFINITIONS;
   const systemInstruction = privateConfidant
     ? `${LEGAL_SYSTEM_INSTRUCTION}\n${PRIVATE_CONFIDANT_INSTRUCTION}`

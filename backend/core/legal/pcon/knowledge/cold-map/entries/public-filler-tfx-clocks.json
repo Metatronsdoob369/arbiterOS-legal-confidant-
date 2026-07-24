@@ -1,0 +1,14 @@
+{
+  "schema_version": "0.1.0",
+  "failure_id": "public-filler-tfx-clocks",
+  "surface": "Inventing Treasury reclamation deadlines or protest rules from general web knowledge instead of owned TFX / skill / artifact.",
+  "kind": "public_filler",
+  "why_static": "Institutional clocks are source-bound; hallucinated day-counts are permanently wrong relative to Fiscal Service procedure.",
+  "corrective_pointer": "spine:tfx-skill-reclamations | artifact:treasury-section-2-tfx",
+  "status": "active",
+  "source_refs": [
+    "skills/tfx-treasury-reclamations",
+    "book-pipeline/library/new/inbox/treasury"
+  ],
+  "epistemic_note": "Silence or tool to owned spine; never freestyle Fed clocks."
+}

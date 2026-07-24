@@ -16,6 +16,7 @@ import { registerCommonLawRoutes } from './modules/common-law/routes';
 import { registerLegalRoutes } from './modules/legal/routes';
 import { registerDraftRoutes } from './modules/drafts/routes';
 import { registerRegisterRoutes } from './modules/register/routes';
+import { registerPconRoutes } from './modules/pcon/routes';
 import { registerPackageRoutes } from './modules/packages/routes';
 import { registerDocsRoutes } from './modules/docs/routes';
 
@@ -59,6 +60,7 @@ export async function createApp() {
   await registerLegalRoutes(app);
   await registerDraftRoutes(app);
   await registerRegisterRoutes(app);
+  await registerPconRoutes(app);
   await registerPackageRoutes(app);
   await registerDocsRoutes(app);
 
