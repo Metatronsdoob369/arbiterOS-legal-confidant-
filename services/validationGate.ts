@@ -15,8 +15,9 @@
  *   R1 — fact/legal_rule claims must have evidence; severity governs harshness of failure.
  *   R2 — statute evidence refs must resolve in the law library (via legalEngine.consultStatute).
  *   R3 — interpretation/speculation claims must carry explicit uncertainty markers.
- *   R5 — high-severity legal_rule / interpretation claims need a statute or strong holding link.
  *   R4 — block decision produces an in-character "verification mode" response requesting missing inputs.
+ *   R5 — high-severity legal_rule / interpretation claims need a statute or strong holding link
+ *        (common-law spectral layer; InterpretationLink.strength === 'strong').
  *
  * "If it ain't in the schema, it ain't real." — Contracts > Prompts
  */
@@ -84,12 +85,13 @@ function buildVerificationModeResponse(
   return (
     `**[VERIFICATION GATE ENGAGED]**\n\n` +
     `I can build you a case — but not on sand. The following assertions couldn't be verified ` +
-    `against the available statutes, library items, or evidence board:\n\n` +
+    `against the available statutes, holdings, library items, or evidence board:\n\n` +
     `${reasons}\n\n` +
     `To proceed with verified counsel, provide:\n` +
     `• Applicable jurisdiction (state/federal)\n` +
     `• Verbatim contract clause or statute text in question\n` +
-    `• Any cited statute title/citation you want relied upon\n\n` +
+    `• Any cited statute title/citation you want relied upon\n` +
+    `• Controlling or persuasive holdings (or let me retrieve them via the Common Law layer)\n\n` +
     `Arbiter doesn't guess. Arbiter *knows* — or tells you what it needs to know.`
   );
 }
@@ -104,9 +106,9 @@ function softenResponse(
     draftText +
     `\n\n---\n` +
     `*⚠ Validation Gate Note: ${claimCount} claim${claimCount === 1 ? '' : 's'} in this response ` +
-    `lack${claimCount === 1 ? 's' : ''} explicit statutory or evidentiary support. ` +
+    `lack${claimCount === 1 ? 's' : ''} explicit statutory, holding, or evidentiary support. ` +
     `Treat the above as informed analysis, not verified legal fact. ` +
-    `Supply jurisdiction, clause text, or statute citations to upgrade this to verified counsel.*`
+    `Supply jurisdiction, clause text, statute citations, or holdings to upgrade this to verified counsel.*`
   );
 }
 
@@ -178,7 +180,7 @@ export async function runValidationGate(
       final_text: draft.draft_text,
       failed_claims: [],
       validation_steps: steps,
-      audit: { score: 1.0, critique: 'All claims verified. Gate passed.' },
+      audit: { score: 1.0, critique: 'All claims verified. Gate passed (incl. R5 common-law).' },
     };
   }
 
@@ -188,7 +190,7 @@ export async function runValidationGate(
     return claim?.severity === 'high';
   });
 
-  // R4: hard block for high-severity failures (statute not found, or high-severity unsupported fact)
+  // R4: hard block for high-severity failures (statute not found, R5 weight fail, high-severity unsupported)
   if (highSeverityFails.length > 0) {
     const highSeverityClaimIds = new Set(
       highSeverityFails.map((fc) => fc.claim_id)
@@ -200,18 +202,19 @@ export async function runValidationGate(
       validation_steps: steps,
       audit: {
         score: 0.0,
-        critique: `Gate blocked: ${highSeverityClaimIds.size} high-severity claim(s) failed.`,
+        critique: `Gate blocked: ${highSeverityClaimIds.size} high-severity claim(s) failed (R1–R5).`,
       },
     };
   }
 
-  // R3 failures and medium-severity R1 failures → caller performs repair round
+  // R3 failures, medium-severity R1, or soft R5 → caller performs repair round
   const repairCandidates = failedClaims.filter((fc) => {
     const claim = draft.claims.find((c) => c.id === fc.claim_id);
     return (
       claim?.kind === 'interpretation' ||
       claim?.kind === 'speculation' ||
-      claim?.severity === 'medium'
+      claim?.severity === 'medium' ||
+      fc.reason.startsWith('R5:')
     );
   });
 
@@ -226,7 +229,7 @@ export async function runValidationGate(
       validation_steps: steps,
       audit: {
         score: 0.5,
-        critique: `Gate issued repair request for ${repairClaimIds.size} fixable claim(s).`,
+        critique: `Gate issued repair request for ${repairClaimIds.size} fixable claim(s) (incl. common-law R5).`,
       },
     };
   }
@@ -252,7 +255,7 @@ export async function runValidationGate(
 // ═══════════════════════════════════════════
 
 /**
- * Applies rules R1–R3 to a single claim, appending to steps and failedClaims in place.
+ * Applies rules R1–R5 to a single claim, appending to steps and failedClaims in place.
  */
 async function processClaim(
   claim: Claim,
@@ -344,6 +347,17 @@ async function processClaim(
           ? `Evidence node ref "${ev.ref}" for claim [${claim.id}] resolved to "${node.label}".`
           : `Evidence node ref "${ev.ref}" for claim [${claim.id}] not found on board — note only (not a hard failure).`,
         evidence_source: `gate:R2:board:${ev.ref}`,
+        timestamp: now(),
+      });
+    }
+
+    // Holding refs are trusted if present (validated by commonLawEngine schemas)
+    if (ev.kind === 'holding') {
+      steps.push({
+        rule_id: 'R2_HOLDING_PRESENT',
+        passed: true,
+        details: `Holding ref "${ev.ref}" attached to claim [${claim.id}]. Common-law object present.`,
+        evidence_source: `gate:R2:holding:${ev.ref}`,
         timestamp: now(),
       });
     }

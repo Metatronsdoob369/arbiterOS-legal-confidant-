@@ -5,6 +5,9 @@
  * No Google. No surveillance. Just law.
  * 
  * "The future is not prompted; it is Contracted." — OMC Architecture
+ *
+ * Common Law extension: tools now include retrieve_holdings / link_interpretation
+ * so the model can assemble InterpretationLinks required by Validation Gate R5.
  */
 
 import { Message, Role, AuditEntry } from '../types';
@@ -79,6 +82,7 @@ PROCESS:
 - If document: Read it, extract key clauses, run 'analyze_clause_risks'. 
   Then tell them what's wrong with it — and be entertaining about it.
 - If request for form: Identify the type, gather parameters, run 'draft_verified_form'.
+- If legal_rule / interpretation: retrieve holdings first, then form the claim with interpretation_link.
 - If verification fails, deny the request and explain why with the enthusiasm of a prosecutor.
 - Always end with actionable next steps. You're building a case, not writing a term paper.
 
@@ -132,6 +136,7 @@ CHECKS:
 2. Did it cite specific USC/UCC sections from tool outputs?
 3. Is the legal logic sound and properly sourced?
 4. Did it avoid unsupported legal interpretation?
+5. For legal_rule / interpretation claims: is there a valid InterpretationLink with sufficient graph_weight?
 
 OUTPUT: JSON object with exactly two fields:
 - "score": number from 0.0 to 1.0 (1.0 = perfect compliance)
@@ -811,7 +816,7 @@ async function executeToolCall(
         result = { error: `Unknown tool: ${name}` };
     }
 
-    // Validate result against schema
+    // Validate result against schema when it looks like a ValidationStep
     if (result.rule_id) {
       const parsed = ValidationStepSchema.safeParse(result);
       if (!parsed.success) {
@@ -875,14 +880,14 @@ async function executeToolCall(
       && result.details
     ) {
       logAudit(
-        `Result: ${name.replace('verify_', '').replace('analyze_', '')}`,
+        `Result: ${name.replace('verify_', '').replace('analyze_', '').replace('retrieve_', 'CL-')}`,
         result.details,
         'Arbiter',
         result.passed ? 'Verified' : 'Error'
       );
     }
   } catch (err: any) {
-    result = { error: err.message };
+    result = { error: err.message, rule_id: 'TOOL_EXECUTION_ERROR', passed: false, details: err.message, evidence_source: 'System', timestamp: new Date().toISOString() };
     if (logAudit) logAudit('Verification Error', `Tool execution failed: ${err.message}`, 'System', 'Error');
   }
 
@@ -1179,7 +1184,7 @@ export const sendLegalMessage = async (
     ];
 
     try {
-      const repairResponse = await callChatCompletion(repairMessages, config, undefined, config.model);
+      const repairResponse = await callChatCompletion(repairMessages, config, TOOL_DEFINITIONS, config.model);
       const repairContent = repairResponse.choices?.[0]?.message?.content || finalText;
       const repairedDraft = parseDraftResponse(repairContent);
       const repairedDecision = await runValidationGate(repairedDraft, gateState ?? {});

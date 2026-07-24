@@ -115,3 +115,42 @@ As verified on July 16, 2026:
 - collection point count is `5`
 - `/embed` returns 1024-dimensional vectors
 - `/api/common-law/query` returns seeded holdings with `fallbackMode: "none"` once Qdrant is seeded
+
+## Future Direction: Spectral Treatment Graph
+
+Under common law, **the holding is the law**. Statutes are raw material; judicial
+interpretation + treatment history (Shepardizing) create binding force. A richer
+Zod-validated graph model for this already exists in `schemas/legalSchemas.ts`
+(`HoldingRefSchema`, `TreatmentEdgeSchema`, `CourtLevelSchema`, `TreatmentTypeSchema`)
+as a forward-looking extension, but is **not yet wired** into the live retrieval path
+above — the live path uses the simpler `HoldingSearchResult` / `InterpretationLink`
+(`holding_id`/`citation`/`relation`/`strength`) shapes instead.
+
+Planned shape once wired:
+
+```
+query / statute
+  → CaseLawModernBERT embed (local sidecar :4881)
+  → Qdrant search (collection: case-law-holdings)
+  → hydrate HoldingRef[] + recompute stare_decisis_weight
+  → linkInterpretation → InterpretationLink (graph_weight / synthesis)
+  → attach to Claim.interpretation_links[]
+  → Validation Gate R5
+```
+
+Shepardizing / treatment graph:
+
+- Nodes = opinions / holdings
+- Edges = treatment (followed | distinguished | overruled | ...)
+- Weight = court_level × recency_decay × product(treatment_multipliers)
+- Negative treatments (overruled, vacated, reversed, superseded) can drive weight → 0
+
+Next steps to land this:
+
+1. Offline embed COLD subset / CourtListener bulk → upsert to Qdrant with full `HoldingRef` payloads.
+2. Wire CourtListener treatment graph for live Shepardizing updates (`treatment_history`).
+3. Compute `stare_decisis_weight` server-side and surface it on `HoldingSearchResult`.
+4. Add jurisdiction filters + multi-state support.
+
+> The future is not prompted; it is Contracted.
+> Interpretation is no longer a vibe. It is a spectral object with provenance, weight, and a gate that can reject it.

@@ -1,3 +1,10 @@
+/**
+ * 📚 The Library — Legal Reference Storage
+ *
+ * Working set (backend-persisted via /api/memories) plus institutional
+ * document departments (IRS/Treasury, FRED/Fed, UCC, CFR catalogs).
+ */
+
 import React from 'react';
 import type {
   DocsCatalogEntry,
@@ -130,22 +137,25 @@ export const Library: React.FC = () => {
     return () => window.clearTimeout(handle);
   }, [tab, primaryCatalog?.catalog_id, primaryCatalog?.status, catalogQuery, catalogKind]);
 
-  const filteredItems = items
-    .filter((item) => {
-      const search = searchQuery.trim().toLowerCase();
-      const matchesSearch =
-        search === ''
-        || item.title.toLowerCase().includes(search)
-        || item.content.toLowerCase().includes(search)
-        || item.tags.some((tag) => tag.toLowerCase().includes(search));
-      const matchesType = filterType === 'all' || item.type === filterType;
-      return matchesSearch && matchesType;
-    })
-    .sort((left, right) => {
-      if (left.pinned && !right.pinned) return -1;
-      if (!left.pinned && right.pinned) return 1;
-      return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
-    });
+  const filteredItems = React.useMemo(() => {
+    // Cache toLowerCase() outside the filter loop
+    const query = searchQuery.trim().toLowerCase();
+
+    return items
+      .filter((item) => {
+        // Early return for type mismatch (O(1)) to skip expensive string operations
+        if (filterType !== 'all' && item.type !== filterType) return false;
+        if (query === '') return true;
+        return item.title.toLowerCase().includes(query)
+          || item.content.toLowerCase().includes(query)
+          || item.tags.some((tag) => tag.toLowerCase().includes(query));
+      })
+      .sort((left, right) => {
+        if (left.pinned && !right.pinned) return -1;
+        if (!left.pinned && right.pinned) return 1;
+        return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+      });
+  }, [items, searchQuery, filterType]);
 
   const addItem = async () => {
     if (!newItem.title.trim() || !newItem.content.trim()) return;

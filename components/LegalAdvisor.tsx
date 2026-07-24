@@ -214,7 +214,7 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean; mode?: AdvisorMode }>
     }
   };
 
-  const playAudioResponse = async (audioData: Uint8Array) => {
+  const playAudioResponse = React.useCallback(async (audioData: Uint8Array) => {
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
     }
@@ -228,7 +228,7 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean; mode?: AdvisorMode }>
     } catch (e) {
       setIsSpeaking(false);
     }
-  };
+  }, []);
 
   const renderRegisteredPlain = (text: string, surfaces?: string[]) => {
     if (!surfaces || surfaces.length === 0) {
