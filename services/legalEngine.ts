@@ -26,9 +26,7 @@ export const consultStatute = async (query: string): Promise<StatuteResult> => {
 
 // 1. The "Chastity Belt" Database Client
 class VerifiableLawDatabaseClient {
-  constructor(private endpoint: string) {
-    console.log(`[ArbiterOS]: Connected to Verifiable Law DB at ${endpoint}`);
-  }
+  constructor(private endpoint: string) {}
 
   // Deterministic query mimicking the provided logic
   async query(naics: string, expense: string): Promise<{ is_ordinary: boolean; source: string }> {
