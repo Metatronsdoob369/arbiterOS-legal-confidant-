@@ -105,6 +105,7 @@ describe('common law routes', () => {
       fallbackMode: string;
       holdings: Array<{ statute: string }>;
       interpretationLinks: Array<{ relation: string }>;
+      silence?: unknown;
     };
     expect(payload.fallbackMode).toBe('seeded_in_memory');
     expect(payload.holdings[0]?.statute).toBe('UCC 3-104');

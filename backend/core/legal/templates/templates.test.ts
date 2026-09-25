@@ -91,6 +91,7 @@ describe('form template registry', () => {
       receiving_party: 'Beta LLC',
       purpose: 'evaluating a potential joint venture',
       term_years: 3,
+      mutual: false,
     });
     expect(nda.passed).toBe(true);
     expect(nda.validation_steps[0]?.rule_id).toBe('R5_CONFIDENTIALITY');
@@ -137,6 +138,7 @@ describe('form template registry', () => {
       receiving_party: 'Same Party',
       purpose: 'due diligence',
       term_years: 2,
+      mutual: false,
     });
     expect(result.passed).toBe(false);
     expect(result.markdown).toContain('GENERATION BLOCKED');

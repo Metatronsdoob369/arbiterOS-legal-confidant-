@@ -526,7 +526,7 @@ export const RegisterProposeRequestSchema = z.object({
   mode: RegisterProposalModeSchema.default('create'),
   entry: RegisterEntrySchema,
 }).strict();
-export type RegisterProposeRequest = z.infer<typeof RegisterProposeRequestSchema>;
+export type RegisterProposeRequest = z.input<typeof RegisterProposeRequestSchema>;
 
 /** Quick research — clarity before propose. Case/orthography aware. */
 export const RegisterResearchRequestSchema = z.object({
