@@ -16,6 +16,17 @@ export default defineConfig(({ mode }) => {
         },
       },
       plugins: [react()],
+      build: {
+        rollupOptions: {
+          output: {
+            manualChunks(id) {
+              if (id.includes('node_modules')) {
+                return 'vendor';
+              }
+            },
+          },
+        },
+      },
       define: {
         'process.env.API_KEY': JSON.stringify(env.API_KEY || env.OPENAI_API_KEY || ''),
         'process.env.OPENAI_API_KEY': JSON.stringify(env.OPENAI_API_KEY || ''),
