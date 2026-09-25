@@ -65,7 +65,7 @@ User action
 Component (e.g. LegalAdvisor)
     │
     ├─► services/aiProvider.ts        — OpenAI-compatible API calls (chat, audit, image)
-    │       └─► process.env.OPENAI_API_KEY / AI_BASE_URL / AI_MODEL (Vite define)
+    │       └─► import.meta.env / VITE_* env vars
     │
     ├─► services/legalEngine.ts       — Hardcoded statute DB; no network call
     │       └─► returns ValidationStep[], InstrumentTerms, etc.

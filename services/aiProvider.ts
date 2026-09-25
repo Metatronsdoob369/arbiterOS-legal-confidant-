@@ -1086,8 +1086,9 @@ export const sendLegalMessage = async (
   }
 
   while (turns <= maxTurns) {
+    const env = (import.meta as any).env ?? {};
     const modelToUse = isShadowCounsel
-      ? (process.env.AI_SHADOW_MODEL || config.model)
+      ? (env.VITE_AI_SHADOW_MODEL || env.AI_SHADOW_MODEL || config.model)
       : config.model;
 
     const response = await callChatCompletion(messages, config, tools, modelToUse);
