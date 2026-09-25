@@ -133,6 +133,7 @@ export function searchDocsCatalog(
   const catalog = getDocsCatalog(catalogId);
   const needle = query.q?.trim().toLowerCase() ?? '';
   const kind = query.kind?.trim().toLowerCase();
+
   const filtered = catalog.entries.filter((entry) => {
     if (kind && entry.kind !== kind) return false;
     if (!needle) return true;

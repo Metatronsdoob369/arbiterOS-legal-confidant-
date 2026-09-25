@@ -153,7 +153,9 @@ export const Library: React.FC = () => {
       .sort((left, right) => {
         if (left.pinned && !right.pinned) return -1;
         if (!left.pinned && right.pinned) return 1;
-        return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+        // ⚡ Bolt Optimization: Use direct string comparison for ISO 8601 dates
+        // Reduces allocations from O(N log N) Date objects to O(1)
+        return right.createdAt < left.createdAt ? -1 : right.createdAt > left.createdAt ? 1 : 0;
       });
   }, [items, searchQuery, filterType]);
 
