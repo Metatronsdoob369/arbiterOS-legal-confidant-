@@ -138,21 +138,17 @@ export const Library: React.FC = () => {
   }, [tab, primaryCatalog?.catalog_id, primaryCatalog?.status, catalogQuery, catalogKind]);
 
   const filteredItems = React.useMemo(() => {
-    // ⚡ Bolt Optimization: Pre-compile case-insensitive regex for faster search
-    // avoiding `.toLowerCase()` allocations on every string for every item
-    const query = searchQuery.trim();
-    // Escape regex characters just in case
-    const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = query ? new RegExp(safeQuery, 'i') : null;
+    // Cache toLowerCase() outside the filter loop
+    const query = searchQuery.trim().toLowerCase();
 
     return items
       .filter((item) => {
         // Early return for type mismatch (O(1)) to skip expensive string operations
         if (filterType !== 'all' && item.type !== filterType) return false;
-        if (!regex) return true;
-        return regex.test(item.title)
-          || regex.test(item.content)
-          || item.tags.some((tag) => regex.test(tag));
+        if (query === '') return true;
+        return item.title.toLowerCase().includes(query)
+          || item.content.toLowerCase().includes(query)
+          || item.tags.some((tag) => tag.toLowerCase().includes(query));
       })
       .sort((left, right) => {
         if (left.pinned && !right.pinned) return -1;

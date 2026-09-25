@@ -131,22 +131,17 @@ export function searchDocsCatalog(
   query: DocsCatalogQuery = {},
 ): { total: number; entries: DocsCatalogEntry[] } {
   const catalog = getDocsCatalog(catalogId);
-  const needle = query.q?.trim() ?? '';
-
-  // ⚡ Bolt Optimization: Use compiled case-insensitive regex
-  // Avoids 4x O(N) `.toLowerCase()` allocations for every entry in the potentially massive catalog
-  const safeNeedle = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = needle ? new RegExp(safeNeedle, 'i') : null;
+  const needle = query.q?.trim().toLowerCase() ?? '';
   const kind = query.kind?.trim().toLowerCase();
 
   const filtered = catalog.entries.filter((entry) => {
     if (kind && entry.kind !== kind) return false;
-    if (!regex) return true;
+    if (!needle) return true;
     return (
-      regex.test(entry.title)
-      || regex.test(entry.file_name)
-      || regex.test(entry.entry_id)
-      || regex.test(entry.text_preview)
+      entry.title.toLowerCase().includes(needle)
+      || entry.file_name.toLowerCase().includes(needle)
+      || entry.entry_id.toLowerCase().includes(needle)
+      || entry.text_preview.toLowerCase().includes(needle)
     );
   });
 
