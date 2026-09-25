@@ -213,6 +213,11 @@ AI_BASE_URL=https://api.together.xyz/v1
 AI_MODEL=meta-llama/Llama-3-70b-chat-hf
 ```
 
+### GitHub Policy & CI Guidelines
+
+- **Vercel Deprecation**: Vercel deployment dependencies and automated actions have been removed. CI pipelines are strictly focused on automated verification and testing.
+- **Allowed AI Models in CI**: GitHub Actions workflows run against mocked AI endpoints (`AI_MODEL=test-model`). Restricted external models requiring live API keys are not invoked during CI runs. See [.github/POLICY.md](.github/POLICY.md) for details.
+
 ---
 
 ## 🧬 The Zod Schema Layer
