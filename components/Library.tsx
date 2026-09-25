@@ -138,22 +138,28 @@ export const Library: React.FC = () => {
   }, [tab, primaryCatalog?.catalog_id, primaryCatalog?.status, catalogQuery, catalogKind]);
 
   const filteredItems = React.useMemo(() => {
-    // Cache toLowerCase() outside the filter loop
-    const query = searchQuery.trim().toLowerCase();
+    // ⚡ Bolt Optimization: Pre-compile case-insensitive regex for faster search
+    // avoiding `.toLowerCase()` allocations on every string for every item
+    const query = searchQuery.trim();
+    // Escape regex characters just in case
+    const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = query ? new RegExp(safeQuery, 'i') : null;
 
     return items
       .filter((item) => {
         // Early return for type mismatch (O(1)) to skip expensive string operations
         if (filterType !== 'all' && item.type !== filterType) return false;
-        if (query === '') return true;
-        return item.title.toLowerCase().includes(query)
-          || item.content.toLowerCase().includes(query)
-          || item.tags.some((tag) => tag.toLowerCase().includes(query));
+        if (!regex) return true;
+        return regex.test(item.title)
+          || regex.test(item.content)
+          || item.tags.some((tag) => regex.test(tag));
       })
       .sort((left, right) => {
         if (left.pinned && !right.pinned) return -1;
         if (!left.pinned && right.pinned) return 1;
-        return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+        // ⚡ Bolt Optimization: Use direct string comparison for ISO 8601 dates
+        // Reduces allocations from O(N log N) Date objects to O(1)
+        return right.createdAt < left.createdAt ? -1 : right.createdAt > left.createdAt ? 1 : 0;
       });
   }, [items, searchQuery, filterType]);
 
