@@ -13,10 +13,11 @@ const webServer = process.env.PLAYWRIGHT_SKIP_WEB_SERVER
       reuseExistingServer: !process.env.CI,
       timeout: 120 * 1000,
       env: {
+        ...process.env,
         // Provide a dummy key so the app doesn't throw on startup
-        OPENAI_API_KEY: 'test-key-placeholder',
-        AI_BASE_URL: 'http://127.0.0.1:9999',
-        AI_MODEL: 'test-model',
+        OPENAI_API_KEY: process.env.OPENAI_API_KEY || 'test-key-placeholder',
+        AI_BASE_URL: process.env.AI_BASE_URL || 'http://127.0.0.1:9999',
+        AI_MODEL: process.env.AI_MODEL || 'test-model',
       },
     };
 
