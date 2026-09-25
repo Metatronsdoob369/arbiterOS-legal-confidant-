@@ -108,6 +108,7 @@ describe('drafts pipeline (sqlite-free)', () => {
       receiving_party: 'Beta LLC',
       purpose: 'evaluating a joint venture',
       term_years: 3,
+      mutual: false,
     }, { userId: 'user-admin' });
 
     const reloaded = loadDraftFromDisk('user-admin', draft.id);

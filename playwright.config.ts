@@ -9,14 +9,15 @@ const webServer = process.env.PLAYWRIGHT_SKIP_WEB_SERVER
   ? undefined
   : {
       command: 'npm run seed:admin && npm run dev',
-      url: 'http://localhost:4321',
+      url: 'http://127.0.0.1:4321',
       reuseExistingServer: !process.env.CI,
       timeout: 120 * 1000,
       env: {
+        ...process.env,
         // Provide a dummy key so the app doesn't throw on startup
-        OPENAI_API_KEY: 'test-key-placeholder',
-        AI_BASE_URL: 'http://localhost:9999',
-        AI_MODEL: 'test-model',
+        OPENAI_API_KEY: process.env.OPENAI_API_KEY || 'test-key-placeholder',
+        AI_BASE_URL: process.env.AI_BASE_URL || 'http://127.0.0.1:9999',
+        AI_MODEL: process.env.AI_MODEL || 'test-model',
       },
     };
 
@@ -28,7 +29,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:4321',
+    baseURL: 'http://127.0.0.1:4321',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
