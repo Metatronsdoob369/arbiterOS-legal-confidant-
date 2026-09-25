@@ -295,9 +295,19 @@ async function processClaim(
 
   // ── R2: statute evidence refs must resolve in the law library ────────────────
 
+  // Concurrently resolve all statute evidence references to eliminate sequential N+1 RAG lookup delays
+  const statuteEvidences = claim.evidence.filter((ev) => ev.kind === 'statute');
+  const statuteLookups = await Promise.all(
+    statuteEvidences.map(async (ev) => ({
+      ref: ev.ref,
+      lookup: await consultStatute(ev.ref),
+    }))
+  );
+  const statuteLookupMap = new Map(statuteLookups.map((item) => [item.ref, item.lookup]));
+
   for (const ev of claim.evidence) {
     if (ev.kind === 'statute') {
-      const lookup = await consultStatute(ev.ref);
+      const lookup = statuteLookupMap.get(ev.ref)!;
       const silenced = lookup.silence?.silenced === true || !lookup.found;
       if (silenced) {
         // Statute cited but corpus silent / not found — cannot verify the claim

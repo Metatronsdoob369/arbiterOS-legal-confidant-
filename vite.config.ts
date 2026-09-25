@@ -16,6 +16,17 @@ export default defineConfig(({ mode }) => {
         },
       },
       plugins: [react()],
+      build: {
+        rollupOptions: {
+          output: {
+            manualChunks(id) {
+              if (id.includes('node_modules')) {
+                return 'vendor';
+              }
+            },
+          },
+        },
+      },
       define: {
         'process.env.AI_BASE_URL': JSON.stringify(env.AI_BASE_URL || 'https://api.openai.com/v1'),
         'process.env.AI_MODEL': JSON.stringify(env.AI_MODEL || 'gpt-4o'),
