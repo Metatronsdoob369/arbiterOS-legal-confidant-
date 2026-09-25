@@ -312,7 +312,7 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean; mode?: AdvisorMode }>
     }
   };
 
-  const handleDownloadDraft = async (draftId: string) => {
+  const handleDownloadDraft = React.useCallback(async (draftId: string) => {
     try {
       const response = await fetch(draftDownloadUrl(draftId), { credentials: 'include' });
       if (!response.ok) {
@@ -332,7 +332,7 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean; mode?: AdvisorMode }>
       console.error(error);
       addEntry('Word Export', 'Failed to download .docx', 'System', 'Error');
     }
-  };
+  }, [addEntry]);
 
   const playAudioResponse = React.useCallback(async (audioData: Uint8Array) => {
     if (!audioContextRef.current) {
@@ -350,7 +350,7 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean; mode?: AdvisorMode }>
     }
   }, []);
 
-  const renderRegisteredPlain = (text: string, surfaces?: string[]) => {
+  const renderRegisteredPlain = React.useCallback((text: string, surfaces?: string[]) => {
     if (!surfaces || surfaces.length === 0) {
       return text;
     }
@@ -376,7 +376,7 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean; mode?: AdvisorMode }>
         <React.Fragment key={`plain-${index}`}>{segment.text}</React.Fragment>
       ),
     );
-  };
+  }, []);
 
   const renderMessageText = React.useCallback((text: string) => {
     const parts = text.split(/(\[(?:SIGNATURE_FIELD|CITATION):.*?\])/g);
