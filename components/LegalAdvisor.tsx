@@ -17,6 +17,126 @@ interface StagedFile {
 
 export type AdvisorMode = 'counsel' | 'private';
 
+interface ChatMessageItemProps {
+  msg: Message;
+  privateMode: boolean;
+  nightMode: boolean;
+  isSpeaking: boolean;
+  onDownloadDraft: (draftId: string) => void;
+  onPlayAudio: (audioData: Uint8Array) => void;
+  renderRegisteredPlain: (text: string, surfaces?: string[]) => React.ReactNode;
+  renderMessageText: (text: string) => React.ReactNode;
+}
+
+const ChatMessageItem: React.FC<ChatMessageItemProps> = React.memo(({
+  msg,
+  privateMode,
+  nightMode,
+  isSpeaking,
+  onDownloadDraft,
+  onPlayAudio,
+  renderRegisteredPlain,
+  renderMessageText,
+}) => {
+  return (
+    <div className={`flex ${msg.role === Role.USER ? 'justify-end' : 'justify-start'}`}>
+      <div className={`max-w-[90%] md:max-w-[80%] ${msg.role === Role.USER ? 'text-right' : 'text-left'}`}>
+
+        {msg.role === Role.MODEL && (
+          <div className="mb-3 opacity-60">
+            <div className="text-[9px] uppercase tracking-widest flex items-center gap-2" style={{ color: '#c4a574' }}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#cfd5de' }}></span>
+              {privateMode ? 'Private Confidant' : 'Arbiter Counsel'}
+            </div>
+          </div>
+        )}
+
+        {msg.images && msg.images.length > 0 && (
+          <div className={`flex flex-wrap gap-2 mb-4 ${msg.role === Role.USER ? 'justify-end' : 'justify-start'}`}>
+            {msg.images.map((attachment, idx) => {
+              const isImage = attachment.startsWith('data:image');
+              return isImage ? (
+                <img key={idx} src={attachment} alt="Evidence" className="max-w-[200px] h-auto opacity-80" style={{ border: '1px solid rgba(207,213,222,0.22)' }} />
+              ) : (
+                <div key={idx} className="p-2 text-xs" style={{ border: '1px solid rgba(207,213,222,0.22)', background: '#1c2026', color: '#9aa1ab' }}>
+                  DOC_{idx}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="inline-block p-5 md:p-6 rounded-lg transition-all duration-500" style={{
+          background: msg.role === Role.USER
+            ? 'linear-gradient(135deg, #2a2e35, #1c2026)'
+            : nightMode
+              ? 'linear-gradient(135deg, rgba(42,46,53,0.95), rgba(28,32,38,0.95))'
+              : 'linear-gradient(135deg, #14171c, #0f1216)',
+          border: '1px solid rgba(207,213,222,0.18)',
+          boxShadow: nightMode && msg.role === Role.MODEL
+            ? '0 0 30px rgba(207,213,222,0.06), 0 4px 12px rgba(0,0,0,0.3)'
+            : '0 4px 12px rgba(0,0,0,0.3)',
+          color: '#eef1f5',
+        }}>
+          <div className="text-sm leading-relaxed font-sans">
+            {msg.role === Role.USER ? (
+              <p className="text-sm leading-relaxed whitespace-pre-wrap mb-0">
+                {renderRegisteredPlain(
+                  msg.text,
+                  privateMode ? msg.registerSurfaces : undefined,
+                )}
+              </p>
+            ) : (
+              renderMessageText(msg.text)
+            )}
+          </div>
+          {privateMode && msg.role === Role.USER && msg.registerSurfaces && msg.registerSurfaces.length > 0 && (
+            <div
+              className="mt-2 text-[9px] uppercase tracking-widest"
+              style={{ color: '#a89060' }}
+              data-testid="register-receipt"
+            >
+              Lexicon registered {msg.registerSurfaces.length} term
+              {msg.registerSurfaces.length === 1 ? '' : 's'}
+            </div>
+          )}
+          {msg.draftIds && msg.draftIds.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2" data-testid="draft-download-actions">
+              {msg.draftIds.map((draftId) => (
+                <button
+                  key={draftId}
+                  type="button"
+                  data-testid={`download-docx-${draftId}`}
+                  onClick={() => onDownloadDraft(draftId)}
+                  className="px-3 py-1.5 text-[10px] uppercase tracking-widest rounded-md transition-colors"
+                  style={{
+                    background: 'rgba(212,175,55,0.12)',
+                    border: '1px solid #cfd5de',
+                    color: '#cfd5de',
+                  }}
+                >
+                  Download .docx
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {msg.audioData && (
+          <div className="mt-2 flex items-center gap-2 text-[9px] uppercase tracking-widest cursor-pointer transition-colors"
+               style={{ color: '#9aa1ab' }}
+               onClick={() => onPlayAudio(msg.audioData!)}>
+             <span className="w-2 h-2 border border-current rounded-full flex items-center justify-center">
+               {isSpeaking ? <span className="w-1 h-1 bg-current rounded-full animate-ping"/> : <span className="w-1 h-1 bg-current rounded-full"/>}
+             </span>
+             {isSpeaking ? 'Transmission Active' : 'Replay Audio Log'}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
 export const LegalAdvisor: React.FC<{ nightMode?: boolean; mode?: AdvisorMode }> = ({
   nightMode = false,
   mode = 'counsel',
@@ -258,7 +378,7 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean; mode?: AdvisorMode }>
     );
   };
 
-  const renderMessageText = (text: string) => {
+  const renderMessageText = React.useCallback((text: string) => {
     const parts = text.split(/(\[(?:SIGNATURE_FIELD|CITATION):.*?\])/g);
     return parts.map((part, index) => {
       if (part.startsWith('[SIGNATURE_FIELD')) {
@@ -317,7 +437,7 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean; mode?: AdvisorMode }>
         </ReactMarkdown>
       );
     });
-  };
+  }, []);
 
   return (
     <div
@@ -384,101 +504,17 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean; mode?: AdvisorMode }>
         )}
 
         {history.map((msg) => (
-          <div key={msg.id} className={`flex ${msg.role === Role.USER ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[90%] md:max-w-[80%] ${msg.role === Role.USER ? 'text-right' : 'text-left'}`}>
-              
-              {msg.role === Role.MODEL && (
-                <div className="mb-3 opacity-60">
-                  <div className="text-[9px] uppercase tracking-widest flex items-center gap-2" style={{ color: '#c4a574' }}>
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#cfd5de' }}></span>
-                    {privateMode ? 'Private Confidant' : 'Arbiter Counsel'}
-                  </div>
-                </div>
-              )}
-
-              {msg.images && msg.images.length > 0 && (
-                <div className={`flex flex-wrap gap-2 mb-4 ${msg.role === Role.USER ? 'justify-end' : 'justify-start'}`}>
-                  {msg.images.map((attachment, idx) => {
-                    const isImage = attachment.startsWith('data:image');
-                    return isImage ? (
-                      <img key={idx} src={attachment} alt="Evidence" className="max-w-[200px] h-auto opacity-80" style={{ border: '1px solid rgba(207,213,222,0.22)' }} />
-                    ) : (
-                      <div key={idx} className="p-2 text-xs" style={{ border: '1px solid rgba(207,213,222,0.22)', background: '#1c2026', color: '#9aa1ab' }}>
-                        DOC_{idx}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              
-              <div className="inline-block p-5 md:p-6 rounded-lg transition-all duration-500" style={{
-                background: msg.role === Role.USER 
-                  ? 'linear-gradient(135deg, #2a2e35, #1c2026)' 
-                  : nightMode
-                    ? 'linear-gradient(135deg, rgba(42,46,53,0.95), rgba(28,32,38,0.95))'
-                    : 'linear-gradient(135deg, #14171c, #0f1216)',
-                border: '1px solid rgba(207,213,222,0.18)',
-                boxShadow: nightMode && msg.role === Role.MODEL
-                  ? '0 0 30px rgba(207,213,222,0.06), 0 4px 12px rgba(0,0,0,0.3)'
-                  : '0 4px 12px rgba(0,0,0,0.3)',
-                color: '#eef1f5',
-              }}>
-                <div className="text-sm leading-relaxed font-sans">
-                  {msg.role === Role.USER ? (
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap mb-0">
-                      {renderRegisteredPlain(
-                        msg.text,
-                        privateMode ? msg.registerSurfaces : undefined,
-                      )}
-                    </p>
-                  ) : (
-                    renderMessageText(msg.text)
-                  )}
-                </div>
-                {privateMode && msg.role === Role.USER && msg.registerSurfaces && msg.registerSurfaces.length > 0 && (
-                  <div
-                    className="mt-2 text-[9px] uppercase tracking-widest"
-                    style={{ color: '#a89060' }}
-                    data-testid="register-receipt"
-                  >
-                    Lexicon registered {msg.registerSurfaces.length} term
-                    {msg.registerSurfaces.length === 1 ? '' : 's'}
-                  </div>
-                )}
-                {msg.draftIds && msg.draftIds.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2" data-testid="draft-download-actions">
-                    {msg.draftIds.map((draftId) => (
-                      <button
-                        key={draftId}
-                        type="button"
-                        data-testid={`download-docx-${draftId}`}
-                        onClick={() => handleDownloadDraft(draftId)}
-                        className="px-3 py-1.5 text-[10px] uppercase tracking-widest rounded-md transition-colors"
-                        style={{
-                          background: 'rgba(212,175,55,0.12)',
-                          border: '1px solid #cfd5de',
-                          color: '#cfd5de',
-                        }}
-                      >
-                        Download .docx
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {msg.audioData && (
-                <div className="mt-2 flex items-center gap-2 text-[9px] uppercase tracking-widest cursor-pointer transition-colors" 
-                     style={{ color: '#9aa1ab' }}
-                     onClick={() => playAudioResponse(msg.audioData!)}>
-                   <span className="w-2 h-2 border border-current rounded-full flex items-center justify-center">
-                     {isSpeaking ? <span className="w-1 h-1 bg-current rounded-full animate-ping"/> : <span className="w-1 h-1 bg-current rounded-full"/>}
-                   </span>
-                   {isSpeaking ? 'Transmission Active' : 'Replay Audio Log'}
-                </div>
-              )}
-            </div>
-          </div>
+          <ChatMessageItem
+            key={msg.id}
+            msg={msg}
+            privateMode={privateMode}
+            nightMode={nightMode}
+            isSpeaking={isSpeaking}
+            onDownloadDraft={handleDownloadDraft}
+            onPlayAudio={playAudioResponse}
+            renderRegisteredPlain={renderRegisteredPlain}
+            renderMessageText={renderMessageText}
+          />
         ))}
 
         {isLoading && (

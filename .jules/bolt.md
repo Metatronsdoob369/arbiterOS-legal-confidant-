@@ -7,3 +7,7 @@
 ## 2026-07-05 - [React.memo missing on heavy markdown lists]
 **Learning:** Rendering complex markdown in a list without `React.memo` combined with a fast-changing state like an input field causes massive lag, because typing triggers a full re-parse and re-render of the entire chat history.
 **Action:** Extract list items that do heavy rendering (like markdown parsing) into their own component and wrap them with `React.memo`. Ensure props like callbacks are wrapped in `React.useCallback` in the parent so they don't break memoization.
+
+## 2026-09-22 - [React.memo ChatMessageItem in LegalAdvisor]
+**Learning:** In `LegalAdvisor.tsx`, message history items rendered markdown directly inside the parent component, causing full markdown re-parsing across all past chat messages on every input keystroke.
+**Action:** Extracted `ChatMessageItem` wrapped in `React.memo` and memoized `renderMessageText` with `React.useCallback` to prevent re-parsing history messages during active typing.
