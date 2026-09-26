@@ -18,6 +18,96 @@ interface StagedFile {
 export type AdvisorMode = 'counsel' | 'private';
 
 
+const renderRegisteredPlain = (text: string, surfaces?: string[]) => {
+  if (!surfaces || surfaces.length === 0) {
+    return text;
+  }
+  return segmentRegisterHighlights(text, surfaces).map((segment, index) =>
+    segment.registered ? (
+      <mark
+        key={`reg-${index}`}
+        data-testid="register-surface"
+        title="Registered by the private confidant lexicon"
+        className="register-surface"
+        style={{
+          background: 'transparent',
+          color: 'inherit',
+          borderBottom: '2px solid rgba(212, 175, 55, 0.85)',
+          boxShadow: 'inset 0 -0.35em 0 rgba(212, 175, 55, 0.18)',
+          borderRadius: '1px',
+          padding: '0 1px',
+        }}
+      >
+        {segment.text}
+      </mark>
+    ) : (
+      <React.Fragment key={`plain-${index}`}>{segment.text}</React.Fragment>
+    ),
+  );
+};
+
+const renderMessageText = (text: string) => {
+  const parts = text.split(/(\[(?:SIGNATURE_FIELD|CITATION):.*?\])/g);
+  return parts.map((part, index) => {
+    if (part.startsWith('[SIGNATURE_FIELD')) {
+      const label = part.includes(':') ? part.split(':')[1].replace(']', '') : 'SIGN HERE';
+      return (
+        <div key={index} className="my-4 p-4 border border-dashed border-[#cfd5de] bg-[#cfd5de]/10 rounded-lg flex items-center justify-between group cursor-pointer hover:bg-[#cfd5de]/15 transition-all">
+          <div className="flex items-center gap-3">
+             <div className="w-8 h-8 rounded-full bg-[#cfd5de] flex items-center justify-center text-black font-bold text-xs animate-pulse">
+               ✍️
+             </div>
+             <div className="flex flex-col">
+               <span className="text-xs font-bold text-[#cfd5de] uppercase tracking-widest">{label}</span>
+               <span className="text-[10px] text-neutral-400">Electronic Signature Required</span>
+             </div>
+          </div>
+          <div className="h-px flex-1 bg-[#cfd5de]/30 mx-4"></div>
+          <span className="text-[9px] text-neutral-500 font-mono group-hover:text-[#cfd5de]">CLICK TO SIGN</span>
+        </div>
+      );
+    }
+    if (part.startsWith('[CITATION')) {
+      const content = part.replace('[CITATION:', '').replace(']', '');
+      const [title, source] = content.split('|');
+      return (
+        <div key={index} className="my-3 inline-block w-full">
+          <div className="bg-neutral-900 border-l-2 border-[#14b8a6] p-3 rounded-r-md shadow-glow">
+              <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-bold text-[#14b8a6] uppercase tracking-widest">Verified Source</span>
+                  <span className="text-[9px] text-neutral-500 font-mono">RETRIEVED FROM VECTOR DB</span>
+              </div>
+              <div className="text-xs font-bold text-neutral-200">{title}</div>
+              <div className="text-[10px] text-neutral-400 italic mt-1">{source}</div>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <ReactMarkdown
+        key={index}
+        components={{
+          h1: ({children}) => <h1 className="text-lg font-bold text-neutral-100 mt-4 mb-2">{children}</h1>,
+          h2: ({children}) => <h2 className="text-base font-bold text-neutral-200 mt-3 mb-2">{children}</h2>,
+          h3: ({children}) => <h3 className="text-sm font-bold text-neutral-300 mt-3 mb-1">{children}</h3>,
+          h4: ({children}) => <h4 className="text-sm font-semibold text-neutral-400 mt-2 mb-1">{children}</h4>,
+          p: ({children}) => <p className="text-sm text-neutral-300 leading-relaxed mb-2">{children}</p>,
+          ul: ({children}) => <ul className="list-disc list-inside text-sm text-neutral-300 space-y-1 mb-2 ml-2">{children}</ul>,
+          ol: ({children}) => <ol className="list-decimal list-inside text-sm text-neutral-300 space-y-1 mb-2 ml-2">{children}</ol>,
+          li: ({children}) => <li className="text-sm text-neutral-300">{children}</li>,
+          strong: ({children}) => <strong className="text-neutral-100 font-semibold">{children}</strong>,
+          em: ({children}) => <em className="text-neutral-400 italic">{children}</em>,
+          code: ({children}) => <code className="bg-neutral-800 text-[#14b8a6] px-1 rounded text-xs font-mono">{children}</code>,
+          blockquote: ({children}) => <blockquote className="border-l-2 border-[#cfd5de] pl-3 my-2 text-neutral-400 italic">{children}</blockquote>,
+        }}
+      >
+        {part}
+      </ReactMarkdown>
+    );
+  });
+};
+
+
 // ⚡ Bolt Optimization: Wrap MessageItem with React.memo to prevent O(N) re-renders
 // By memoizing the MessageItem, we avoid re-rendering the entire chat history whenever
 // the user types in the input field or when new messages arrive.
@@ -30,7 +120,6 @@ const MessageItem = React.memo<{
   onDownloadDraft: (draftId: string) => void;
   onPlayAudio: (audioData: Uint8Array) => void;
 }>(({ msg, privateMode, nightMode, isSpeaking, onDownloadDraft, onPlayAudio }) => {
-
   return (
     <div className={`flex ${msg.role === Role.USER ? 'justify-end' : 'justify-start'}`}>
       <div className={`max-w-[90%] md:max-w-[80%] ${msg.role === Role.USER ? 'text-right' : 'text-left'}`}>
@@ -343,94 +432,6 @@ export const LegalAdvisor: React.FC<{ nightMode?: boolean; mode?: AdvisorMode }>
     }
   }, []);
 
-  const renderRegisteredPlain = (text: string, surfaces?: string[]) => {
-    if (!surfaces || surfaces.length === 0) {
-      return text;
-    }
-    return segmentRegisterHighlights(text, surfaces).map((segment, index) =>
-      segment.registered ? (
-        <mark
-          key={`reg-${index}`}
-          data-testid="register-surface"
-          title="Registered by the private confidant lexicon"
-          className="register-surface"
-          style={{
-            background: 'transparent',
-            color: 'inherit',
-            borderBottom: '2px solid rgba(212, 175, 55, 0.85)',
-            boxShadow: 'inset 0 -0.35em 0 rgba(212, 175, 55, 0.18)',
-            borderRadius: '1px',
-            padding: '0 1px',
-          }}
-        >
-          {segment.text}
-        </mark>
-      ) : (
-        <React.Fragment key={`plain-${index}`}>{segment.text}</React.Fragment>
-      ),
-    );
-  };
-
-  const renderMessageText = (text: string) => {
-    const parts = text.split(/(\[(?:SIGNATURE_FIELD|CITATION):.*?\])/g);
-    return parts.map((part, index) => {
-      if (part.startsWith('[SIGNATURE_FIELD')) {
-        const label = part.includes(':') ? part.split(':')[1].replace(']', '') : 'SIGN HERE';
-        return (
-          <div key={index} className="my-4 p-4 border border-dashed border-[#cfd5de] bg-[#cfd5de]/10 rounded-lg flex items-center justify-between group cursor-pointer hover:bg-[#cfd5de]/15 transition-all">
-            <div className="flex items-center gap-3">
-               <div className="w-8 h-8 rounded-full bg-[#cfd5de] flex items-center justify-center text-black font-bold text-xs animate-pulse">
-                 ✍️
-               </div>
-               <div className="flex flex-col">
-                 <span className="text-xs font-bold text-[#cfd5de] uppercase tracking-widest">{label}</span>
-                 <span className="text-[10px] text-neutral-400">Electronic Signature Required</span>
-               </div>
-            </div>
-            <div className="h-px flex-1 bg-[#cfd5de]/30 mx-4"></div>
-            <span className="text-[9px] text-neutral-500 font-mono group-hover:text-[#cfd5de]">CLICK TO SIGN</span>
-          </div>
-        );
-      }
-      if (part.startsWith('[CITATION')) {
-        const content = part.replace('[CITATION:', '').replace(']', '');
-        const [title, source] = content.split('|');
-        return (
-          <div key={index} className="my-3 inline-block w-full">
-            <div className="bg-neutral-900 border-l-2 border-[#14b8a6] p-3 rounded-r-md shadow-glow">
-                <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-bold text-[#14b8a6] uppercase tracking-widest">Verified Source</span>
-                    <span className="text-[9px] text-neutral-500 font-mono">RETRIEVED FROM VECTOR DB</span>
-                </div>
-                <div className="text-xs font-bold text-neutral-200">{title}</div>
-                <div className="text-[10px] text-neutral-400 italic mt-1">{source}</div>
-            </div>
-          </div>
-        );
-      }
-      return (
-        <ReactMarkdown
-          key={index}
-          components={{
-            h1: ({children}) => <h1 className="text-lg font-bold text-neutral-100 mt-4 mb-2">{children}</h1>,
-            h2: ({children}) => <h2 className="text-base font-bold text-neutral-200 mt-3 mb-2">{children}</h2>,
-            h3: ({children}) => <h3 className="text-sm font-bold text-neutral-300 mt-3 mb-1">{children}</h3>,
-            h4: ({children}) => <h4 className="text-sm font-semibold text-neutral-400 mt-2 mb-1">{children}</h4>,
-            p: ({children}) => <p className="text-sm text-neutral-300 leading-relaxed mb-2">{children}</p>,
-            ul: ({children}) => <ul className="list-disc list-inside text-sm text-neutral-300 space-y-1 mb-2 ml-2">{children}</ul>,
-            ol: ({children}) => <ol className="list-decimal list-inside text-sm text-neutral-300 space-y-1 mb-2 ml-2">{children}</ol>,
-            li: ({children}) => <li className="text-sm text-neutral-300">{children}</li>,
-            strong: ({children}) => <strong className="text-neutral-100 font-semibold">{children}</strong>,
-            em: ({children}) => <em className="text-neutral-400 italic">{children}</em>,
-            code: ({children}) => <code className="bg-neutral-800 text-[#14b8a6] px-1 rounded text-xs font-mono">{children}</code>,
-            blockquote: ({children}) => <blockquote className="border-l-2 border-[#cfd5de] pl-3 my-2 text-neutral-400 italic">{children}</blockquote>,
-          }}
-        >
-          {part}
-        </ReactMarkdown>
-      );
-    });
-  };
 
   return (
     <div
