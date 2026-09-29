@@ -10,3 +10,6 @@
 ## 2026-07-06 - [React.memo missing on complex inline drag-and-drop nodes]
 **Learning:** Rendering complex inline list items (like interactive nodes on a canvas) without `React.memo` during 60FPS drag operations causes massive O(N) React diff re-renders on every mouse movement, significantly hurting performance.
 **Action:** Extract node UI elements into a separate component wrapped with `React.memo` and ensure stable callback references are passed using `React.useCallback`.
+## 2026-07-06 - [React.memo missing on chat history]
+**Learning:** Rendering complex chat history (with markdown parsing) inline without `React.memo` combined with frequent updates to unrelated state (like `inputText`) causes massive O(N) re-renders.
+**Action:** Extract list items into a separate component wrapped with `React.memo` and ensure stable callback references are passed using `React.useCallback`.
