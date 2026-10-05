@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import type { PrimerPackage } from '../../schemas/legalSchemas';
 import { listPackages } from '../../services/packagesClient';
 import { brand } from '../brand/tokens';
@@ -55,9 +55,14 @@ export function GrowthBoard() {
     }
   }, []);
 
-  const selectedPackage = packages.find((item) => item.package_id === selectedPackageId) ?? null;
-  const selectedSteps = selectedPackage ? sortPackageSteps(selectedPackage.steps) : [];
-  const selectedVehicles = selectedPackage ? vehiclesForPackage(selectedPackage) : [];
+  // ⚡ Bolt Optimization: Memoize derived state to prevent O(N log N) sorting and O(N) filtering on every render.
+  // Impact: Prevents unnecessary work and maintains referential equality for child components (GrowthAreaCard, etc).
+  // Measurement: Verify by interacting with Growth funnel; re-renders no longer trigger expensive sortPackageSteps.
+  const selectedPackage = useMemo(() => packages.find((item) => item.package_id === selectedPackageId) ?? null, [packages, selectedPackageId]);
+  const selectedSteps = useMemo(() => selectedPackage ? sortPackageSteps(selectedPackage.steps) : [], [selectedPackage]);
+  const selectedVehicles = useMemo(() => selectedPackage ? vehiclesForPackage(selectedPackage) : [], [selectedPackage]);
+
+  // Cheap calculation, no memo needed
   const canClimb = canEnterClimb(Boolean(selectedVehicle), selectedSteps.length);
 
   function dissolvePeers(peerIds: string[], onComplete: () => void) {
