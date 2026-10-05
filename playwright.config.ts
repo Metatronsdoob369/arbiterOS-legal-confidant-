@@ -9,7 +9,7 @@ const webServer = process.env.PLAYWRIGHT_SKIP_WEB_SERVER
   ? undefined
   : {
       command: 'npm run seed:admin && npm run dev',
-      url: 'http://127.0.0.1:4321',
+      url: 'http://localhost:4321',
       reuseExistingServer: !process.env.CI,
       timeout: 120 * 1000,
       env: {
@@ -29,7 +29,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'list',
   use: {
-    baseURL: 'http://127.0.0.1:4321',
+    baseURL: 'http://localhost:4321',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
