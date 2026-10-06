@@ -69,7 +69,7 @@ export function GrowthBoard() {
   }, [packages, selectedPackageId]);
   const canClimb = canEnterClimb(Boolean(selectedVehicle), selectedSteps.length);
 
-  function dissolvePeers(peerIds: string[], onComplete: () => void) {
+  const dissolvePeers = useCallback((peerIds: string[], onComplete: () => void) => {
     if (dissolvingIds.length > 0) {
       return;
     }
@@ -79,7 +79,7 @@ export function GrowthBoard() {
       setDissolvingIds([]);
       onComplete();
     }, DISSOLVE_DURATION_MS);
-  }
+  }, [dissolvingIds.length]);
 
   const selectPackage = useCallback((pkg: PrimerPackage) => {
     dissolvePeers(
