@@ -101,7 +101,7 @@ export function GrowthBoard() {
         setStage(3);
       },
     );
-  }, [packages, dissolvePeers]);
+  }, [selectedVehicles, dissolvePeers]);
 
   const moveBack = useCallback(() => {
     const previousStage = previousGrowthStage(stage);
