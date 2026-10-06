@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PrimerPackage } from '../../schemas/legalSchemas';
 import { listPackages } from '../../services/packagesClient';
 import { brand } from '../brand/tokens';
@@ -55,9 +55,18 @@ export function GrowthBoard() {
     }
   }, []);
 
-  const selectedPackage = packages.find((item) => item.package_id === selectedPackageId) ?? null;
-  const selectedSteps = selectedPackage ? sortPackageSteps(selectedPackage.steps) : [];
-  const selectedVehicles = selectedPackage ? vehiclesForPackage(selectedPackage) : [];
+  /**
+   * ⚡ Bolt Optimization: Memoized derived state to prevent O(N) lookup and
+   * array sorting on every render loop (e.g. during dissolve animations).
+   */
+  const { selectedPackage, selectedSteps, selectedVehicles } = useMemo(() => {
+    const pkg = packages.find((item) => item.package_id === selectedPackageId) ?? null;
+    return {
+      selectedPackage: pkg,
+      selectedSteps: pkg ? sortPackageSteps(pkg.steps) : [],
+      selectedVehicles: pkg ? vehiclesForPackage(pkg) : [],
+    };
+  }, [packages, selectedPackageId]);
   const canClimb = canEnterClimb(Boolean(selectedVehicle), selectedSteps.length);
 
   function dissolvePeers(peerIds: string[], onComplete: () => void) {
