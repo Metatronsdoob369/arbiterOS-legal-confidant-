@@ -13,3 +13,6 @@
 ## 2026-07-07 - [Extract Heavy Chat Item into React.memo]
 **Learning:** Rendering complex markdown inside a map function within a React component holding fast-changing state like text inputs causes massive re-renders and slowness. Using `React.memo` for the list item prevents this. Also, be sure to use `React.useCallback` for functions passed as props to avoid breaking memoization.
 **Action:** Extract large elements rendered inside loops into their own component and wrap them with `React.memo` if their props don't frequently change. Ensure parent callbacks passed as props are wrapped in `React.useCallback`.
+## 2026-07-08 - [Unnecessary array methods derived state in GrowthBoard render]
+**Learning:** Computing derived state like array filtering and sorting within the render loop of a component (like `GrowthBoard`) without memoization can cause unnecessary CPU cycles on every re-render, especially if the underlying state object hasn't changed.
+**Action:** Always wrap heavy derived state logic (like `.find()`, `.sort()`, or custom filters like `vehiclesForPackage`) inside a `useMemo` hook with appropriate dependency arrays.
