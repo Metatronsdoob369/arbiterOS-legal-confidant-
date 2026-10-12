@@ -48,6 +48,116 @@ const border = 'rgba(207,213,222,0.22)';
 const deep = '#1c2026';
 const nearBlack = '#0a0a0c';
 
+
+/**
+ * ⚡ Bolt Optimization: Extracted Library Item to React.memo
+ * Prevents re-rendering the entire list of items when typing in the search input
+ */
+const MemoizedLibraryItem = React.memo<{
+  item: LibraryItem;
+  onTogglePin: (item: LibraryItem) => Promise<void>;
+  onDeleteItem: (id: string) => Promise<void>;
+}>(({ item, onTogglePin, onDeleteItem }) => (
+  <div
+    className={`group p-4 rounded-lg border transition-all hover:-translate-y-0.5 ${TYPE_COLORS[item.type]}`}
+    style={{
+      boxShadow: item.pinned ? '0 0 15px rgba(212, 175, 55, 0.1)' : 'none',
+    }}
+  >
+    <div className="flex items-start justify-between mb-2">
+      <div className="flex items-center gap-2">
+        <span className="text-sm">{TYPE_ICONS[item.type]}</span>
+        <span className="text-[10px] uppercase tracking-widest font-bold" style={{ color: mute }}>
+          {item.type}
+        </span>
+        {item.pinned && <span className="text-[9px]" style={{ color: gold }}>📌</span>}
+      </div>
+      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button onClick={() => void onTogglePin(item)} className="text-xs" title="Pin/Unpin">📌</button>
+        <button onClick={() => void onDeleteItem(item.id)} className="text-xs text-red-400" title="Delete">×</button>
+      </div>
+    </div>
+    <h3 className="text-sm font-bold mb-2" style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif", color: ink }}>
+      {item.title}
+    </h3>
+    <p className="text-xs leading-relaxed mb-3" style={{ color: '#a89070' }}>
+      {item.content}
+    </p>
+    <div className="flex items-center justify-between">
+      <div className="flex gap-1.5 flex-wrap">
+        {item.tags.map((tag) => (
+          <span
+            key={tag}
+            className="px-2 py-0.5 text-[9px] uppercase tracking-wider rounded-full"
+            style={{ background: panel, color: mute, border: `1px solid ${border}` }}
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+      {item.citation && (
+        <span className="text-[9px] italic" style={{ color: gold }}>
+          {item.citation}
+        </span>
+      )}
+    </div>
+  </div>
+));
+
+
+const MemoizedDepartmentItem = React.memo<{
+  dept: DocsDepartmentModule;
+  selectedDepartmentId: string | null;
+  onSelect: (id: string) => void;
+}>(({ dept, selectedDepartmentId, onSelect }) => (
+  <button
+    data-testid={`docs-dept-${dept.department_id}`}
+    onClick={() => onSelect(dept.department_id)}
+    className="w-full text-left px-3 py-2 rounded"
+    style={{
+      background: selectedDepartmentId === dept.department_id ? panel : 'transparent',
+      border: `1px solid ${selectedDepartmentId === dept.department_id ? gold : border}`,
+      color: ink,
+    }}
+  >
+    <div className="text-xs font-bold" style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
+      {dept.title}
+    </div>
+    <div className="text-[10px] uppercase tracking-wider mt-1" style={{ color: mute }}>
+      {dept.status === 'populated' ? 'Populated' : 'Scaffold'}
+    </div>
+  </button>
+));
+
+const MemoizedCatalogEntryItem = React.memo<{
+  entry: DocsCatalogEntry;
+  selectedEntryId: string | undefined;
+  onOpenEntry: (id: string) => Promise<void>;
+}>(({ entry, selectedEntryId, onOpenEntry }) => (
+  <button
+    data-testid={`docs-entry-${entry.file_name}`}
+    onClick={() => void onOpenEntry(entry.entry_id)}
+    className="w-full text-left p-3 rounded transition-colors"
+    style={{
+      background: selectedEntryId === entry.entry_id ? panel : deep,
+      border: `1px solid ${border}`,
+    }}
+  >
+    <div className="flex items-center gap-2 mb-1">
+      <span className="text-[9px] uppercase tracking-wider" style={{ color: gold }}>
+        {entry.kind}
+      </span>
+      <span className="text-[9px]" style={{ color: mute }}>{entry.file_name}</span>
+    </div>
+    <div className="text-xs font-bold" style={{ color: ink }}>{entry.title}</div>
+    {entry.text_preview && (
+      <p className="text-[11px] mt-1 line-clamp-2" style={{ color: mute }}>
+        {entry.text_preview}
+      </p>
+    )}
+  </button>
+));
+
 export const Library: React.FC = () => {
   const [tab, setTab] = React.useState<LibraryTab>('working_set');
   const [items, setItems] = React.useState<LibraryItem[]>([]);
@@ -75,6 +185,13 @@ export const Library: React.FC = () => {
   const [selectedEntry, setSelectedEntry] = React.useState<
     (DocsCatalogEntry & { full_text?: string }) | null
   >(null);
+
+
+  const handleSelectDepartment = React.useCallback((id: string) => {
+    setSelectedDepartmentId(id);
+    setSelectedEntry(null);
+    setCatalogQuery('');
+  }, []);
 
   const loadItems = React.useCallback(async () => {
     setLoading(true);
@@ -157,7 +274,7 @@ export const Library: React.FC = () => {
       });
   }, [items, searchQuery, filterType]);
 
-  const addItem = async () => {
+  const addItem = React.useCallback(async () => {
     if (!newItem.title.trim() || !newItem.content.trim()) return;
 
     await apiFetch('/api/memories', {
@@ -176,31 +293,31 @@ export const Library: React.FC = () => {
     setNewItem({ type: 'note', title: '', content: '', source: '', citation: '', tags: '' });
     setShowAddForm(false);
     await loadItems();
-  };
+  }, [newItem, loadItems]);
 
-  const togglePin = async (item: LibraryItem) => {
+  const togglePin = React.useCallback(async (item: LibraryItem) => {
     await apiFetch(`/api/memories/${item.id}/pin`, {
       method: 'PATCH',
       body: JSON.stringify({ pinned: !item.pinned }),
     });
     await loadItems();
-  };
+  }, [loadItems]);
 
-  const deleteItem = async (id: string) => {
+  const deleteItem = React.useCallback(async (id: string) => {
     await apiFetch(`/api/memories/${id}`, {
       method: 'DELETE',
     });
     await loadItems();
-  };
+  }, [loadItems]);
 
-  const openEntry = async (entryId: string) => {
+  const openEntry = React.useCallback(async (entryId: string) => {
     try {
       const detail = await getDocsEntry(entryId);
       setSelectedEntry(detail);
     } catch {
       setSelectedEntry(null);
     }
-  };
+  }, []);
 
   return (
     <div
@@ -384,51 +501,12 @@ export const Library: React.FC = () => {
               </div>
             ) : (
               filteredItems.map((item) => (
-                <div
+                <MemoizedLibraryItem
                   key={item.id}
-                  className={`group p-4 rounded-lg border transition-all hover:-translate-y-0.5 ${TYPE_COLORS[item.type]}`}
-                  style={{
-                    boxShadow: item.pinned ? '0 0 15px rgba(212, 175, 55, 0.1)' : 'none',
-                  }}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">{TYPE_ICONS[item.type]}</span>
-                      <span className="text-[10px] uppercase tracking-widest font-bold" style={{ color: mute }}>
-                        {item.type}
-                      </span>
-                      {item.pinned && <span className="text-[9px]" style={{ color: gold }}>📌</span>}
-                    </div>
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => void togglePin(item)} className="text-xs" title="Pin/Unpin">📌</button>
-                      <button onClick={() => void deleteItem(item.id)} className="text-xs text-red-400" title="Delete">×</button>
-                    </div>
-                  </div>
-                  <h3 className="text-sm font-bold mb-2" style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif", color: ink }}>
-                    {item.title}
-                  </h3>
-                  <p className="text-xs leading-relaxed mb-3" style={{ color: '#a89070' }}>
-                    {item.content}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-1.5 flex-wrap">
-                      {item.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="px-2 py-0.5 text-[9px] uppercase tracking-wider rounded-full"
-                          style={{ background: panel, color: mute, border: `1px solid ${border}` }}
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                    {item.citation && (
-                      <span className="text-[9px] italic" style={{ color: gold }}>
-                        {item.citation}
-                      </span>
-                    )}
-                  </div>
-                </div>
+                  item={item}
+                  onTogglePin={togglePin}
+                  onDeleteItem={deleteItem}
+                />
               ))
             )}
           </div>
@@ -451,28 +529,12 @@ export const Library: React.FC = () => {
               <div className="text-xs" style={{ color: mute }}>Loading…</div>
             ) : (
               departments.map((dept) => (
-                <button
+                <MemoizedDepartmentItem
                   key={dept.department_id}
-                  data-testid={`docs-dept-${dept.department_id}`}
-                  onClick={() => {
-                    setSelectedDepartmentId(dept.department_id);
-                    setSelectedEntry(null);
-                    setCatalogQuery('');
-                  }}
-                  className="w-full text-left px-3 py-2 rounded"
-                  style={{
-                    background: selectedDepartmentId === dept.department_id ? panel : 'transparent',
-                    border: `1px solid ${selectedDepartmentId === dept.department_id ? gold : border}`,
-                    color: ink,
-                  }}
-                >
-                  <div className="text-xs font-bold" style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif" }}>
-                    {dept.title}
-                  </div>
-                  <div className="text-[10px] uppercase tracking-wider mt-1" style={{ color: mute }}>
-                    {dept.status === 'populated' ? 'Populated' : 'Scaffold'}
-                  </div>
-                </button>
+                  dept={dept}
+                  selectedDepartmentId={selectedDepartmentId}
+                  onSelect={handleSelectDepartment}
+                />
               ))
             )}
           </aside>
@@ -543,29 +605,12 @@ export const Library: React.FC = () => {
                       {primaryCatalog ? ` · ${primaryCatalog.title}` : ''}
                     </div>
                     {catalogEntries.map((entry) => (
-                      <button
+                      <MemoizedCatalogEntryItem
                         key={entry.entry_id}
-                        data-testid={`docs-entry-${entry.file_name}`}
-                        onClick={() => void openEntry(entry.entry_id)}
-                        className="w-full text-left p-3 rounded transition-colors"
-                        style={{
-                          background: selectedEntry?.entry_id === entry.entry_id ? panel : deep,
-                          border: `1px solid ${border}`,
-                        }}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[9px] uppercase tracking-wider" style={{ color: gold }}>
-                            {entry.kind}
-                          </span>
-                          <span className="text-[9px]" style={{ color: mute }}>{entry.file_name}</span>
-                        </div>
-                        <div className="text-xs font-bold" style={{ color: ink }}>{entry.title}</div>
-                        {entry.text_preview && (
-                          <p className="text-[11px] mt-1 line-clamp-2" style={{ color: mute }}>
-                            {entry.text_preview}
-                          </p>
-                        )}
-                      </button>
+                        entry={entry}
+                        selectedEntryId={selectedEntry?.entry_id}
+                        onOpenEntry={openEntry}
+                      />
                     ))}
                   </>
                 )}
