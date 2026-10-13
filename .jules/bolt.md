@@ -13,3 +13,6 @@
 ## 2026-07-07 - [Extract Heavy Chat Item into React.memo]
 **Learning:** Rendering complex markdown inside a map function within a React component holding fast-changing state like text inputs causes massive re-renders and slowness. Using `React.memo` for the list item prevents this. Also, be sure to use `React.useCallback` for functions passed as props to avoid breaking memoization.
 **Action:** Extract large elements rendered inside loops into their own component and wrap them with `React.memo` if their props don't frequently change. Ensure parent callbacks passed as props are wrapped in `React.useCallback`.
+## 2026-07-08 - [O(N log N) Sorting in Render Loop]
+**Learning:** Derived state that requires expensive operations like sorting (`sortPackageSteps`) during step navigation triggers unnecessary O(N log N) re-calculations on every render cycle when a user clicks "Next" or "Back".
+**Action:** Wrap the derived state calculations in `useMemo` hooks so they are only re-computed when their underlying dependencies change, rather than on every state update.

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PrimerPackage } from '../../schemas/legalSchemas';
 import { listPackages } from '../../services/packagesClient';
 import { brand } from '../brand/tokens';
@@ -55,10 +55,21 @@ export function GrowthBoard() {
     }
   }, []);
 
-  const selectedPackage = packages.find((item) => item.package_id === selectedPackageId) ?? null;
-  const selectedSteps = selectedPackage ? sortPackageSteps(selectedPackage.steps) : [];
-  const selectedVehicles = selectedPackage ? vehiclesForPackage(selectedPackage) : [];
-  const canClimb = canEnterClimb(Boolean(selectedVehicle), selectedSteps.length);
+  const selectedPackage = useMemo(() => {
+    return packages.find((item) => item.package_id === selectedPackageId) ?? null;
+  }, [packages, selectedPackageId]);
+
+  const selectedSteps = useMemo(() => {
+    return selectedPackage ? sortPackageSteps(selectedPackage.steps) : [];
+  }, [selectedPackage]);
+
+  const selectedVehicles = useMemo(() => {
+    return selectedPackage ? vehiclesForPackage(selectedPackage) : [];
+  }, [selectedPackage]);
+
+  const canClimb = useMemo(() => {
+    return canEnterClimb(Boolean(selectedVehicle), selectedSteps.length);
+  }, [selectedVehicle, selectedSteps.length]);
 
   function dissolvePeers(peerIds: string[], onComplete: () => void) {
     if (dissolvingIds.length > 0) {
