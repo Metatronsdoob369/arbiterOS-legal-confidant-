@@ -51,8 +51,8 @@ const nearBlack = '#0a0a0c';
 
 const MemoizedLibraryItem = React.memo<{
   item: LibraryItem;
-  onTogglePin: (item: LibraryItem) => void;
-  onDelete: (id: string) => void;
+  onTogglePin: (item: LibraryItem) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
 }>(({ item, onTogglePin, onDelete }) => (
   <div
     className={`group p-4 rounded-lg border transition-all hover:-translate-y-0.5 ${TYPE_COLORS[item.type]}`}
@@ -69,8 +69,8 @@ const MemoizedLibraryItem = React.memo<{
         {item.pinned && <span className="text-[9px]" style={{ color: gold }}>📌</span>}
       </div>
       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button onClick={() => onTogglePin(item)} className="text-xs" title="Pin/Unpin">📌</button>
-        <button onClick={() => onDelete(item.id)} className="text-xs text-red-400" title="Delete">×</button>
+        <button onClick={() => void onTogglePin(item)} className="text-xs" title="Pin/Unpin">📌</button>
+        <button onClick={() => void onDelete(item.id)} className="text-xs text-red-400" title="Delete">×</button>
       </div>
     </div>
     <h3 className="text-sm font-bold mb-2" style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif", color: ink }}>
@@ -99,6 +99,7 @@ const MemoizedLibraryItem = React.memo<{
     </div>
   </div>
 ));
+MemoizedLibraryItem.displayName = 'MemoizedLibraryItem';
 
 
 export const Library: React.FC = () => {
