@@ -13,3 +13,6 @@
 ## 2026-07-07 - [Extract Heavy Chat Item into React.memo]
 **Learning:** Rendering complex markdown inside a map function within a React component holding fast-changing state like text inputs causes massive re-renders and slowness. Using `React.memo` for the list item prevents this. Also, be sure to use `React.useCallback` for functions passed as props to avoid breaking memoization.
 **Action:** Extract large elements rendered inside loops into their own component and wrap them with `React.memo` if their props don't frequently change. Ensure parent callbacks passed as props are wrapped in `React.useCallback`.
+## 2026-10-16 - [React.memo missing on complex list items mapping over search input]
+**Learning:** Rendering complex inline list items (like the items inside Library) without `React.memo` while mapping them over a list that gets filtered by a fast-changing state (search box query input string) causes massive O(N) React diff re-renders on every keystroke, hurting search performance significantly.
+**Action:** Extract node UI elements into a separate component wrapped with `React.memo` and ensure stable callback references are passed using `React.useCallback`.
