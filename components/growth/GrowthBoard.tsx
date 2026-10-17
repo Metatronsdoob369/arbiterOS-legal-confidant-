@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PrimerPackage } from '../../schemas/legalSchemas';
 import { listPackages } from '../../services/packagesClient';
 import { brand } from '../brand/tokens';
@@ -55,10 +55,21 @@ export function GrowthBoard() {
     }
   }, []);
 
-  const selectedPackage = packages.find((item) => item.package_id === selectedPackageId) ?? null;
-  const selectedSteps = selectedPackage ? sortPackageSteps(selectedPackage.steps) : [];
-  const selectedVehicles = selectedPackage ? vehiclesForPackage(selectedPackage) : [];
-  const canClimb = canEnterClimb(Boolean(selectedVehicle), selectedSteps.length);
+  // ⚡ Bolt Optimization: Memoize the package derivation to prevent O(N log N) sorting
+  // and O(N) searching on every render when state like stepIndex changes.
+  const { selectedPackage, selectedSteps, selectedVehicles, canClimb } = useMemo(() => {
+    const pkg = packages.find((item) => item.package_id === selectedPackageId) ?? null;
+    const steps = pkg ? sortPackageSteps(pkg.steps) : [];
+    const vehicles = pkg ? vehiclesForPackage(pkg) : [];
+    const climb = canEnterClimb(Boolean(selectedVehicle), steps.length);
+
+    return {
+      selectedPackage: pkg,
+      selectedSteps: steps,
+      selectedVehicles: vehicles,
+      canClimb: climb,
+    };
+  }, [packages, selectedPackageId, selectedVehicle]);
 
   function dissolvePeers(peerIds: string[], onComplete: () => void) {
     if (dissolvingIds.length > 0) {
