@@ -10,7 +10,7 @@ const webServer = process.env.PLAYWRIGHT_SKIP_WEB_SERVER
   : {
       command: 'npm run seed:admin && npm run dev',
       url: 'http://127.0.0.1:4321',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: true,
       timeout: 120 * 1000,
       env: {
         ...process.env,

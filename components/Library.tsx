@@ -439,12 +439,51 @@ export const Library: React.FC = () => {
               </div>
             ) : (
               filteredItems.map((item) => (
-                <MemoizedLibraryItem
+                <div
                   key={item.id}
-                  item={item}
-                  onTogglePin={togglePin}
-                  onDelete={deleteItem}
-                />
+                  className={`group p-4 rounded-lg border transition-all hover:-translate-y-0.5 ${TYPE_COLORS[item.type]}`}
+                  style={{
+                    boxShadow: item.pinned ? '0 0 15px rgba(212, 175, 55, 0.1)' : 'none',
+                  }}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">{TYPE_ICONS[item.type]}</span>
+                      <span className="text-[10px] uppercase tracking-widest font-bold" style={{ color: mute }}>
+                        {item.type}
+                      </span>
+                      {item.pinned && <span className="text-[9px]" style={{ color: gold }}>📌</span>}
+                    </div>
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => void togglePin(item)} className="text-xs" title="Pin/Unpin">📌</button>
+                      <button onClick={() => void deleteItem(item.id)} className="text-xs text-red-400" title="Delete">×</button>
+                    </div>
+                  </div>
+                  <h3 className="text-sm font-bold mb-2" style={{ fontFamily: "'IBM Plex Sans', system-ui, sans-serif", color: ink }}>
+                    {item.title}
+                  </h3>
+                  <p className="text-xs leading-relaxed mb-3" style={{ color: '#a89070' }}>
+                    {item.content}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-1.5 flex-wrap">
+                      {item.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-2 py-0.5 text-[9px] uppercase tracking-wider rounded-full"
+                          style={{ background: panel, color: mute, border: `1px solid ${border}` }}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    {item.citation && (
+                      <span className="text-[9px] italic" style={{ color: gold }}>
+                        {item.citation}
+                      </span>
+                    )}
+                  </div>
+                </div>
               ))
             )}
           </div>
