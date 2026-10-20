@@ -137,6 +137,12 @@ export const Library: React.FC = () => {
     return () => window.clearTimeout(handle);
   }, [tab, primaryCatalog?.catalog_id, primaryCatalog?.status, catalogQuery, catalogKind]);
 
+  // ⚡ Bolt Optimization: Memoize the pinned count to avoid O(N) filtering during every render cycle
+  const pinnedCount = React.useMemo(
+    () => items.reduce((acc, item) => acc + (item.pinned ? 1 : 0), 0),
+    [items]
+  );
+
   const filteredItems = React.useMemo(() => {
     // Cache toLowerCase() outside the filter loop
     const query = searchQuery.trim().toLowerCase();
@@ -434,7 +440,7 @@ export const Library: React.FC = () => {
           </div>
           <div className="px-6 py-3 border-t flex items-center justify-between" style={{ borderColor: border, background: nearBlack }}>
             <span className="text-[10px] uppercase tracking-widest" style={{ color: mute }}>
-              {items.length} entries • {items.filter((item) => item.pinned).length} pinned
+              {items.length} entries • {pinnedCount} pinned
             </span>
             <span className="text-[10px] uppercase tracking-widest" style={{ color: mute }}>
               ArbiterOS Library
