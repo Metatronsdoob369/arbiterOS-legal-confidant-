@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import type { PrimerPackage } from '../../schemas/legalSchemas';
 import { listPackages } from '../../services/packagesClient';
 import { brand } from '../brand/tokens';
@@ -55,12 +55,26 @@ export function GrowthBoard() {
     }
   }, []);
 
-  const selectedPackage = packages.find((item) => item.package_id === selectedPackageId) ?? null;
-  const selectedSteps = selectedPackage ? sortPackageSteps(selectedPackage.steps) : [];
-  const selectedVehicles = selectedPackage ? vehiclesForPackage(selectedPackage) : [];
-  const canClimb = canEnterClimb(Boolean(selectedVehicle), selectedSteps.length);
+  // ⚡ Bolt Optimization: Memoize derived state to prevent O(N log N) sorting and O(N) array lookups on every render
+  const selectedPackage = useMemo(
+    () => packages.find((item) => item.package_id === selectedPackageId) ?? null,
+    [packages, selectedPackageId]
+  );
+  const selectedSteps = useMemo(
+    () => selectedPackage ? sortPackageSteps(selectedPackage.steps) : [],
+    [selectedPackage]
+  );
+  const selectedVehicles = useMemo(
+    () => selectedPackage ? vehiclesForPackage(selectedPackage) : [],
+    [selectedPackage]
+  );
+  const canClimb = useMemo(
+    () => canEnterClimb(Boolean(selectedVehicle), selectedSteps.length),
+    [selectedVehicle, selectedSteps.length]
+  );
 
-  function dissolvePeers(peerIds: string[], onComplete: () => void) {
+  // ⚡ Bolt Optimization: Memoize callbacks to prevent child component re-renders
+  const dissolvePeers = useCallback((peerIds: string[], onComplete: () => void) => {
     if (dissolvingIds.length > 0) {
       return;
     }
@@ -70,9 +84,9 @@ export function GrowthBoard() {
       setDissolvingIds([]);
       onComplete();
     }, DISSOLVE_DURATION_MS);
-  }
+  }, [dissolvingIds.length]);
 
-  function selectPackage(pkg: PrimerPackage) {
+  const selectPackage = useCallback((pkg: PrimerPackage) => {
     dissolvePeers(
       packages.filter((item) => item.package_id !== pkg.package_id).map((item) => item.package_id),
       () => {
@@ -82,9 +96,9 @@ export function GrowthBoard() {
         setStage(2);
       },
     );
-  }
+  }, [packages, dissolvePeers]);
 
-  function selectVehicle(vehicle: GrowthVehicle) {
+  const selectVehicle = useCallback((vehicle: GrowthVehicle) => {
     dissolvePeers(
       selectedVehicles.filter((item) => item.id !== vehicle.id).map((item) => item.id),
       () => {
@@ -92,18 +106,18 @@ export function GrowthBoard() {
         setStage(3);
       },
     );
-  }
+  }, [selectedVehicles, dissolvePeers]);
 
-  function moveBack() {
+  const moveBack = useCallback(() => {
     const previousStage = previousGrowthStage(stage);
     if (previousStage !== null) {
       setStage(previousStage);
     }
-  }
+  }, [stage]);
 
-  function advanceStep() {
+  const advanceStep = useCallback(() => {
     setStepIndex((currentIndex) => Math.min(currentIndex + 1, selectedSteps.length - 1));
-  }
+  }, [selectedSteps.length]);
 
   return (
     <main
