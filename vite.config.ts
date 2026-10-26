@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
     return {
       server: {
         port: 4321,
-        host: '0.0.0.0',
+        host: '127.0.0.1',
         proxy: {
           '/api': {
             target: 'http://127.0.0.1:4881',
