@@ -16,3 +16,6 @@
 ## 2026-10-22 - [O(N log N) Sorting in GrowthBoard]
 **Learning:** Re-computing expensive derived state like sorting (`sortPackageSteps` which is O(N log N)) on every render during state transitions (like stage or step index changes) causes unnecessary performance overhead.
 **Action:** Use `useMemo` to memoize derived state calculations, ensuring they only recalculate when their specific dependencies change. Also wrap handler functions in `useCallback` so they can be safely passed to child components.
+## 2026-10-25 - [React.memo missing on large list elements]
+**Learning:** Rendering complex items inside a map loop without `React.memo` causes O(N) re-renders, resulting in slow updates when fast-changing state like a search input updates. Furthermore, inline filter operations like counting items (`items.filter(...).length`) within a render loop adds unneeded O(N) overhead.
+**Action:** Extract loop contents into a separate component, wrap it with `React.memo`, and make sure child event handlers passed as props use `React.useCallback`. Use `React.useMemo` for any derived values that require iterative operations on data sets.
