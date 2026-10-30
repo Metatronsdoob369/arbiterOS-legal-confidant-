@@ -44,7 +44,7 @@ const MemoizedEvidenceNode = React.memo<{
   isSelected: boolean;
   isConnectTarget: boolean;
   isGrabbing: boolean;
-  onMouseDown: (e: React.MouseEvent, nodeId: string, x: number, y: number) => void;
+  onMouseDown: (e: React.MouseEvent, nodeId: string) => void;
   onClick: (nodeId: string) => void;
   onDelete: (nodeId: string) => void;
 }>(({ node, isSelected, isConnectTarget, isGrabbing, onMouseDown, onClick, onDelete }) => {
@@ -60,7 +60,7 @@ const MemoizedEvidenceNode = React.memo<{
         zIndex: isSelected ? 20 : 10,
         cursor: isGrabbing ? 'grabbing' : 'grab',
       }}
-      onMouseDown={e => onMouseDown(e, node.id, node.x, node.y)}
+      onMouseDown={e => onMouseDown(e, node.id)}
       onClick={e => { e.stopPropagation(); onClick(node.id); }}
     >
       <div
@@ -114,18 +114,19 @@ export const EvidenceBoard: React.FC = () => {
     return map;
   }, [nodes]);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent, nodeId: string, nodeX: number, nodeY: number) => {
+  const handleMouseDown = useCallback((e: React.MouseEvent, nodeId: string) => {
     e.stopPropagation();
-    if (!boardRef.current) return;
+    const node = nodeMap.get(nodeId);
+    if (!node || !boardRef.current) return;
 
     const rect = boardRef.current.getBoundingClientRect();
     setDragState({
       nodeId,
-      offsetX: e.clientX - rect.left - nodeX,
-      offsetY: e.clientY - rect.top - nodeY,
+      offsetX: e.clientX - rect.left - node.x,
+      offsetY: e.clientY - rect.top - node.y,
     });
     setSelectedNode(nodeId);
-  }, []);
+  }, [nodeMap]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!dragState || !boardRef.current) return;
