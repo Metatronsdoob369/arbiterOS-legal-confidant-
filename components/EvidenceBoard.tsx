@@ -183,9 +183,10 @@ export const EvidenceBoard: React.FC = () => {
     setSelectedNode(prev => prev === id ? null : prev);
   }, []);
 
-  const deleteConnection = (id: string) => {
+  // ⚡ Bolt Optimization: Memoize the delete handler to prevent unnecessary re-renders of the SVGs
+  const deleteConnection = useCallback((id: string) => {
     setConnections(prev => prev.filter(c => c.id !== id));
-  };
+  }, []);
 
   const getNodeCenter = (nodeId: string) => {
     const node = nodeMap.get(nodeId);
