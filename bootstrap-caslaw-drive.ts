@@ -190,8 +190,6 @@ async function bootstrapFromDrive(config: CaslawBootstrapConfig) {
     throw new Error(`No supported data files found under ${config.inputPath ?? config.driveMount}`);
   }
 
-  console.log(`[caslaw-drive] Found ${files.length} input file(s)`);
-
   const batch: NormalizedCaslawRecord[] = [];
   let scanned = 0;
   let upserted = 0;
