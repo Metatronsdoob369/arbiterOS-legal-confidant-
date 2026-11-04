@@ -16,7 +16,7 @@ env:
 jobs:
   test-and-build:
     name: Test and Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout code
@@ -30,6 +30,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Build SQLite from source
+        run: npm install --build-from-source better-sqlite3
 
       - name: Type check
         run: npx tsc --noEmit
