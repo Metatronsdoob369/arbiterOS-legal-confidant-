@@ -16,3 +16,6 @@
 ## 2026-10-22 - [O(N log N) Sorting in GrowthBoard]
 **Learning:** Re-computing expensive derived state like sorting (`sortPackageSteps` which is O(N log N)) on every render during state transitions (like stage or step index changes) causes unnecessary performance overhead.
 **Action:** Use `useMemo` to memoize derived state calculations, ensuring they only recalculate when their specific dependencies change. Also wrap handler functions in `useCallback` so they can be safely passed to child components.
+## 2024-10-28 - [Stabilize callback references passed to React.memo]
+**Learning:** Even if you use `useMemo` for O(1) lookups inside an event handler to avoid O(N) array searches, depending on that derived state (`nodeMap`) within a `useCallback` recreates the callback whenever the state updates (e.g., during drag operations). Passing an unstable callback to a child component wrapped in `React.memo` breaks the memoization, causing all instances (even those not dragging) to re-render.
+**Action:** Pass explicit, required data directly as an argument from the child component to the callback instead of doing a lookup in the parent. This removes the parent's dependency on the derived state, stabilizing the callback reference and preserving `React.memo` performance.
