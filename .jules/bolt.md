@@ -16,3 +16,6 @@
 ## 2026-10-22 - [O(N log N) Sorting in GrowthBoard]
 **Learning:** Re-computing expensive derived state like sorting (`sortPackageSteps` which is O(N log N)) on every render during state transitions (like stage or step index changes) causes unnecessary performance overhead.
 **Action:** Use `useMemo` to memoize derived state calculations, ensuring they only recalculate when their specific dependencies change. Also wrap handler functions in `useCallback` so they can be safely passed to child components.
+## 2026-11-08 - [O(N log N) Date Parsing inside Sort]
+**Learning:** Instantiating new `Date` objects for ISO 8601 strings inside an array `.sort()` block is extremely expensive. The `.sort()` function is O(N log N), which means Date parsing is repeated many times during the render/memo cycles.
+**Action:** Use direct string comparison (`localeCompare`) for ISO 8601 timestamps instead of parsing `Date` objects to avoid unnecessary overhead during sorting operations.
