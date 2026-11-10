@@ -5,7 +5,7 @@ import { defineConfig, devices } from '@playwright/test';
  * Uses a dedicated port (4321) to avoid conflicts with other dev servers.
  * Network requests to AI/API endpoints are mocked inside each test.
  */
-const webServer = process.env.PLAYWRIGHT_SKIP_WEB_SERVER
+const webServer = process.env.PLAYWRIGHT_SKIP_WEB_SERVER === 'true'
   ? undefined
   : {
       command: 'npm run seed:admin && npm run dev',
