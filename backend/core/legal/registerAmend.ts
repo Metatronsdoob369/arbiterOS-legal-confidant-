@@ -81,7 +81,8 @@ export function listRegisterProposals(filter?: { status?: RegisterProposal['stat
       }
     })
     .filter((p): p is RegisterProposal => p !== null)
-    .sort((a, b) => b.created_at.localeCompare(a.created_at));
+    // ⚡ Bolt: Optimize sorting ISO 8601 timestamps using relational operators instead of the slower localeCompare
+    .sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0));
 
   if (!filter?.status) return proposals;
   return proposals.filter((p) => p.status === filter.status);
